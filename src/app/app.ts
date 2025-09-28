@@ -1,9 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import {MonthlySpendingStackedBarChart} from './monthly-spending-stacked-bar-chart/monthly-spending-stacked-bar-chart';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, MonthlySpendingStackedBarChart],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
