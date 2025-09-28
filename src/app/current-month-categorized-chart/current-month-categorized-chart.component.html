@@ -1,0 +1,13 @@
+@if (isLoading) {
+  <app-loader></app-loader>
+}
+
+@if (!isLoading) {
+  <div class="chart-container" style="position: relative; width: 100%; height: 50vh;">
+    <canvas baseChart
+            [data]="chartData"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+}

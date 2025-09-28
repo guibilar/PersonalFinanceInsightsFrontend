@@ -13,4 +13,8 @@ export class ReportsRepository {
   getMonthlyCategorizedGraph(): Observable<any> {
     return this.http.get(`${this.baseUrl}/monthly-categorized-graph`);
   }
+
+  getCurrentMonthCategorizedGraph(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/current-month-categorized-graph`);
+  }
 }

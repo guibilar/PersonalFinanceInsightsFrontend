@@ -6,7 +6,10 @@ import {
 } from 'chart.js';
 
 export class ChartHelper {
-  static generateChartConfiguration(apiResponse: any): { chartData: any; chartOptions: ChartConfiguration['options'] } {
+  static generateMonthlySpendingChartConfiguration(apiResponse: any): {
+    chartData: any;
+    chartOptions: ChartConfiguration['options']
+  } {
     const months = apiResponse.monthlyData.map((monthData: any) => monthData.month);
     const categories = apiResponse.categories;
 
@@ -54,7 +57,7 @@ export class ChartHelper {
               const labels = originalGenerateLabels(chart);
 
               labels.push({
-                text: `Avg: ${averageValue.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`,
+                text: `Avg: ${averageValue.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`,
                 fillStyle: 'red',
                 strokeStyle: 'red',
                 lineWidth: 2,
@@ -97,7 +100,7 @@ export class ChartHelper {
               const labels = originalGenerateLabels(chart);
 
               labels.push({
-                text: `Avg: ${newAverageValue.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`,
+                text: `Avg: ${newAverageValue.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`,
                 fillStyle: 'red',
                 strokeStyle: 'red',
                 lineWidth: 2,
@@ -118,9 +121,9 @@ export class ChartHelper {
         },
         tooltip: {
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               let value = context.raw as number;
-              return `${value.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`;
+              return `${value.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`;
             }
           }
         },
@@ -135,6 +138,51 @@ export class ChartHelper {
               borderWidth: 2,
             },
           },
+        },
+      },
+    };
+
+    return {chartData, chartOptions};
+  }
+
+  static generateDoughnutChartConfiguration(apiResponse: any): {
+    chartData: any;
+    chartOptions: ChartConfiguration['options'];
+  } {
+    const categories = apiResponse.categories || [];
+    const firstMonthData = apiResponse.monthlyData[0]?.categoryValues || {};
+    const data = categories.map((category: string) => firstMonthData[category] || 0);
+
+    const chartData = {
+      labels: categories,
+      datasets: [
+        {
+          data: data,
+          backgroundColor: categories.map((category: string) =>
+            CategoryColorHelper.getColor(category)
+          ),
+        },
+      ],
+    };
+
+
+    const chartOptions: ChartConfiguration['options'] = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#333',
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              let value = context.raw as number;
+              return `${value.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`;
+            }
+          }
         },
       },
     };
