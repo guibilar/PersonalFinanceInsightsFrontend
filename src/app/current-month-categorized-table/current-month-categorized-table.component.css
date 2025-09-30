@@ -1,0 +1,13 @@
+.categorized-table {
+  margin-top: 20px;
+}
+
+.table {
+  width: 100%;
+  border: 1px solid #ddd;
+}
+
+.table th, .table td {
+  text-align: left;
+  padding: 8px;
+}

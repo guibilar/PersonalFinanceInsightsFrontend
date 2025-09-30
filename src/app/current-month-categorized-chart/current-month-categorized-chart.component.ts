@@ -16,7 +16,7 @@ import {
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 
-Chart.register(CategoryScale, LinearScale, BarElement, DoughnutController, Tooltip, Legend, annotationPlugin, ArcElement);
+Chart.register(CategoryScale, DoughnutController, Tooltip, Legend, annotationPlugin, ArcElement);
 
 @Component({
   selector: 'app-current-month-categorized-chart',

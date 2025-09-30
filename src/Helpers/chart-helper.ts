@@ -171,7 +171,7 @@ export class ChartHelper {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'right',
+          position: 'bottom',
           labels: {
             color: '#333',
           },

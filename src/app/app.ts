@@ -5,10 +5,14 @@ import {MonthlyCategorizedChartComponent} from './monthly-categorized-chart/mont
 import {
   CurrentMonthCategorizedChartComponent
 } from './current-month-categorized-chart/current-month-categorized-chart.component';
+import {
+  CurrentMonthCategorizedTableComponent
+} from './current-month-categorized-table/current-month-categorized-table.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CardWrapperComponent, MonthlyCategorizedChartComponent, CurrentMonthCategorizedChartComponent],
+  imports: [RouterOutlet, CardWrapperComponent, MonthlyCategorizedChartComponent, CurrentMonthCategorizedChartComponent,
+    CurrentMonthCategorizedTableComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
