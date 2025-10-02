@@ -1,7 +1,6 @@
-version: '3.8'
 services:
   angular-app:
-    image: angular-app-debug
+    build: .
     ports:
       - "5095:5095"
     restart: unless-stopped

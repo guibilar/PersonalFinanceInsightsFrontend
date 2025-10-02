@@ -1,39 +1,35 @@
-# Use official Node.js image to install dependencies and build the project
-FROM node:20 as builder
+# Stage 1: Build the Angular application
+FROM node:20-alpine AS build-stage
 
-# Set working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the container
-COPY package.json package-lock.json ./
+# Install Angular CLI globally to ensure we can build the Angular app
+RUN npm install -g @angular/cli@20.3.3
+
+# Copy package.json and package-lock.json for dependency installation
+COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
-# Copy the Angular project files into the container
+# Copy the rest of the application source code to the container
 COPY . .
 
-# Build the Angular application
-RUN npm run build --prod
+# Debug and verify Angular build process
+RUN ng version && ng build --configuration=production
 
-# Diagnostic step: List the /app/dist directory to verify build output
-RUN echo "######### Contents of /app/dist #########" && ls -R /app/dist
+# Stage 2: Serve the application using nginx
+FROM nginx:1.25-alpine AS production-stage
 
-# Use nginx to serve the built application
-FROM nginx:1.25-alpine
-
-# Expose port 5095
-EXPOSE 5095
+# Copy built files from the build stage to the nginx HTML folder
+COPY --from=build-stage /app/dist/PersonalFinancesFrontend/ /usr/share/nginx/html/
 
 # Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy built application from the previous stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Expose port 5095 to serve the application
+EXPOSE 5095
 
-# Diagnostic step: List files in Nginx serving directory and check for index.html
-RUN echo "######### Contents of /usr/share/nginx/html #########" && ls -R /usr/share/nginx/html && \
-    if [ -f /usr/share/nginx/html/index.html ]; then echo "index.html FOUND"; else echo "index.html NOT FOUND"; fi
-
-# Run nginx in the foreground
+# Start nginx when the container starts
 CMD ["nginx", "-g", "daemon off;"]
