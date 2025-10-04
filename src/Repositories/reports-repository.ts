@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ReportsRepository {
-  private readonly baseUrl: string = 'http://192.168.1.241:5096/api/Reports';
+  private readonly baseUrl: string = 'http://localhost:5096/api/Reports';
 
   constructor(private http: HttpClient) {}
 

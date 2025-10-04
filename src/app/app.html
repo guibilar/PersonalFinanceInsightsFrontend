@@ -1,17 +1,19 @@
 <div class="container">
   <div class="container py-4">
     <div class="row justify-content-center">
-      <div class="d-grid row-gap-3 col-12 col-md-10 col-lg-8">
+      <div class="col-12 col-md-10 col-lg-8">
         <app-card-wrapper headerTitle='Monthly Spending'>
           <ng-content>
             <app-monthly-categorized-chart/>
           </ng-content>
         </app-card-wrapper>
+        <div class="mb-3"></div>
         <app-card-wrapper headerTitle='Current Month Spending Table'>
           <ng-content>
             <app-current-month-categorized-table />
           </ng-content>
         </app-card-wrapper>
+        <div class="mb-3"></div>
         <app-card-wrapper headerTitle='Current Month Spending'>
           <ng-content>
             <app-current-month-categorized-chart/>
