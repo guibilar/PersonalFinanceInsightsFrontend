@@ -17,7 +17,7 @@ RUN npm ci
 COPY . .
 
 # Debug and verify Angular build process
-RUN ng version && ng build --configuration=production
+RUN ng version && ng build --configuration production
 
 # Stage 2: Serve the application using nginx
 FROM nginx:1.25-alpine AS production-stage
