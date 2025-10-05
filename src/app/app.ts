@@ -8,10 +8,11 @@ import {
 import {
   CurrentMonthCategorizedTableComponent
 } from './current-month-categorized-table/current-month-categorized-table.component';
+import { NavigationComponent } from './navigation/navigation.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, NavigationComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
