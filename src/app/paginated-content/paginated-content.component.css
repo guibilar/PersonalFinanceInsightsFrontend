@@ -14,11 +14,14 @@
   justify-content: center;
   gap: 0.5rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .page-numbers {
   display: flex;
   gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .pagination-button,
@@ -29,6 +32,34 @@
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  .pagination {
+    gap: 0.25rem;
+  }
+
+  .pagination-button,
+  .page-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .page-numbers {
+    gap: 0.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pagination-button,
+  .page-button {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    min-width: 40px;
+    min-height: 40px;
+  }
 }
 
 .pagination-button:hover:not(:disabled),
