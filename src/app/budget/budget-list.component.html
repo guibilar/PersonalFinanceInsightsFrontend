@@ -1,0 +1,44 @@
+<div class="budget-header">
+  <button class="btn btn-primary" (click)="onCreateBudget()">Create Budget</button>
+</div>
+
+@if (showForm) {
+  <app-budget-form
+    [budget]="editingBudget"
+    (submit)="onFormSubmit($event)"
+    (cancel)="onFormCancel()">
+  </app-budget-form>
+}
+
+<app-budget-filter
+  [filter]="filter"
+  (filterChange)="onFilterChange($event)">
+</app-budget-filter>
+
+<app-paginated-content
+  [data]="budgets"
+  [contentTemplate]="budgetTemplate"
+  (pageChange)="onPageChange($event)">
+</app-paginated-content>
+
+<ng-template #budgetTemplate let-items="items">
+  <div class="budget-list">
+    @for (budget of items; track budget.id) {
+      <div class="budget-card">
+        <div class="budget-card-header">
+          <h3>{{ budget.name }}</h3>
+          <span class="budget-status" [class.active]="budget.status === 0" [class.inactive]="budget.status === 1">
+              {{ getStatusLabel(budget.status) }}
+            </span>
+        </div>
+        <div class="budget-card-body">
+          <p class="budget-description">{{ budget.description }}</p>
+        </div>
+        <div class="budget-card-actions">
+          <button class="btn btn-secondary" (click)="onEditBudget(budget)">Edit</button>
+          <button class="btn btn-danger" (click)="onDeleteBudget(budget.id)">Delete</button>
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>

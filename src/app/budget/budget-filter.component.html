@@ -1,0 +1,56 @@
+<div class="filter-container">
+  <div class="filter-section">
+    <h3>Filters</h3>
+
+    <div class="filter-row">
+      <label for="name">Name:</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        [(ngModel)]="filter.Name"
+        placeholder="Search by name">
+    </div>
+
+    <div class="filter-row">
+      <label for="description">Description:</label>
+      <input
+        type="text"
+        id="description"
+        name="description"
+        [(ngModel)]="filter.Description"
+        placeholder="Search by description">
+    </div>
+
+    <div class="filter-row">
+      <label for="status">Status:</label>
+      <select
+        id="status"
+        name="status"
+        [(ngModel)]="filter.Status">
+        @for (option of statusOptions; track option.label) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-row">
+      <label for="pageSize">Items per page:</label>
+      <select
+        id="pageSize"
+        name="pageSize"
+        [(ngModel)]="filter.PageSize">
+        <option [ngValue]="5">5</option>
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
+        <option [ngValue]="100">100</option>
+      </select>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn-apply" (click)="applyFilter()">Apply Filter</button>
+      <button class="btn-clear" (click)="clearFilter()">Clear</button>
+    </div>
+  </div>
+</div>
