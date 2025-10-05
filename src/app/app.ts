@@ -11,8 +11,7 @@ import {
 
 @Component({
   selector: 'app-root',
-  imports: [CardWrapperComponent, MonthlyCategorizedChartComponent, CurrentMonthCategorizedChartComponent,
-    CurrentMonthCategorizedTableComponent],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

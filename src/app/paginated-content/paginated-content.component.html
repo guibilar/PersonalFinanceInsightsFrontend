@@ -1,0 +1,45 @@
+@if (data) {
+  <div class="paginated-content">
+    <!-- Custom content -->
+    <div class="content">
+      <ng-container *ngTemplateOutlet="contentTemplate; context: { items: data.items, data: data }"></ng-container>
+    </div>
+
+    <!-- Pagination controls -->
+    @if (data.totalPages > 1) {
+      <div class="pagination">
+        <button
+          class="pagination-button"
+          [disabled]="!data.hasPreviousPage"
+          (click)="onPageChange(data.page - 1)">
+          Previous
+        </button>
+
+        <div class="page-numbers">
+          @for (page of getPageNumbers(); track page) {
+            <button
+              class="page-button"
+              [class.active]="page === data.page"
+              [class.ellipsis]="page === -1"
+              [disabled]="page === -1"
+              (click)="onPageChange(page)">
+              {{ page === -1 ? '...' : page }}
+            </button>
+          }
+        </div>
+
+        <button
+          class="pagination-button"
+          [disabled]="!data.hasNextPage"
+          (click)="onPageChange(data.page + 1)">
+          Next
+        </button>
+      </div>
+    }
+
+    <!-- Pagination info -->
+    <div class="pagination-info">
+      Showing {{ (data.page - 1) * data.pageSize + 1 }} to {{ Math.min(data.page * data.pageSize, data.totalCount) }} of {{ data.totalCount }} items
+    </div>
+  </div>
+}

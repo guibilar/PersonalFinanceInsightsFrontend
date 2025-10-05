@@ -1,0 +1,45 @@
+<app-transaction-filter
+  [enabledFilters]="['pageSize']"
+  [filter]="filter"
+  (filterChange)="onFilterChange($event)">
+</app-transaction-filter>
+
+<app-paginated-content
+  [data]="transactions"
+  [contentTemplate]="transactionTemplate"
+  (pageChange)="onPageChange($event)">
+</app-paginated-content>
+
+<ng-template #transactionTemplate let-items="items">
+  <div class="transaction-list">
+    @for (transaction of items; track transaction.Id) {
+      <div class="transaction-card">
+        <div class="card-header">
+          <span class="card-date">{{ transaction.date | date:'dd/MM/yyyy' }}</span>
+          <span class="card-amount"
+                [class.expense]="transaction.transactionType === 'Debit'"
+                [class.income]="transaction.transactionType === 'Credit'">
+            {{ transaction.amount | currency }}
+          </span>
+        </div>
+        <div class="card-body">
+          <p class="card-description">{{ transaction.description }}</p>
+          <div class="card-details">
+            <div class="card-detail">
+              <span class="detail-label">Category:</span>
+              <span class="detail-value" [style.color]="getCategoryColor(transaction.category)">{{ transaction.category }}</span>
+            </div>
+            <div class="card-detail">
+              <span class="detail-label">Account:</span>
+              <span class="detail-value">{{ transaction.account }}</span>
+            </div>
+            <div class="card-detail">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">{{ transaction.transactionType }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>
