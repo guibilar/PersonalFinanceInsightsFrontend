@@ -1,8 +1,12 @@
 import { Status } from '../Enums/status';
 
 export interface BudgetOutputDto {
-  Id: string;
-  Name: string;
-  Description: string;
-  Status: Status;
+  id: string;
+  name: string;
+  description: string;
+  status: Status;
+  totalAmount: number;
+  totalSpent: number;
+  totalRemaining: number;
+  percentageUsed: number;
 }

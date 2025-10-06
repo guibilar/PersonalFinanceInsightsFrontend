@@ -4,6 +4,7 @@ export interface BudgetInputDto {
   Id: string;
   Name: string;
   Description: string;
+  Amount: number;
   Status: Status
 }
 

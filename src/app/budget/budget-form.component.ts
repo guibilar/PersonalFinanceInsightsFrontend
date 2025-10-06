@@ -13,13 +13,14 @@ import { Status } from '../../Models/Enums/status';
 })
 export class BudgetFormComponent implements OnInit {
   @Input() budget: any = null;
-  @Output() submit = new EventEmitter<BudgetInputDto>();
+  @Output() submitBudget = new EventEmitter<BudgetInputDto>();
   @Output() cancel = new EventEmitter<void>();
 
   formData: BudgetInputDto = {
     Id: '',
     Name: '',
     Description: '',
+    Amount: 0,
     Status: Status.Active
   };
 
@@ -32,6 +33,7 @@ export class BudgetFormComponent implements OnInit {
     if (this.budget) {
       this.formData = {
         Id: this.budget.id,
+        Amount: this.budget.totalAmount,
         Name: this.budget.name,
         Description: this.budget.description,
         Status: this.budget.status
@@ -41,8 +43,7 @@ export class BudgetFormComponent implements OnInit {
 
   onSubmit(): void {
     if (this.isValid()) {
-      console.log(this.formData);
-      this.submit.emit(this.formData);
+      this.submitBudget.emit(this.formData);
     }
   }
 
@@ -51,7 +52,10 @@ export class BudgetFormComponent implements OnInit {
   }
 
   isValid(): boolean {
-    return this.formData.Name.trim() !== '' && this.formData.Description.trim() !== '';
+    return this.formData.Name.trim() !== ''
+      && this.formData.Description.trim() !== ''
+      && this.formData.Amount > 0
+      && this.formData.Status !== undefined;
   }
 
   get isEditing(): boolean {

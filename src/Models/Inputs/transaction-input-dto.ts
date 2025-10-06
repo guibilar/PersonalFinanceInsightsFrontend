@@ -11,3 +11,8 @@ export interface TransactionInputDto {
   Account: AccountType;
   BudgetId: string;
 }
+
+export interface TransactionLinkingInputDto {
+  TransactionId: string;
+  BudgetId: string;
+}

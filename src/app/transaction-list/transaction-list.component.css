@@ -56,6 +56,11 @@
   gap: 0.5rem;
 }
 
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .card-detail {
   display: flex;
   justify-content: space-between;
