@@ -1,10 +1,10 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
+import {ChangeDetectionStrategy, Component, effect, inject, input, output} from '@angular/core';
+import {NonNullableFormBuilder, ReactiveFormsModule} from '@angular/forms';
 import {TransactionFilterInputDto} from '../../../core/models/inputs/transaction-filter-input-dto';
 import {TransactionType} from '../../../core/models/enums/transaction-type';
 import {AccountType} from '../../../core/models/enums/account-type';
 import {Category} from '../../../core/models/enums/category';
+import {PAGE_SIZE_OPTIONS} from '../../../shared/utils/page-size-options';
 
 export type FilterField =
   'description'
@@ -19,86 +19,100 @@ export type FilterField =
 
 @Component({
   selector: 'app-transaction-filter',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './transaction-filter.component.html',
-  styleUrls: ['./transaction-filter.component.css']
+  styleUrls: ['./transaction-filter.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionFilterComponent implements OnInit {
-  // Edited locally; the parent only sees changes on apply/clear.
-  filter: TransactionFilterInputDto = {
-    page: 1,
-    pageSize: 10
-  };
+export class TransactionFilterComponent {
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  @Input('filter') set filterInput(value: TransactionFilterInputDto) {
-    this.filter = { ...value, accountType: value.accountType ? [...value.accountType] : undefined };
-  }
-  @Input() enabledFilters: FilterField[] = [];
-
-  @Output() filterChange = new EventEmitter<TransactionFilterInputDto>();
-
-  isFilterEnabled(filterName: FilterField): boolean {
-    return this.enabledFilters.includes(filterName);
-  }
+  readonly filter = input.required<TransactionFilterInputDto>();
+  readonly enabledFilters = input<FilterField[]>([]);
+  readonly filterChange = output<TransactionFilterInputDto>();
 
   readonly transactionTypes = Object.values(TransactionType);
   readonly accountTypes = Object.values(AccountType);
   readonly categories = Object.values(Category);
+  readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
 
-  selectedAccountTypes: Partial<Record<AccountType, boolean>> = {};
+  // Edited locally; the parent only sees changes on apply/clear.
+  readonly form = this.fb.group({
+    transactionId: '',
+    description: '',
+    transactionType: this.fb.control<TransactionType | null>(null),
+    accountType: this.fb.control<AccountType[]>([]),
+    category: this.fb.control<Category | null>(null),
+    startDate: '',
+    endDate: '',
+    budgetId: '',
+    pageSize: 10
+  });
 
-  ngOnInit(): void {
-    this.filter.accountType?.forEach(type => (this.selectedAccountTypes[type] = true));
+  constructor() {
+    effect(() => {
+      const filter = this.filter();
+      this.form.reset({
+        transactionId: filter.transactionId ?? '',
+        description: filter.description ?? '',
+        transactionType: filter.transactionType ?? null,
+        accountType: filter.accountType ?? [],
+        category: filter.category ?? null,
+        startDate: filter.startDate ?? '',
+        endDate: filter.endDate ?? '',
+        budgetId: filter.budgetId ?? '',
+        pageSize: filter.pageSize
+      });
+    });
+  }
+
+  isFilterEnabled(filterName: FilterField): boolean {
+    return this.enabledFilters().includes(filterName);
+  }
+
+  isAccountTypeSelected(accountType: AccountType): boolean {
+    return this.form.controls.accountType.value.includes(accountType);
   }
 
   onAccountTypeChange(accountType: AccountType, checked: boolean): void {
-    this.selectedAccountTypes[accountType] = checked;
-
-    const selected = this.accountTypes.filter(type => this.selectedAccountTypes[type]);
-
-    this.filter.accountType = selected.length > 0 ? selected : undefined;
+    const control = this.form.controls.accountType;
+    const others = control.value.filter((type) => type !== accountType);
+    control.setValue(checked ? [...others, accountType] : others);
   }
 
   applyFilter(): void {
-    this.filterChange.emit({ ...this.filter });
+    const value = this.form.getRawValue();
+    this.filterChange.emit({
+      transactionId: value.transactionId.trim() || undefined,
+      description: value.description.trim() || undefined,
+      transactionType: value.transactionType ?? undefined,
+      accountType: value.accountType.length > 0 ? value.accountType : undefined,
+      category: value.category ?? undefined,
+      startDate: value.startDate || undefined,
+      endDate: value.endDate || undefined,
+      budgetId: value.budgetId.trim() || undefined,
+      page: this.filter().page,
+      pageSize: value.pageSize
+    });
   }
 
+  // Resets only the fields shown to the user; hidden ones keep the parent's values.
   clearFilter(): void {
-    const newFilter: TransactionFilterInputDto = {
-      page: this.filter.page,
-      pageSize: this.filter.pageSize
-    };
+    const controls = this.form.controls;
+    const clearable: [FilterField, () => void][] = [
+      ['transactionId', () => controls.transactionId.reset()],
+      ['description', () => controls.description.reset()],
+      ['transactionType', () => controls.transactionType.reset()],
+      ['accountTypes', () => controls.accountType.reset()],
+      ['category', () => controls.category.reset()],
+      ['startDate', () => controls.startDate.reset()],
+      ['endDate', () => controls.endDate.reset()],
+      ['budgetId', () => controls.budgetId.reset()]
+    ];
+    clearable
+      .filter(([field]) => this.isFilterEnabled(field))
+      .forEach(([, reset]) => reset());
 
-    // Only clear fields that are not enabled
-    if (!this.isFilterEnabled('description')) {
-      newFilter.description = this.filter.description;
-    }
-    if (!this.isFilterEnabled('transactionType')) {
-      newFilter.transactionType = this.filter.transactionType;
-    }
-    if (!this.isFilterEnabled('category')) {
-      newFilter.category = this.filter.category;
-    }
-    if (!this.isFilterEnabled('accountTypes')) {
-      newFilter.accountType = this.filter.accountType;
-    } else {
-      this.selectedAccountTypes = {};
-    }
-    if (!this.isFilterEnabled('startDate')) {
-      newFilter.startDate = this.filter.startDate;
-    }
-    if (!this.isFilterEnabled('endDate')) {
-      newFilter.endDate = this.filter.endDate;
-    }
-    if (!this.isFilterEnabled('transactionId')) {
-      newFilter.transactionId = this.filter.transactionId;
-    }
-    if (!this.isFilterEnabled('budgetId')) {
-      newFilter.budgetId = this.filter.budgetId;
-    }
-
-    this.filter = newFilter;
-    this.filterChange.emit(this.filter);
+    this.applyFilter();
   }
 }

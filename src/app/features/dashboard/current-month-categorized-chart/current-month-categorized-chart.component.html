@@ -1,11 +1,7 @@
-@if (chartData) {
-  <div class="chart-container" style="position: relative; width: 100%; height: 50vh;">
-    <canvas baseChart
-            [data]="chartData"
-            [options]="chartOptions"
-            [type]="chartType">
-    </canvas>
-  </div>
-} @else {
-  <app-loader></app-loader>
-}
+<div class="chart-container" style="position: relative; width: 100%; height: 50vh;">
+  <canvas baseChart
+          [data]="chart().chartData"
+          [options]="chart().chartOptions"
+          type="doughnut">
+  </canvas>
+</div>

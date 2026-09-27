@@ -2,24 +2,34 @@
   <button class="btn btn-primary" (click)="onCreateBudget()">Create Budget</button>
 </div>
 
-@if (showForm) {
+@if (actionError(); as error) {
+  <app-error-state [message]="error" actionLabel="Dismiss" (retry)="actionError.set(null)" />
+}
+
+@if (showForm()) {
   <app-budget-form
-    [budget]="editingBudget"
+    [budget]="editingBudget()"
     (submitBudget)="onFormSubmit($event)"
     (cancel)="onFormCancel()">
   </app-budget-form>
 }
 
 <app-budget-filter
-  [filter]="filter"
+  [filter]="filter()"
   (filterChange)="onFilterChange($event)">
 </app-budget-filter>
 
-<app-paginated-content
-  [data]="budgets"
-  [contentTemplate]="budgetTemplate"
-  (pageChange)="onPageChange($event)">
-</app-paginated-content>
+@if (budgets.error()) {
+  <app-error-state message="Could not load budgets." (retry)="budgets.reload()" />
+} @else if (budgets.isLoading() && !budgets.hasValue()) {
+  <app-loader />
+} @else {
+  <app-paginated-content
+    [data]="budgets.value()"
+    [contentTemplate]="budgetTemplate"
+    (pageChange)="onPageChange($event)">
+  </app-paginated-content>
+}
 
 <ng-template #budgetTemplate let-items="items">
   <div class="budget-list">
@@ -28,7 +38,7 @@
         <div class="budget-card-header">
           <h3>{{ budget.name }}</h3>
           <span class="budget-status" [class.active]="budget.status === Status.Active" [class.inactive]="budget.status === Status.Inactive">
-              {{ getStatusLabel(budget.status) }}
+              {{ budget.status }}
             </span>
         </div>
         <div class="budget-card-body">

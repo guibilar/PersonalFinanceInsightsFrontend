@@ -1,125 +1,92 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
+import { BudgetRepository } from '../../../core/api/budget-repository';
 import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
+import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
-import { PaginatedResult } from '../../../core/models/outputs/paginated-result-output-dto';
-import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
-import { TransactionFilterComponent } from '../transaction-filter/transaction-filter.component';
-import { CommonModule } from '@angular/common';
+import { Status } from '../../../core/models/enums/status';
+import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
-import {BudgetRepository} from '../../../core/api/budget-repository';
-import {BudgetOutputDto} from '../../../core/models/outputs/budget-output-dto';
-import {BudgetFilterInputDto} from '../../../core/models/inputs/budget-filter-input-dto';
-import {Status} from '../../../core/models/enums/status';
-import {TransactionLinkForm} from '../transaction-link-form/transaction-link-form';
-import {TransactionLinkingInputDto} from '../../../core/models/inputs/transaction-linking-input-dto';
+import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
+import { LoaderComponent } from '../../../shared/ui/loader/loader.component';
+import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
+import { FilterField, TransactionFilterComponent } from '../transaction-filter/transaction-filter.component';
+import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
 
 @Component({
   selector: 'app-transaction-list',
   templateUrl: './transaction-list.component.html',
   imports: [
+    CurrencyPipe,
+    DatePipe,
     PaginatedContentComponent,
     TransactionFilterComponent,
-    CommonModule,
-    TransactionLinkForm
+    TransactionLinkForm,
+    LoaderComponent,
+    ErrorStateComponent
   ],
-  styleUrls: ['./transaction-list.component.css']
+  styleUrls: ['./transaction-list.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionListComponent implements OnInit {
-  showForm: boolean = false;
-  linkingTransaction: TransactionOutputDto | null = null;
-  transactions?: PaginatedResult<TransactionOutputDto>;
-  budgets?: BudgetOutputDto[] | undefined = [];
-  filter: TransactionFilterInputDto = {
-    page: 1,
-    pageSize: 10
-  };
+export class TransactionListComponent {
+  private readonly transactionRepository = inject(TransactionRepository);
+  private readonly budgetRepository = inject(BudgetRepository);
 
-  constructor(private transactionRepository: TransactionRepository,
-              private budgetRepository: BudgetRepository,) {}
+  readonly enabledFilters: FilterField[] = ['pageSize', 'startDate', 'endDate', 'category', 'description'];
 
-  ngOnInit(): void {
-    this.loadTransactions();
-    this.loadBudgets();
-  }
+  readonly filter = signal<TransactionFilterInputDto>({ page: 1, pageSize: 10 });
+  readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
+  readonly actionError = signal<string | null>(null);
 
-  loadBudgets(): void {
-    // Link dropdown needs every active budget, not just the first page.
-    const filter: BudgetFilterInputDto = {
-      status: Status.Active,
-      page: 1,
-      pageSize: 1000
-    };
-    this.budgetRepository.filter(filter).subscribe({
-      next: (data) => {
-        this.budgets = data.items;
-      },
-      error: (error) => {
-        console.error('Error loading budgets:', error);
-      }
-    });
-  }
+  readonly transactions = rxResource({
+    params: () => this.filter(),
+    stream: ({ params }) => this.transactionRepository.filter(params)
+  });
 
-  onLinkingTransaction(transaction: TransactionOutputDto): void {
-    this.linkingTransaction = transaction;
-    this.showForm = true;
-  }
+  // Link dropdown needs every active budget, not just the first page.
+  private readonly activeBudgetsResource = rxResource({
+    stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 })
+  });
+  readonly activeBudgets = computed(() => this.activeBudgetsResource.value()?.items ?? []);
 
-  loadTransactions(): void {
-    this.transactionRepository.filter(this.filter).subscribe({
-      next: (data) => {
-        this.transactions = data;
-      },
-      error: (error) => {
-        console.error('Error loading transactions:', error);
-      }
-    });
-  }
+  protected readonly TransactionType = TransactionType;
 
   onPageChange(page: number): void {
-    this.filter = { ...this.filter, page: page };
-    this.loadTransactions();
+    this.filter.update((filter) => ({ ...filter, page }));
   }
 
   onFilterChange(newFilter: TransactionFilterInputDto): void {
-    this.filter = { ...newFilter, page: 1 };
-    this.loadTransactions();
+    this.filter.set({ ...newFilter, page: 1 });
   }
 
   getCategoryColor(category: string): string {
     return CategoryColorHelper.getColor(category);
   }
 
-  onFormSubmit(transactionLinkingInputDto: TransactionLinkingInputDto): void {
-    if (this.linkingTransaction) {
-      this.transactionRepository.linkTransaction(transactionLinkingInputDto).subscribe({
-        next: () => {
-          this.showForm = false;
-          this.linkingTransaction = null;
-          this.loadTransactions();
-          console.log('Transaction linked successfully');
-        },
-        error: (error) => {
-          console.error('Error linking transaction:', error);
-        }
-      });
-    }
+  onLinkingTransaction(transaction: TransactionOutputDto): void {
+    this.linkingTransaction.set(transaction);
+  }
+
+  onFormSubmit(linking: TransactionLinkingInputDto): void {
+    this.transactionRepository.linkTransaction(linking).subscribe({
+      next: () => {
+        this.linkingTransaction.set(null);
+        this.transactions.reload();
+      },
+      error: () => this.actionError.set('Could not link the transaction.')
+    });
   }
 
   onUnlinkSubmit(id: string): void {
-      this.transactionRepository.unlinkTransaction(id).subscribe({
-        next: () => {
-          this.loadTransactions();
-          console.log('Transaction unlinked successfully');
-        },
-        error: (error) => {
-          console.error('Error unlinked transaction:', error);
-        }
-      });
+    this.transactionRepository.unlinkTransaction(id).subscribe({
+      next: () => this.transactions.reload(),
+      error: () => this.actionError.set('Could not unlink the transaction.')
+    });
   }
 
   onFormCancel(): void {
-    this.showForm = false;
-    this.linkingTransaction = null;
+    this.linkingTransaction.set(null);
   }
 }

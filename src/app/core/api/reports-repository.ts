@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -8,9 +8,8 @@ import { CategorizedReportOutputDto } from '../models/outputs/categorized-report
   providedIn: 'root'
 })
 export class ReportsRepository {
+  private readonly http = inject(HttpClient);
   private readonly baseUrl: string = `${environment.apiUrl}/Reports`;
-
-  constructor(private http: HttpClient) {}
 
   getMonthlyCategorizedGraph(): Observable<CategorizedReportOutputDto> {
     return this.http.get<CategorizedReportOutputDto>(`${this.baseUrl}/monthly-categorized-graph`);

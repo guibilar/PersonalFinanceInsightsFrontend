@@ -3,25 +3,20 @@
     <h3>Linking Transaction</h3>
   </div>
 
-  <form (ngSubmit)="onSubmit()" #TransactionForm="ngForm">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="form-group">
-      <label for="budget">Budget *</label>
-      <select
-        id="budget"
-        name="budget"
-        [(ngModel)]="formData.budgetId"
-        required
-        class="form-control">
-        <option [ngValue]="''" disabled>Select a budget</option>
-        @for (option of budgets; track option.id) {
-          <option [ngValue]="option.id">{{ option.name }}</option>
+      <label for="link-budget">Budget *</label>
+      <select id="link-budget" formControlName="budgetId" class="form-control">
+        <option value="" disabled>Select a budget</option>
+        @for (option of budgets(); track option.id) {
+          <option [value]="option.id">{{ option.name }}</option>
         }
       </select>
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancel</button>
-      <button type="submit" class="btn btn-primary" [disabled]="!isValid()">Link</button>
+      <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Link</button>
     </div>
   </form>
 </div>

@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import {
   ArcElement,
   BarController,
@@ -16,7 +17,8 @@ import { MonthlyCategorizedChartComponent } from './monthly-categorized-chart/mo
 import { CurrentMonthCategorizedTableComponent } from './current-month-categorized-table/current-month-categorized-table.component';
 import { CurrentMonthCategorizedChartComponent } from './current-month-categorized-chart/current-month-categorized-chart.component';
 import { ReportsRepository } from '../../core/api/reports-repository';
-import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+import { LoaderComponent } from '../../shared/ui/loader/loader.component';
+import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
 Chart.register(
@@ -37,27 +39,23 @@ Chart.register(
     CardWrapperComponent,
     MonthlyCategorizedChartComponent,
     CurrentMonthCategorizedTableComponent,
-    CurrentMonthCategorizedChartComponent
+    CurrentMonthCategorizedChartComponent,
+    LoaderComponent,
+    ErrorStateComponent
   ],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css'
+  styleUrl: './dashboard.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DashboardComponent implements OnInit {
-  monthlyReport?: CategorizedReportOutputDto;
-  currentMonthReport?: CategorizedReportOutputDto;
+export class DashboardComponent {
+  private readonly reportsRepository = inject(ReportsRepository);
 
-  constructor(private reportsRepository: ReportsRepository) {}
+  readonly monthlyReport = rxResource({
+    stream: () => this.reportsRepository.getMonthlyCategorizedGraph()
+  });
 
-  ngOnInit(): void {
-    this.reportsRepository.getMonthlyCategorizedGraph().subscribe({
-      next: (report) => (this.monthlyReport = report),
-      error: (error) => console.error('Error loading monthly report:', error)
-    });
-
-    // Fetched once and shared by the table and the doughnut chart.
-    this.reportsRepository.getCurrentMonthCategorizedGraph().subscribe({
-      next: (report) => (this.currentMonthReport = report),
-      error: (error) => console.error('Error loading current month report:', error)
-    });
-  }
+  // Fetched once and shared by the table and the doughnut chart.
+  readonly currentMonthReport = rxResource({
+    stream: () => this.reportsRepository.getCurrentMonthCategorizedGraph()
+  });
 }

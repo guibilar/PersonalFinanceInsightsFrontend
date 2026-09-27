@@ -3,7 +3,7 @@ import {
   DEFAULT_CURRENCY_CODE,
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
-  provideZoneChangeDetection
+  provideZonelessChangeDetection
 } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeEnCa from '@angular/common/locales/en-CA';
@@ -17,7 +17,7 @@ registerLocaleData(localeEnCa);
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(),
     { provide: LOCALE_ID, useValue: 'en-CA' },

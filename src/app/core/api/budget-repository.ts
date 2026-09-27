@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -11,9 +11,8 @@ import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
   providedIn: 'root'
 })
 export class BudgetRepository {
+  private readonly http = inject(HttpClient);
   private readonly baseUrl: string = `${environment.apiUrl}/Budget`;
-
-  constructor(private http: HttpClient) {}
 
   create(budgetDto: BudgetInputDto): Observable<void> {
     return this.http.post<void>(this.baseUrl, budgetDto);
