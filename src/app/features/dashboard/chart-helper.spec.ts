@@ -3,6 +3,7 @@ import { ChartHelper, formatCurrency, visibleMonthlyAverage } from './chart-help
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 
 const report: CategorizedReportOutputDto = {
+  averageMonthlyTotal: 1150,
   categories: ['Dining', 'Rent'],
   monthlyData: [
     { month: 'Aug', total: 1200, categoryValues: { Dining: 200, Rent: 1000 } },
@@ -54,6 +55,7 @@ describe('ChartHelper', () => {
     const { chartData } = ChartHelper.generateDoughnutChartConfiguration({
       categories: ['Rent'],
       monthlyData: [],
+      averageMonthlyTotal: 0,
     });
 
     expect(chartData.datasets[0].data).toEqual([0]);

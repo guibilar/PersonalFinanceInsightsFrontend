@@ -1,8 +1,16 @@
-<div class="card shadow-sm">
-  <div class="card-header">
-    <h2 class="h5 text-center mb-0">{{ headerTitle() }}</h2>
+<div class="card h-100">
+  <div
+    class="card-header d-flex align-items-start justify-content-between gap-2 border-0 pt-3 pb-0"
+  >
+    <div>
+      <h2 class="h6 fw-semibold mb-0">{{ headerTitle() }}</h2>
+      @if (subtitle(); as subtitle) {
+        <p class="small text-body-secondary mb-0">{{ subtitle }}</p>
+      }
+    </div>
+    <ng-content select="[card-actions]" />
   </div>
   <div class="card-body">
-    <ng-content></ng-content>
+    <ng-content />
   </div>
 </div>

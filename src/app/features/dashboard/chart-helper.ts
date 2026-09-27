@@ -164,10 +164,8 @@ export class ChartHelper {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: theme.text },
-        },
+        // The dashboard lists categories with amounts right below the doughnut.
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: (context) => formatCurrency(context.raw as number),

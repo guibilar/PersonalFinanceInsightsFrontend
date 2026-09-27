@@ -7,4 +7,5 @@ export interface MonthlyCategoryValuesDto {
 export interface CategorizedReportOutputDto {
   categories: string[];
   monthlyData: MonthlyCategoryValuesDto[];
+  averageMonthlyTotal: number;
 }
