@@ -15,7 +15,8 @@ import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto'
             <span [class.text-danger]="budget.percentageUsed >= 100" class="fw-semibold">
               {{ budget.totalSpent | currency }}
               <span class="text-body-secondary fw-normal"
-                >/ {{ budget.totalAmount | currency }}</span
+                >/ {{ budget.totalAmount | currency
+                }}{{ budget.period === 'Monthly' ? ' this month' : '' }}</span
               >
             </span>
           </div>

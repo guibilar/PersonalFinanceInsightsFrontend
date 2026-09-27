@@ -4,6 +4,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TransactionListComponent } from './transaction-list.component';
 import { Category } from '../../../core/models/enums/category';
+import { AccountType } from '../../../core/models/enums/account-type';
+import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('TransactionListComponent', () => {
   let fixture: ComponentFixture<TransactionListComponent>;
@@ -87,5 +90,79 @@ describe('TransactionListComponent', () => {
       page: 1,
     });
     expect(component.hasCriteria()).toBeTrue();
+  });
+
+  describe('editing and category rules', () => {
+    const coffee: TransactionOutputDto = {
+      id: 't1',
+      date: '2026-09-10',
+      amount: 4,
+      description: 'COFFEE',
+      category: Category.Other,
+      categoryLocked: false,
+      account: AccountType.CreditCard,
+      budgetId: '',
+    };
+
+    // reload() is ignored while the first load is still settling, so let it finish first.
+    beforeEach(async () => {
+      lastFilterRequest();
+      await fixture.whenStable();
+    });
+
+    it('saves an edit, closes the panel and reloads', () => {
+      component.editingTransaction.set(coffee);
+
+      component.onEditSubmit({ description: 'Coffee', category: Category.Dining });
+      const put = http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' });
+      expect(put.request.body).toEqual({ description: 'Coffee', category: Category.Dining });
+      expect(component.savingEdit()).toBeTrue();
+      put.flush({
+        ...coffee,
+        description: 'Coffee',
+        category: Category.Dining,
+        categoryLocked: true,
+      });
+
+      expect(component.editingTransaction()).toBeNull();
+      expect(component.savingEdit()).toBeFalse();
+      lastFilterRequest();
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(['Transaction updated']);
+    });
+
+    it('keeps the panel open when saving fails', () => {
+      component.editingTransaction.set(coffee);
+
+      component.onEditSubmit({ description: 'Coffee', category: Category.Dining });
+      http
+        .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
+        .flush(null, { status: 500, statusText: 'Error' });
+
+      expect(component.editingTransaction()).toEqual(coffee);
+      expect(component.savingEdit()).toBeFalse();
+    });
+
+    it('applies the category rules after confirming and reports what changed', () => {
+      component.confirmingRules.set(true);
+
+      component.applyCategoryRules();
+      expect(component.confirmingRules()).toBeFalse();
+      expect(component.applyingRules()).toBeTrue();
+      http
+        .expectOne({ method: 'POST', url: '/api/Transaction/ApplyCategoryRules' })
+        .flush({ checked: 40, updated: 3 });
+
+      expect(component.applyingRules()).toBeFalse();
+      lastFilterRequest();
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(['Recategorised 3 of 40 transactions']);
+    });
   });
 });

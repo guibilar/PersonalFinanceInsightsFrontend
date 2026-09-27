@@ -9,6 +9,8 @@ export interface TransactionOutputDto {
   amount: number;
   description: string;
   category: Category;
+  /** Picked by hand: re-applying the category rules leaves it alone. */
+  categoryLocked: boolean;
   transactionType?: TransactionType;
   account: AccountType;
   budgetId: string;

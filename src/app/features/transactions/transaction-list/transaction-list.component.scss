@@ -23,16 +23,34 @@
   max-width: 22rem;
 }
 
+.btn-icon {
+  display: inline-flex;
+  padding: 0.3125rem;
+  color: var(--bs-secondary-color);
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    background: var(--bs-secondary-bg);
+  }
+}
+
+.lock-icon {
+  color: var(--bs-secondary-color);
+  margin-left: 0.25rem;
+  vertical-align: -0.125em;
+}
+
 @media (max-width: 575.98px) {
   .tx-table {
     th,
     td {
-      padding: 0.625rem 0.5rem;
+      padding: 0.625rem 0.375rem;
     }
   }
 
+  // Scales with the screen so description, budget and amount fit side by side without scrolling.
   .description-cell {
-    max-width: 11rem;
+    max-width: 38vw;
   }
 }
 

@@ -10,6 +10,7 @@ import {
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
+import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 
 const NOT_BLANK = Validators.pattern(/\S/);
@@ -34,11 +35,25 @@ export class BudgetFormComponent implements OnInit {
     { value: Status.Inactive, label: 'Inactive' },
   ];
 
+  readonly periodOptions = [
+    {
+      value: BudgetPeriod.Total,
+      label: 'Total',
+      hint: 'Everything linked counts, e.g. a trip or a project.',
+    },
+    {
+      value: BudgetPeriod.Monthly,
+      label: 'Monthly',
+      hint: 'Only this month’s transactions count; it starts over every month.',
+    },
+  ];
+
   readonly form = this.fb.group({
     name: ['', [Validators.required, NOT_BLANK]],
     description: ['', [Validators.required, NOT_BLANK]],
     amount: [0, [Validators.required, Validators.min(0.01)]],
     status: [Status.Active, Validators.required],
+    period: [BudgetPeriod.Total, Validators.required],
   });
 
   ngOnInit(): void {
@@ -49,6 +64,7 @@ export class BudgetFormComponent implements OnInit {
         description: budget.description,
         amount: budget.totalAmount,
         status: budget.status,
+        period: budget.period,
       });
     }
   }
@@ -70,6 +86,7 @@ export class BudgetFormComponent implements OnInit {
       description: value.description.trim(),
       amount: value.amount,
       status: value.status,
+      period: value.period,
     });
   }
 }

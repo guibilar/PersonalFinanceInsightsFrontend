@@ -9,6 +9,7 @@ import {
   TransactionSortField,
 } from '../../../core/models/inputs/transaction-filter-input-dto';
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
+import { TransactionUpdateInputDto } from '../../../core/models/inputs/transaction-update-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { Status } from '../../../core/models/enums/status';
@@ -20,12 +21,14 @@ import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { SidePanelComponent } from '../../../shared/ui/side-panel/side-panel.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import {
   TransactionCriteria,
   TransactionToolbarComponent,
 } from '../transaction-toolbar/transaction-toolbar.component';
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
+import { TransactionEditForm } from '../transaction-edit-form/transaction-edit-form';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
 
 interface SortableColumn {
@@ -51,7 +54,9 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
     PaginatedContentComponent,
     TransactionToolbarComponent,
     TransactionLinkForm,
+    TransactionEditForm,
     StatementImportComponent,
+    ConfirmDialogComponent,
     SidePanelComponent,
     SkeletonComponent,
     ErrorStateComponent,
@@ -80,6 +85,10 @@ export class TransactionListComponent {
   });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
   readonly showImport = signal(false);
+  readonly editingTransaction = signal<TransactionOutputDto | null>(null);
+  readonly savingEdit = signal(false);
+  readonly confirmingRules = signal(false);
+  readonly applyingRules = signal(false);
 
   readonly transactions = rxResource({
     params: () => this.filter(),
@@ -174,6 +183,44 @@ export class TransactionListComponent {
         this.toasts.success(budget ? `Linked to “${budget.name}”` : 'Transaction linked');
       },
       error: () => this.toasts.error('Could not link the transaction.'),
+    });
+  }
+
+  onEditSubmit(update: TransactionUpdateInputDto): void {
+    const transaction = this.editingTransaction();
+    if (!transaction) return;
+    this.savingEdit.set(true);
+    this.transactionRepository.update(transaction.id, update).subscribe({
+      next: () => {
+        this.savingEdit.set(false);
+        this.editingTransaction.set(null);
+        this.transactions.reload();
+        this.toasts.success('Transaction updated');
+      },
+      error: () => {
+        this.savingEdit.set(false);
+        this.toasts.error('Could not update the transaction.');
+      },
+    });
+  }
+
+  applyCategoryRules(): void {
+    this.confirmingRules.set(false);
+    this.applyingRules.set(true);
+    this.transactionRepository.applyCategoryRules().subscribe({
+      next: ({ checked, updated }) => {
+        this.applyingRules.set(false);
+        this.transactions.reload();
+        this.toasts.success(
+          updated === 0
+            ? `All ${checked} categories already match the rules`
+            : `Recategorised ${updated} of ${checked} transactions`,
+        );
+      },
+      error: () => {
+        this.applyingRules.set(false);
+        this.toasts.error('Could not apply the category rules.');
+      },
     });
   }
 
