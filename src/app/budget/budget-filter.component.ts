@@ -12,10 +12,15 @@ import { Status } from '../../Models/Enums/status';
   styleUrls: ['./budget-filter.component.css']
 })
 export class BudgetFilterComponent {
-  @Input() filter: BudgetFilterInputDto = {
+  // Edited locally; the parent only sees changes on apply/clear.
+  filter: BudgetFilterInputDto = {
     Page: 1,
     PageSize: 10
   };
+
+  @Input('filter') set filterInput(value: BudgetFilterInputDto) {
+    this.filter = { ...value };
+  }
 
   @Output() filterChange = new EventEmitter<BudgetFilterInputDto>();
 
@@ -26,7 +31,7 @@ export class BudgetFilterComponent {
   ];
 
   applyFilter(): void {
-    this.filterChange.emit(this.filter);
+    this.filterChange.emit({ ...this.filter });
   }
 
   clearFilter(): void {

@@ -45,9 +45,12 @@ export class TransactionListComponent implements OnInit {
   }
 
   loadBudgets(): void {
-    let filter = {
-      Status: Status.Active
-    } as BudgetFilterInputDto;
+    // Link dropdown needs every active budget, not just the first page.
+    const filter: BudgetFilterInputDto = {
+      Status: Status.Active,
+      Page: 1,
+      PageSize: 1000
+    };
     this.budgetRepository.filter(filter).subscribe({
       next: (data) => {
         this.budgets = data.items;
@@ -75,7 +78,7 @@ export class TransactionListComponent implements OnInit {
   }
 
   onPageChange(page: number): void {
-    this.filter.Page = page;
+    this.filter = { ...this.filter, Page: page };
     this.loadTransactions();
   }
 

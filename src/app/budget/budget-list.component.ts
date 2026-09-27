@@ -8,6 +8,7 @@ import { PaginatedResult } from '../../Models/Outputs/paginated-result-output-dt
 import { BudgetFormComponent } from './budget-form.component';
 import { BudgetFilterComponent } from './budget-filter.component';
 import { PaginatedContentComponent } from '../paginated-content/paginated-content.component';
+import { Status } from '../../Models/Enums/status';
 
 @Component({
   selector: 'app-budget-list',
@@ -67,7 +68,7 @@ export class BudgetListComponent implements OnInit {
   }
 
   onPageChange(page: number): void {
-    this.filter.Page = page;
+    this.filter = { ...this.filter, Page: page };
     this.loadBudgets();
   }
 
@@ -108,7 +109,10 @@ export class BudgetListComponent implements OnInit {
     this.editingBudget = null;
   }
 
-  getStatusLabel(status: string): string {
+  getStatusLabel(status: Status): string {
     return status.toString();
   }
+
+  protected readonly Status = Status;
+  protected readonly Math = Math;
 }

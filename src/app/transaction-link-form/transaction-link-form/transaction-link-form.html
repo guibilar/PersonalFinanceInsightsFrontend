@@ -12,6 +12,7 @@
         [(ngModel)]="formData.BudgetId"
         required
         class="form-control">
+        <option [ngValue]="''" disabled>Select a budget</option>
         @for (option of budgets; track option.id) {
           <option [ngValue]="option.id">{{ option.name }}</option>
         }

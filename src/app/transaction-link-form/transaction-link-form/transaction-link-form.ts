@@ -3,6 +3,8 @@ import {FormsModule} from '@angular/forms';
 import {TransactionLinkingInputDto} from '../../../Models/Inputs/transaction-input-dto';
 import {BudgetOutputDto} from '../../../Models/Outputs/budget-output-dto';
 
+const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
+
 @Component({
   selector: 'app-transaction-link-form',
   imports: [
@@ -27,7 +29,7 @@ export class TransactionLinkForm {
     if (this.transaction) {
       this.formData = {
         TransactionId: this.transaction.id,
-        BudgetId: this.transaction.budgetId
+        BudgetId: this.transaction.budgetId === EMPTY_GUID ? '' : this.transaction.budgetId ?? ''
       };
     }
   }
@@ -43,6 +45,6 @@ export class TransactionLinkForm {
   }
 
   isValid(): boolean {
-    return this.formData.BudgetId !== undefined;
+    return !!this.formData.BudgetId && this.formData.BudgetId !== EMPTY_GUID;
   }
 }
