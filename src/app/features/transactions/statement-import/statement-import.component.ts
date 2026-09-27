@@ -73,6 +73,9 @@ export class StatementImportComponent {
 
 /** Uses the API's problem details (validation errors or detail) when present. */
 function describeError(error: unknown): string {
+  if (error instanceof HttpErrorResponse && error.status === 413) {
+    return 'The file is too large to upload (the limit is 5 MB).';
+  }
   if (error instanceof HttpErrorResponse && error.status === 400) {
     const errors = error.error?.errors as Record<string, string[]> | undefined;
     const messages = errors ? Object.values(errors).flat() : [];

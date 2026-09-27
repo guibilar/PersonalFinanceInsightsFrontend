@@ -60,3 +60,14 @@ docker compose up --build   # http://localhost:5095
 nginx serves the app and proxies `/api/` to `API_UPSTREAM` (set in
 `docker-compose.yml`; the backend base URL without a path, e.g.
 `http://192.168.1.153:5096`). The same image works for any backend address.
+
+nginx also:
+
+- accepts uploads up to 6 MB on `/api/` (a 5 MB statement plus the form envelope; nginx's default is 1 MB);
+- sends security headers on every response (`docker/security-headers.conf`): a Content-Security-Policy that
+  only allows this origin's scripts, no framing, `nosniff`, a same-origin referrer policy;
+- hides its version, and caches hashed bundles for a year while `index.html`, `theme.js` and the favicon
+  are revalidated.
+
+Because of the policy there is no inline script: the early theme switch lives in `public/theme.js`, and
+critical-CSS inlining is off in `angular.json` (its `onload` handler would be blocked).

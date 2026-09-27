@@ -15,6 +15,7 @@ FROM nginx:1.27-alpine
 ENV API_UPSTREAM=http://backend:5096
 
 COPY docker/default.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist/PersonalFinancesFrontend/browser/ /usr/share/nginx/html/
 
 EXPOSE 5095
