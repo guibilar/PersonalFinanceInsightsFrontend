@@ -1,59 +1,54 @@
-# PersonalFinancesFrontend
+# Personal Finances Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.3.
+Angular 20 frontend for the Personal Finance Insights API: a spending dashboard,
+transaction list with budget linking, and budget management.
 
-## Development server
+## Getting started
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Requires Node 22 and the backend (`FinanceApi`) running on `http://localhost:5096`.
 
 ```bash
-ng generate component component-name
+npm ci
+npm start          # http://localhost:4200
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+The app calls a relative `/api`. During development, `ng serve` forwards it to the
+backend using [`proxy.conf.json`](proxy.conf.json); change the target there if your
+backend runs elsewhere.
+
+## Scripts
+
+| Command                | What it does                                    |
+| ---------------------- | ----------------------------------------------- |
+| `npm start`            | Dev server with the API proxy                   |
+| `npm run build`        | Production build into `dist/`                   |
+| `npm test`             | Unit tests (Karma, watch mode)                  |
+| `npm run test:ci`      | Unit tests once, headless Chrome                |
+| `npm run lint`         | ESLint (angular-eslint) for TypeScript and HTML |
+| `npm run format`       | Format with Prettier                            |
+| `npm run format:check` | Check formatting (used in CI)                   |
+
+CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR.
+
+## Project structure
+
+```
+src/app/
+  core/       api/ (repositories, API base URL), models/, layout/navigation
+  shared/     ui/ (card, filter panel, form card, loader, error state, paginator), utils/
+  features/   dashboard/, transactions/, budgets/   (lazy-loaded routes)
+```
+
+Components are standalone, OnPush and signal-based; the app runs zoneless.
+Styling is Bootstrap 5 only: `src/styles.scss` imports just the Bootstrap modules in
+use, so add a module there before using its classes.
+
+## Docker
 
 ```bash
-ng generate --help
+docker compose up --build   # http://localhost:5095
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+nginx serves the app and proxies `/api/` to `API_UPSTREAM` (set in
+`docker-compose.yml`; the backend base URL without a path, e.g.
+`http://192.168.1.153:5096`). The same image works for any backend address.

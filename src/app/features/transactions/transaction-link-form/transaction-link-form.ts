@@ -29,7 +29,7 @@ export class TransactionLinkForm implements OnInit {
   readonly transaction = input.required<TransactionOutputDto>();
   readonly budgets = input<BudgetOutputDto[]>([]);
   readonly submitTransaction = output<TransactionLinkingInputDto>();
-  readonly cancel = output<void>();
+  readonly cancelled = output<void>();
 
   readonly form = this.fb.group({
     budgetId: ['', [Validators.required, notEmptyGuid]],

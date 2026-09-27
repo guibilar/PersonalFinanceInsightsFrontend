@@ -51,7 +51,7 @@
     </div>
 
     <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
-      <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
+      <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
         {{ isEditing() ? 'Update' : 'Create' }}
       </button>

@@ -9,7 +9,7 @@
     [transaction]="transaction"
     [budgets]="activeBudgets()"
     (submitTransaction)="onFormSubmit($event)"
-    (cancel)="onFormCancel()"
+    (cancelled)="onFormCancel()"
   >
   </app-transaction-link-form>
 }

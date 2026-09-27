@@ -26,7 +26,7 @@ export class BudgetFormComponent implements OnInit {
 
   readonly budget = input<BudgetOutputDto | null>(null);
   readonly submitBudget = output<BudgetInputDto>();
-  readonly cancel = output<void>();
+  readonly cancelled = output<void>();
 
   readonly isEditing = computed(() => this.budget() !== null);
 
