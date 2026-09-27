@@ -1,0 +1,58 @@
+.tx-table {
+  thead th {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    background: var(--bs-tertiary-bg);
+    white-space: nowrap;
+  }
+
+  th,
+  td {
+    padding: 0.75rem 1rem;
+  }
+
+  // Keep the table readable while a new page or sort loads.
+  &.is-reloading tbody {
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+}
+
+.description-cell {
+  max-width: 22rem;
+}
+
+@media (max-width: 575.98px) {
+  .tx-table {
+    th,
+    td {
+      padding: 0.625rem 0.5rem;
+    }
+  }
+
+  .description-cell {
+    max-width: 11rem;
+  }
+}
+
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}

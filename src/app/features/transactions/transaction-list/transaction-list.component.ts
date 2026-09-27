@@ -3,35 +3,58 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { BudgetRepository } from '../../../core/api/budget-repository';
-import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
+import {
+  SortDirection,
+  TransactionFilterInputDto,
+  TransactionSortField,
+} from '../../../core/models/inputs/transaction-filter-input-dto';
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/utils/page-size-options';
 import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
-import { LoaderComponent } from '../../../shared/ui/loader/loader.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
+import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { SidePanelComponent } from '../../../shared/ui/side-panel/side-panel.component';
+import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import {
-  FilterField,
-  TransactionFilterComponent,
-} from '../transaction-filter/transaction-filter.component';
+  TransactionCriteria,
+  TransactionToolbarComponent,
+} from '../transaction-toolbar/transaction-toolbar.component';
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
-import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
+
+interface SortableColumn {
+  field: TransactionSortField;
+  label: string;
+}
+
+// Text columns start A→Z; date and amount start with the largest/newest.
+const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
+  Date: 'Descending',
+  Amount: 'Descending',
+  Description: 'Ascending',
+  Category: 'Ascending',
+};
 
 @Component({
   selector: 'app-transaction-list',
   templateUrl: './transaction-list.component.html',
+  styleUrl: './transaction-list.component.scss',
   imports: [
     CurrencyPipe,
     DatePipe,
     PaginatedContentComponent,
-    TransactionFilterComponent,
+    TransactionToolbarComponent,
     TransactionLinkForm,
     StatementImportComponent,
-    LoaderComponent,
+    SidePanelComponent,
+    SkeletonComponent,
     ErrorStateComponent,
+    IconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -39,15 +62,20 @@ export class TransactionListComponent {
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly budgetRepository = inject(BudgetRepository);
 
-  readonly enabledFilters: FilterField[] = [
-    'pageSize',
-    'startDate',
-    'endDate',
-    'category',
-    'description',
-  ];
+  readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
+  readonly columns: Record<'date' | 'description' | 'category' | 'amount', SortableColumn> = {
+    date: { field: 'Date', label: 'Date' },
+    description: { field: 'Description', label: 'Description' },
+    category: { field: 'Category', label: 'Category' },
+    amount: { field: 'Amount', label: 'Amount' },
+  };
 
-  readonly filter = signal<TransactionFilterInputDto>({ page: 1, pageSize: 10 });
+  readonly filter = signal<TransactionFilterInputDto>({
+    page: 1,
+    pageSize: 25,
+    sortBy: 'Date',
+    sortDirection: 'Descending',
+  });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly showImport = signal(false);
@@ -58,6 +86,11 @@ export class TransactionListComponent {
     stream: ({ params }) => this.transactionRepository.filter(params),
   });
 
+  readonly hasCriteria = computed(() => {
+    const { description, category, startDate, endDate } = this.filter();
+    return !!(description || category || startDate || endDate);
+  });
+
   // Link dropdown needs every active budget, not just the first page.
   private readonly activeBudgetsResource = rxResource({
     stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 }),
@@ -66,29 +99,69 @@ export class TransactionListComponent {
 
   protected readonly TransactionType = TransactionType;
 
-  onImported(result: ImportResultOutputDto): void {
-    this.showImport.set(false);
-    this.importResult.set(result);
-    this.transactions.reload();
+  onCriteriaChange(criteria: TransactionCriteria): void {
+    this.filter.update(({ pageSize, sortBy, sortDirection }) => ({
+      ...criteria,
+      pageSize,
+      sortBy,
+      sortDirection,
+      page: 1,
+    }));
   }
 
   onPageChange(page: number): void {
     this.filter.update((filter) => ({ ...filter, page }));
   }
 
-  onFilterChange(newFilter: TransactionFilterInputDto): void {
-    this.filter.set({ ...newFilter, page: 1 });
+  onPageSizeChange(pageSize: number): void {
+    this.filter.update((filter) => ({ ...filter, pageSize, page: 1 }));
+  }
+
+  /** Same column: flip direction. New column: its natural direction. */
+  sort(field: TransactionSortField): void {
+    this.filter.update((filter) => ({
+      ...filter,
+      page: 1,
+      sortBy: field,
+      sortDirection:
+        filter.sortBy === field
+          ? filter.sortDirection === 'Ascending'
+            ? 'Descending'
+            : 'Ascending'
+          : DEFAULT_DIRECTION[field],
+    }));
+  }
+
+  ariaSort(field: TransactionSortField): 'ascending' | 'descending' | 'none' {
+    const { sortBy, sortDirection } = this.filter();
+    if (sortBy !== field) return 'none';
+    return sortDirection === 'Ascending' ? 'ascending' : 'descending';
+  }
+
+  sortIcon(field: TransactionSortField): 'sort-asc' | 'sort-desc' | 'sort-none' {
+    const direction = this.ariaSort(field);
+    return direction === 'ascending'
+      ? 'sort-asc'
+      : direction === 'descending'
+        ? 'sort-desc'
+        : 'sort-none';
+  }
+
+  clearCriteria(): void {
+    this.onCriteriaChange({});
   }
 
   getCategoryColor(category: string): string {
     return CategoryColorHelper.getColor(category);
   }
 
-  onLinkingTransaction(transaction: TransactionOutputDto): void {
-    this.linkingTransaction.set(transaction);
+  onImported(result: ImportResultOutputDto): void {
+    this.showImport.set(false);
+    this.importResult.set(result);
+    this.transactions.reload();
   }
 
-  onFormSubmit(linking: TransactionLinkingInputDto): void {
+  onLinkSubmit(linking: TransactionLinkingInputDto): void {
     this.transactionRepository.linkTransaction(linking).subscribe({
       next: () => {
         this.linkingTransaction.set(null);
@@ -98,14 +171,10 @@ export class TransactionListComponent {
     });
   }
 
-  onUnlinkSubmit(id: string): void {
+  onUnlink(id: string): void {
     this.transactionRepository.unlinkTransaction(id).subscribe({
       next: () => this.transactions.reload(),
       error: () => this.actionError.set('Could not unlink the transaction.'),
     });
-  }
-
-  onFormCancel(): void {
-    this.linkingTransaction.set(null);
   }
 }

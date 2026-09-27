@@ -1,7 +1,14 @@
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h3 mb-0">Transactions</h1>
-  <button type="button" class="btn btn-primary" (click)="showImport.set(true)">
-    Import Statement
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Transactions</h1>
+    <p class="text-body-secondary mb-0">Search, sort and link your spending to budgets</p>
+  </div>
+  <button
+    type="button"
+    class="btn btn-primary d-inline-flex align-items-center gap-2"
+    (click)="showImport.set(true)"
+  >
+    <app-icon name="upload" [size]="16" /> Import statement
   </button>
 </div>
 
@@ -22,106 +29,179 @@
   </div>
 }
 
-@if (showImport()) {
-  <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
-}
-
 @if (actionError(); as error) {
   <app-error-state [message]="error" actionLabel="Dismiss" (retry)="actionError.set(null)" />
 }
 
-@if (linkingTransaction(); as transaction) {
-  <app-transaction-link-form
-    [transaction]="transaction"
-    [budgets]="activeBudgets()"
-    (submitTransaction)="onFormSubmit($event)"
-    (cancelled)="onFormCancel()"
-  >
-  </app-transaction-link-form>
-}
+<app-transaction-toolbar [filter]="filter()" (criteriaChange)="onCriteriaChange($event)" />
 
-<app-transaction-filter
-  [enabledFilters]="enabledFilters"
-  [filter]="filter()"
-  (filterChange)="onFilterChange($event)"
->
-</app-transaction-filter>
-
-@if (transactions.error()) {
-  <app-error-state message="Could not load transactions." (retry)="transactions.reload()" />
-} @else if (transactions.isLoading() && !transactions.hasValue()) {
-  <app-loader />
-} @else {
-  <app-paginated-content
-    [data]="transactions.value()"
-    [contentTemplate]="transactionTemplate"
-    (pageChange)="onPageChange($event)"
-  >
-  </app-paginated-content>
-}
-
-<ng-template #transactionTemplate let-items="items">
-  @if (items.length === 0) {
-    <p class="text-center text-body-secondary py-5 mb-0">No transactions found.</p>
+<div class="card">
+  @if (transactions.error()) {
+    <div class="card-body">
+      <app-error-state message="Could not load transactions." (retry)="transactions.reload()" />
+    </div>
+  } @else if (transactions.isLoading() && !transactions.hasValue()) {
+    <div class="card-body"><app-skeleton [lines]="8" height="2rem" /></div>
+  } @else {
+    <div class="card-body p-0">
+      <app-paginated-content
+        [data]="transactions.value()"
+        [contentTemplate]="table"
+        (pageChange)="onPageChange($event)"
+      >
+        <div paginator-footer class="d-flex align-items-center gap-2 small">
+          <label for="tx-page-size" class="text-body-secondary text-nowrap">Rows per page</label>
+          <select
+            id="tx-page-size"
+            class="form-select form-select-sm w-auto"
+            (change)="onPageSizeChange(+$any($event.target).value)"
+          >
+            @for (size of pageSizeOptions; track size) {
+              <!-- [selected] per option: binding the select's value runs before its options exist. -->
+              <option [value]="size" [selected]="size === filter().pageSize">{{ size }}</option>
+            }
+          </select>
+        </div>
+      </app-paginated-content>
+    </div>
   }
-  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
-    @for (transaction of items; track transaction.id) {
-      <div class="col">
-        <div class="card h-100 shadow-sm">
-          <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <span class="small fw-medium text-body-secondary">{{
-              transaction.date | date: 'dd/MM/yyyy'
-            }}</span>
-            <span
-              class="fs-5 fw-bold"
-              [class.text-danger]="transaction.transactionType === TransactionType.Debit"
-              [class.text-success]="transaction.transactionType === TransactionType.Credit"
-            >
-              {{ transaction.amount | currency }}
-            </span>
-          </div>
-          <div class="card-body d-flex flex-column">
-            <p class="fw-semibold mb-2">{{ transaction.description }}</p>
-            <dl class="row small mb-3">
-              @if (transaction.budget) {
-                <dt class="col-5 fw-medium text-body-secondary">Budget</dt>
-                <dd class="col-7 text-end fw-semibold mb-1">{{ transaction.budget.name }}</dd>
-              }
-              <dt class="col-5 fw-medium text-body-secondary">Category</dt>
-              <dd class="col-7 text-end fw-semibold mb-1">
+</div>
+
+<ng-template #table let-items="items">
+  @if (items.length === 0) {
+    <div class="text-center text-body-secondary py-5">
+      @if (hasCriteria()) {
+        <p class="mb-2">No transactions match these filters.</p>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="clearCriteria()">
+          Clear filters
+        </button>
+      } @else {
+        <p class="mb-2">No transactions yet.</p>
+        <button type="button" class="btn btn-primary btn-sm" (click)="showImport.set(true)">
+          Import a statement
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table
+        class="table table-hover align-middle mb-0 tx-table"
+        [class.is-reloading]="transactions.isLoading()"
+      >
+        <thead>
+          <tr>
+            @for (
+              column of [columns.date, columns.description, columns.category];
+              track column.field
+            ) {
+              <th
+                scope="col"
+                [attr.aria-sort]="ariaSort(column.field)"
+                [class.d-none]="column.field !== 'Description'"
+                [class.d-md-table-cell]="column.field !== 'Description'"
+              >
+                <button type="button" class="sort-button" (click)="sort(column.field)">
+                  {{ column.label }} <app-icon [name]="sortIcon(column.field)" [size]="14" />
+                </button>
+              </th>
+            }
+            <th scope="col" class="d-none d-lg-table-cell">Account</th>
+            <th scope="col">Budget</th>
+            <th scope="col" class="text-end" [attr.aria-sort]="ariaSort(columns.amount.field)">
+              <button
+                type="button"
+                class="sort-button ms-auto"
+                (click)="sort(columns.amount.field)"
+              >
+                {{ columns.amount.label }}
+                <app-icon [name]="sortIcon(columns.amount.field)" [size]="14" />
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (transaction of items; track transaction.id) {
+            <tr>
+              <td class="d-none d-md-table-cell text-nowrap text-body-secondary small">
+                {{ transaction.date | date: 'mediumDate' : 'UTC' }}
+              </td>
+              <td class="description-cell">
+                <div class="fw-medium text-truncate">{{ transaction.description }}</div>
+                <div class="small text-body-secondary d-md-none">
+                  {{ transaction.date | date: 'MMM d' : 'UTC' }} ·
+                  <span
+                    class="category-dot"
+                    [style.background-color]="getCategoryColor(transaction.category)"
+                  ></span
+                  >{{ transaction.category }}
+                </div>
+              </td>
+              <td class="d-none d-md-table-cell text-nowrap">
                 <span
                   class="category-dot"
                   [style.background-color]="getCategoryColor(transaction.category)"
                 ></span
                 >{{ transaction.category }}
-              </dd>
-              <dt class="col-5 fw-medium text-body-secondary">Account</dt>
-              <dd class="col-7 text-end fw-semibold mb-1">{{ transaction.account }}</dd>
-              <dt class="col-5 fw-medium text-body-secondary">Type</dt>
-              <dd class="col-7 text-end fw-semibold mb-0">{{ transaction.transactionType }}</dd>
-            </dl>
-            <div class="mt-auto">
-              @if (!transaction.budget) {
-                <button
-                  type="button"
-                  class="btn btn-sm btn-secondary"
-                  (click)="onLinkingTransaction(transaction)"
-                >
-                  Link
-                </button>
-              } @else {
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  (click)="onUnlinkSubmit(transaction.id)"
-                >
-                  Unlink
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-  </div>
+              </td>
+              <td class="d-none d-lg-table-cell text-body-secondary small">
+                {{ transaction.account }}
+              </td>
+              <td>
+                @if (transaction.budget; as budget) {
+                  <span
+                    class="badge rounded-pill text-bg-light border fw-medium d-inline-flex align-items-center gap-1"
+                  >
+                    {{ budget.name }}
+                    <button
+                      type="button"
+                      class="btn btn-link p-0 lh-1 text-body-secondary"
+                      [attr.aria-label]="'Unlink from ' + budget.name"
+                      title="Unlink"
+                      (click)="onUnlink(transaction.id)"
+                    >
+                      <app-icon name="close" [size]="12" />
+                    </button>
+                  </span>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-0"
+                    [attr.aria-label]="'Link ' + transaction.description + ' to a budget'"
+                    (click)="linkingTransaction.set(transaction)"
+                  >
+                    <app-icon name="link" [size]="12" />
+                    <span class="d-none d-sm-inline">Link</span>
+                  </button>
+                }
+              </td>
+              <td
+                class="text-end text-nowrap fw-semibold"
+                [class.text-success]="transaction.transactionType === TransactionType.Credit"
+              >
+                {{ transaction.transactionType === TransactionType.Credit ? '+' : '−'
+                }}{{ transaction.amount | currency }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </ng-template>
+
+@if (showImport()) {
+  <app-side-panel title="Import statement" (closed)="showImport.set(false)">
+    <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
+  </app-side-panel>
+}
+
+@if (linkingTransaction(); as transaction) {
+  <app-side-panel title="Link to a budget" (closed)="linkingTransaction.set(null)">
+    <app-transaction-link-form
+      [transaction]="transaction"
+      [budgets]="activeBudgets()"
+      (submitTransaction)="onLinkSubmit($event)"
+      (cancelled)="linkingTransaction.set(null)"
+    />
+  </app-side-panel>
+}
