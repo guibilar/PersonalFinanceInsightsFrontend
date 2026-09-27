@@ -7,7 +7,6 @@ import {CategorizedReportOutputDto, MonthlyCategoryValuesDto} from '../../../cor
   selector: 'app-current-month-categorized-table',
   templateUrl: './current-month-categorized-table.component.html',
   imports: [CurrencyPipe, KeyValuePipe],
-  styleUrls: ['./current-month-categorized-table.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CurrentMonthCategorizedTableComponent {

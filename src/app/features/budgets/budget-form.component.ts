@@ -3,14 +3,14 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
+import { FormCardComponent } from '../../shared/ui/form-card/form-card.component';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
 @Component({
   selector: 'app-budget-form',
-  imports: [ReactiveFormsModule],
+  imports: [FormCardComponent, ReactiveFormsModule],
   templateUrl: './budget-form.component.html',
-  styleUrls: ['./budget-form.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BudgetFormComponent implements OnInit {
@@ -44,6 +44,11 @@ export class BudgetFormComponent implements OnInit {
         status: budget.status
       });
     }
+  }
+
+  isInvalid(control: 'name' | 'description' | 'amount'): boolean {
+    const c = this.form.controls[control];
+    return c.invalid && c.touched;
   }
 
   onSubmit(): void {

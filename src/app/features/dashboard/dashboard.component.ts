@@ -44,7 +44,6 @@ Chart.register(
     ErrorStateComponent
   ],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent {

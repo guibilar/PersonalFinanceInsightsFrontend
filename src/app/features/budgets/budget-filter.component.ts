@@ -3,12 +3,12 @@ import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { BudgetFilterInputDto } from '../../core/models/inputs/budget-filter-input-dto';
 import { Status } from '../../core/models/enums/status';
 import { PAGE_SIZE_OPTIONS } from '../../shared/utils/page-size-options';
+import { FilterPanelComponent } from '../../shared/ui/filter-panel/filter-panel.component';
 
 @Component({
   selector: 'app-budget-filter',
-  imports: [ReactiveFormsModule],
+  imports: [FilterPanelComponent, ReactiveFormsModule],
   templateUrl: './budget-filter.component.html',
-  styleUrls: ['./budget-filter.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BudgetFilterComponent {

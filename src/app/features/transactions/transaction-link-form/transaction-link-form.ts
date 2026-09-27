@@ -3,6 +3,7 @@ import {AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validation
 import {TransactionLinkingInputDto} from '../../../core/models/inputs/transaction-linking-input-dto';
 import {BudgetOutputDto} from '../../../core/models/outputs/budget-output-dto';
 import {TransactionOutputDto} from '../../../core/models/outputs/transaction-output-dto';
+import { FormCardComponent } from '../../../shared/ui/form-card/form-card.component';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
@@ -12,9 +13,8 @@ function notEmptyGuid(control: AbstractControl<string>): ValidationErrors | null
 
 @Component({
   selector: 'app-transaction-link-form',
-  imports: [ReactiveFormsModule],
+  imports: [FormCardComponent, ReactiveFormsModule],
   templateUrl: './transaction-link-form.html',
-  styleUrl: './transaction-link-form.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransactionLinkForm implements OnInit {
