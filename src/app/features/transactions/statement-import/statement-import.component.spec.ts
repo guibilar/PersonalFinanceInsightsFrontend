@@ -96,4 +96,17 @@ describe('StatementImportComponent', () => {
 
     expect(component.error()).toBe('The import failed. Please try again.');
   });
+
+  it('explains when the server refuses the file as too large', () => {
+    component.form.controls.account.setValue(AccountType.Savings);
+    selectFile(new File(['x'], 'statement.csv'));
+
+    component.onSubmit();
+    http.expectOne('/api/Transaction/Import').flush('<html>413 Request Entity Too Large</html>', {
+      status: 413,
+      statusText: 'Request Entity Too Large',
+    });
+
+    expect(component.error()).toBe('The file is too large to upload (the limit is 5 MB).');
+  });
 });
