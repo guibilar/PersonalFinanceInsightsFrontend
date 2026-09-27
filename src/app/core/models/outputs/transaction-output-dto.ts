@@ -11,6 +11,8 @@ export interface TransactionOutputDto {
   category: Category;
   /** Picked by hand: re-applying the category rules leaves it alone. */
   categoryLocked: boolean;
+  /** Deleted: kept only so re-importing its statement doesn't add it back. */
+  hidden?: boolean;
   transactionType?: TransactionType;
   account: AccountType;
   budgetId: string;

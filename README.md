@@ -78,7 +78,8 @@ One-time setup:
 Then open `https://finance.<your-tailnet>.ts.net` from any device with Tailscale signed in to your tailnet
 (the first visit can take a few seconds while the certificate is issued). On the server itself nginx is
 also on `http://localhost:5095`. Troubleshooting: `docker compose logs tailscale` and
-`docker compose exec tailscale tailscale serve status`.
+`docker compose exec tailscale tailscale serve status`. Container logs are capped at 3 files of 10 MB
+per service.
 
 `docker/smoke-test.sh [base-url]` checks a running container: security headers, HSTS only over HTTPS,
 SPA routing, and that uploads over 1 MB get past nginx. CI builds the image and runs it on every change.

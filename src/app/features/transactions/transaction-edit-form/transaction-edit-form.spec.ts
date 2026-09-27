@@ -64,4 +64,17 @@ describe('TransactionEditForm', () => {
     expect(save.disabled).toBe(true);
     expect(save.textContent).toContain('Saving');
   });
+
+  it('asks the page to delete, which then asks for confirmation', () => {
+    let requested = 0;
+    component.deleteRequested.subscribe(() => requested++);
+
+    const button = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+    ).find((b) => b.textContent?.includes('Delete'))!;
+    button.click();
+
+    expect(requested).toBe(1);
+    expect(submitted).toEqual([]);
+  });
 });
