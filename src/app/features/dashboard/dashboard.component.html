@@ -1,0 +1,9 @@
+<app-card-wrapper headerTitle="Monthly Spending" class="d-block mb-3">
+  <app-monthly-categorized-chart [report]="monthlyReport" />
+</app-card-wrapper>
+<app-card-wrapper headerTitle="Current Month Spending Table" class="d-block mb-3">
+  <app-current-month-categorized-table [report]="currentMonthReport" />
+</app-card-wrapper>
+<app-card-wrapper headerTitle="Current Month Spending">
+  <app-current-month-categorized-chart [report]="currentMonthReport" />
+</app-card-wrapper>
