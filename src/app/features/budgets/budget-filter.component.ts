@@ -1,46 +1,62 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
+import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { BudgetFilterInputDto } from '../../core/models/inputs/budget-filter-input-dto';
 import { Status } from '../../core/models/enums/status';
+import { PAGE_SIZE_OPTIONS } from '../../shared/utils/page-size-options';
 
 @Component({
   selector: 'app-budget-filter',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './budget-filter.component.html',
-  styleUrls: ['./budget-filter.component.css']
+  styleUrls: ['./budget-filter.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BudgetFilterComponent {
-  // Edited locally; the parent only sees changes on apply/clear.
-  filter: BudgetFilterInputDto = {
-    page: 1,
-    pageSize: 10
-  };
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  @Input('filter') set filterInput(value: BudgetFilterInputDto) {
-    this.filter = { ...value };
-  }
+  readonly filter = input.required<BudgetFilterInputDto>();
+  readonly filterChange = output<BudgetFilterInputDto>();
 
-  @Output() filterChange = new EventEmitter<BudgetFilterInputDto>();
-
-  statusOptions = [
-    { value: undefined, label: 'All' },
+  readonly statusOptions = [
+    { value: null, label: 'All' },
     { value: Status.Active, label: 'Active' },
     { value: Status.Inactive, label: 'Inactive' }
   ];
+  readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
+
+  // Edited locally; the parent only sees changes on apply/clear.
+  readonly form = this.fb.group({
+    name: '',
+    description: '',
+    status: this.fb.control<Status | null>(null),
+    pageSize: 10
+  });
+
+  constructor() {
+    effect(() => {
+      const filter = this.filter();
+      this.form.reset({
+        name: filter.name ?? '',
+        description: filter.description ?? '',
+        status: filter.status ?? null,
+        pageSize: filter.pageSize
+      });
+    });
+  }
 
   applyFilter(): void {
-    this.filterChange.emit({ ...this.filter });
+    const { name, description, status, pageSize } = this.form.getRawValue();
+    this.filterChange.emit({
+      name: name.trim() || undefined,
+      description: description.trim() || undefined,
+      status: status ?? undefined,
+      page: this.filter().page,
+      pageSize
+    });
   }
 
   clearFilter(): void {
-    const newFilter: BudgetFilterInputDto = {
-      page: this.filter.page,
-      pageSize: this.filter.pageSize
-    };
-
-    this.filter = newFilter;
-    this.filterChange.emit(this.filter);
+    this.form.reset({ pageSize: this.form.controls.pageSize.value });
+    this.applyFilter();
   }
 }

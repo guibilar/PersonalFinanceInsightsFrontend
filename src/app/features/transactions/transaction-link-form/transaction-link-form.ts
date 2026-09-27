@@ -1,51 +1,48 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {FormsModule} from '@angular/forms';
+import {ChangeDetectionStrategy, Component, OnInit, inject, input, output} from '@angular/core';
+import {AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
 import {TransactionLinkingInputDto} from '../../../core/models/inputs/transaction-linking-input-dto';
 import {BudgetOutputDto} from '../../../core/models/outputs/budget-output-dto';
 import {TransactionOutputDto} from '../../../core/models/outputs/transaction-output-dto';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
+function notEmptyGuid(control: AbstractControl<string>): ValidationErrors | null {
+  return control.value === EMPTY_GUID ? { emptyGuid: true } : null;
+}
+
 @Component({
   selector: 'app-transaction-link-form',
-  imports: [
-    FormsModule
-  ],
+  imports: [ReactiveFormsModule],
   templateUrl: './transaction-link-form.html',
-  styleUrl: './transaction-link-form.css'
+  styleUrl: './transaction-link-form.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionLinkForm {
+export class TransactionLinkForm implements OnInit {
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  @Input() transaction: TransactionOutputDto | null = null;
-  @Input() budgets: BudgetOutputDto[] | undefined = [];
-  @Output() submitTransaction = new EventEmitter<TransactionLinkingInputDto>();
-  @Output() cancel = new EventEmitter<void>();
+  readonly transaction = input.required<TransactionOutputDto>();
+  readonly budgets = input<BudgetOutputDto[]>([]);
+  readonly submitTransaction = output<TransactionLinkingInputDto>();
+  readonly cancel = output<void>();
 
-  formData: TransactionLinkingInputDto = {
-    budgetId: '',
-    transactionId: ''
-  };
+  readonly form = this.fb.group({
+    budgetId: ['', [Validators.required, notEmptyGuid]]
+  });
 
   ngOnInit(): void {
-    if (this.transaction) {
-      this.formData = {
-        transactionId: this.transaction.id,
-        budgetId: this.transaction.budgetId === EMPTY_GUID ? '' : this.transaction.budgetId ?? ''
-      };
+    const budgetId = this.transaction().budgetId;
+    if (budgetId && budgetId !== EMPTY_GUID) {
+      this.form.setValue({ budgetId });
     }
   }
 
   onSubmit(): void {
-    if (this.isValid()) {
-      this.submitTransaction.emit(this.formData);
+    if (this.form.invalid) {
+      return;
     }
-  }
-
-  onCancel(): void {
-    this.cancel.emit();
-  }
-
-  isValid(): boolean {
-    return !!this.formData.budgetId && this.formData.budgetId !== EMPTY_GUID;
+    this.submitTransaction.emit({
+      transactionId: this.transaction().id,
+      budgetId: this.form.getRawValue().budgetId
+    });
   }
 }

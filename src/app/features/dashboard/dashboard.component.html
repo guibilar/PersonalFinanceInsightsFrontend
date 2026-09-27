@@ -1,9 +1,29 @@
 <app-card-wrapper headerTitle="Monthly Spending" class="d-block mb-3">
-  <app-monthly-categorized-chart [report]="monthlyReport" />
+  @if (monthlyReport.error()) {
+    <app-error-state message="Could not load monthly spending." (retry)="monthlyReport.reload()" />
+  } @else if (monthlyReport.value(); as report) {
+    <app-monthly-categorized-chart [report]="report" />
+  } @else {
+    <app-loader />
+  }
 </app-card-wrapper>
+
 <app-card-wrapper headerTitle="Current Month Spending Table" class="d-block mb-3">
-  <app-current-month-categorized-table [report]="currentMonthReport" />
+  @if (currentMonthReport.error()) {
+    <app-error-state message="Could not load current month spending." (retry)="currentMonthReport.reload()" />
+  } @else if (currentMonthReport.value(); as report) {
+    <app-current-month-categorized-table [report]="report" />
+  } @else {
+    <app-loader />
+  }
 </app-card-wrapper>
+
 <app-card-wrapper headerTitle="Current Month Spending">
-  <app-current-month-categorized-chart [report]="currentMonthReport" />
+  @if (currentMonthReport.error()) {
+    <app-error-state message="Could not load current month spending." (retry)="currentMonthReport.reload()" />
+  } @else if (currentMonthReport.value(); as report) {
+    <app-current-month-categorized-chart [report]="report" />
+  } @else {
+    <app-loader />
+  }
 </app-card-wrapper>

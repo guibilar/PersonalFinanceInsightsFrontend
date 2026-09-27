@@ -1,53 +1,29 @@
 <div class="form-container">
   <div class="form-header">
-    <h3>{{ isEditing ? 'Edit Budget' : 'Create Budget' }}</h3>
+    <h3>{{ isEditing() ? 'Edit Budget' : 'Create Budget' }}</h3>
   </div>
 
-  <form (ngSubmit)="onSubmit()" #budgetForm="ngForm">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="form-group">
-      <label for="name">Name *</label>
-      <input
-        type="text"
-        id="name"
-        name="name"
-        [(ngModel)]="formData.name"
-        required
-        class="form-control"
-        placeholder="Enter budget name">
+      <label for="budget-name">Name *</label>
+      <input type="text" id="budget-name" formControlName="name" class="form-control" placeholder="Enter budget name">
     </div>
 
     <div class="form-group">
-      <label for="description">Description *</label>
-      <textarea
-        id="description"
-        name="description"
-        [(ngModel)]="formData.description"
-        required
-        class="form-control"
-        rows="4"
-        placeholder="Enter budget description"></textarea>
+      <label for="budget-description">Description *</label>
+      <textarea id="budget-description" formControlName="description" class="form-control" rows="4"
+                placeholder="Enter budget description"></textarea>
     </div>
 
     <div class="form-group">
-      <label for="amount">Amount *</label>
-      <input
-        type="number"
-        id="amount"
-        name="amount"
-        [(ngModel)]="formData.amount"
-        required
-        class="form-control"
-        placeholder="Enter budget amount">
+      <label for="budget-amount">Amount *</label>
+      <input type="number" id="budget-amount" formControlName="amount" class="form-control" min="0.01" step="0.01"
+             placeholder="Enter budget amount">
     </div>
 
     <div class="form-group">
-      <label for="status">Status *</label>
-      <select
-        id="status"
-        name="status"
-        [(ngModel)]="formData.status"
-        required
-        class="form-control">
+      <label for="budget-status">Status *</label>
+      <select id="budget-status" formControlName="status" class="form-control">
         @for (option of statusOptions; track option.value) {
           <option [ngValue]="option.value">{{ option.label }}</option>
         }
@@ -55,9 +31,9 @@
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancel</button>
-      <button type="submit" class="btn btn-primary" [disabled]="!isValid()">
-        {{ isEditing ? 'Update' : 'Create' }}
+      <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
+        {{ isEditing() ? 'Update' : 'Create' }}
       </button>
     </div>
   </form>

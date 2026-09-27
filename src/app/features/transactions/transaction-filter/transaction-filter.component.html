@@ -1,37 +1,27 @@
-@if (enabledFilters.length > 0) {
-  <div class="filter-container">
+@if (enabledFilters().length > 0) {
+  <form class="filter-container" [formGroup]="form" (ngSubmit)="applyFilter()">
     <div class="filter-section">
       <h3>Filters</h3>
 
       @if (isFilterEnabled('transactionId')) {
         <div class="filter-row">
-          <label for="transactionId">Transaction ID:</label>
-          <input
-            type="text"
-            id="transactionId"
-            [(ngModel)]="filter.transactionId"
-            placeholder="Enter transaction ID">
+          <label for="tx-filter-id">Transaction ID:</label>
+          <input type="text" id="tx-filter-id" formControlName="transactionId" placeholder="Enter transaction ID">
         </div>
       }
 
       @if (isFilterEnabled('description')) {
         <div class="filter-row">
-          <label for="description">Description:</label>
-          <input
-            type="text"
-            id="description"
-            [(ngModel)]="filter.description"
-            placeholder="Search description">
+          <label for="tx-filter-description">Description:</label>
+          <input type="text" id="tx-filter-description" formControlName="description" placeholder="Search description">
         </div>
       }
 
       @if (isFilterEnabled('transactionType')) {
         <div class="filter-row">
-          <label for="transactionType">Transaction Type:</label>
-          <select
-            id="transactionType"
-            [(ngModel)]="filter.transactionType">
-            <option [ngValue]="undefined">All</option>
+          <label for="tx-filter-type">Transaction Type:</label>
+          <select id="tx-filter-type" formControlName="transactionType">
+            <option [ngValue]="null">All</option>
             @for (type of transactionTypes; track type) {
               <option [ngValue]="type">{{ type }}</option>
             }
@@ -41,13 +31,13 @@
 
       @if (isFilterEnabled('accountTypes')) {
         <div class="filter-row">
-          <label>Account Types:</label>
+          <span class="filter-label">Account Types:</span>
           <div class="checkbox-group">
             @for (accountType of accountTypes; track accountType) {
               <label class="checkbox-label">
                 <input
                   type="checkbox"
-                  [checked]="selectedAccountTypes[accountType]"
+                  [checked]="isAccountTypeSelected(accountType)"
                   (change)="onAccountTypeChange(accountType, $any($event.target).checked)">
                 {{ accountType }}
               </label>
@@ -58,11 +48,9 @@
 
       @if (isFilterEnabled('category')) {
         <div class="filter-row">
-          <label for="category">Category:</label>
-          <select
-            id="category"
-            [(ngModel)]="filter.category">
-            <option [ngValue]="undefined">All</option>
+          <label for="tx-filter-category">Category:</label>
+          <select id="tx-filter-category" formControlName="category">
+            <option [ngValue]="null">All</option>
             @for (category of categories; track category) {
               <option [ngValue]="category">{{ category }}</option>
             }
@@ -72,54 +60,40 @@
 
       @if (isFilterEnabled('startDate')) {
         <div class="filter-row">
-          <label for="startDate">Start Date:</label>
-          <input
-            type="date"
-            id="startDate"
-            [(ngModel)]="filter.startDate">
+          <label for="tx-filter-start">Start Date:</label>
+          <input type="date" id="tx-filter-start" formControlName="startDate">
         </div>
       }
 
       @if (isFilterEnabled('endDate')) {
         <div class="filter-row">
-          <label for="endDate">End Date:</label>
-          <input
-            type="date"
-            id="endDate"
-            [(ngModel)]="filter.endDate">
+          <label for="tx-filter-end">End Date:</label>
+          <input type="date" id="tx-filter-end" formControlName="endDate">
         </div>
       }
 
       @if (isFilterEnabled('budgetId')) {
         <div class="filter-row">
-          <label for="budgetId">Budget ID:</label>
-          <input
-            type="text"
-            id="budgetId"
-            [(ngModel)]="filter.budgetId"
-            placeholder="Enter budget ID">
+          <label for="tx-filter-budget">Budget ID:</label>
+          <input type="text" id="tx-filter-budget" formControlName="budgetId" placeholder="Enter budget ID">
         </div>
       }
 
-      @if (isFilterEnabled('pageSize')){
-      <div class="filter-row">
-        <label for="pageSize">Items per page:</label>
-        <select
-          id="pageSize"
-          [(ngModel)]="filter.pageSize">
-          <option [ngValue]="5">5</option>
-          <option [ngValue]="10">10</option>
-          <option [ngValue]="25">25</option>
-          <option [ngValue]="50">50</option>
-          <option [ngValue]="100">100</option>
-        </select>
-      </div>
+      @if (isFilterEnabled('pageSize')) {
+        <div class="filter-row">
+          <label for="tx-filter-page-size">Items per page:</label>
+          <select id="tx-filter-page-size" formControlName="pageSize">
+            @for (size of pageSizeOptions; track size) {
+              <option [ngValue]="size">{{ size }}</option>
+            }
+          </select>
+        </div>
       }
 
       <div class="filter-actions">
-        <button class="btn-apply" (click)="applyFilter()">Apply Filter</button>
-        <button class="btn-clear" (click)="clearFilter()">Clear</button>
+        <button type="submit" class="btn-apply">Apply Filter</button>
+        <button type="button" class="btn-clear" (click)="clearFilter()">Clear</button>
       </div>
     </div>
-  </div>
+  </form>
 }

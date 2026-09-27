@@ -1,50 +1,67 @@
-import { Component, Input, Output, EventEmitter, TemplateRef } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  TemplateRef,
+  computed,
+  input,
+  output
+} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { PaginatedResult } from '../../../core/models/outputs/paginated-result-output-dto';
-import {NgTemplateOutlet} from '@angular/common';
+
+export interface PaginatedContentContext<T> {
+  items: T[];
+  data: PaginatedResult<T>;
+}
 
 @Component({
   selector: 'app-paginated-content',
   templateUrl: './paginated-content.component.html',
-  imports: [
-    NgTemplateOutlet
-  ],
-  styleUrls: ['./paginated-content.component.css']
+  imports: [NgTemplateOutlet],
+  styleUrls: ['./paginated-content.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PaginatedContentComponent<T> {
-  @Input() data?: PaginatedResult<T>;
-  @Input() contentTemplate!: TemplateRef<any>;
-  @Output() pageChange = new EventEmitter<number>();
+  readonly data = input<PaginatedResult<T>>();
+  readonly contentTemplate = input.required<TemplateRef<PaginatedContentContext<T>>>();
+  readonly pageChange = output<number>();
 
-  onPageChange(page: number): void {
-    if (this.data && page >= 1 && page <= this.data.totalPages) {
-      this.pageChange.emit(page);
-    }
-  }
+  readonly firstItem = computed(() => {
+    const data = this.data();
+    return data ? (data.page - 1) * data.pageSize + 1 : 0;
+  });
 
-  getPageNumbers(): number[] {
-    if (!this.data) return [];
+  readonly lastItem = computed(() => {
+    const data = this.data();
+    return data ? Math.min(data.page * data.pageSize, data.totalCount) : 0;
+  });
 
-    const current = this.data.page;
-    const total = this.data.totalPages;
-    const pages: number[] = [];
+  // -1 marks an ellipsis between page numbers.
+  readonly pageNumbers = computed(() => {
+    const data = this.data();
+    if (!data) return [];
 
-    pages.push(1);
+    const current = data.page;
+    const total = data.totalPages;
+    const pages: number[] = [1];
 
     const start = Math.max(2, current - 1);
     const end = Math.min(total - 1, current + 1);
 
     if (start > 2) pages.push(-1);
-
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-
     if (end < total - 1) pages.push(-1);
-
     if (total > 1) pages.push(total);
 
     return pages;
-  }
+  });
 
-  protected readonly Math = Math;
+  onPageChange(page: number): void {
+    const data = this.data();
+    if (data && page >= 1 && page <= data.totalPages) {
+      this.pageChange.emit(page);
+    }
+  }
 }

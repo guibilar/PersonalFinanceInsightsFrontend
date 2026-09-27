@@ -1,65 +1,63 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output } from '@angular/core';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 
+const NOT_BLANK = Validators.pattern(/\S/);
+
 @Component({
   selector: 'app-budget-form',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './budget-form.component.html',
-  styleUrls: ['./budget-form.component.css']
+  styleUrls: ['./budget-form.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BudgetFormComponent implements OnInit {
-  @Input() budget: BudgetOutputDto | null = null;
-  @Output() submitBudget = new EventEmitter<BudgetInputDto>();
-  @Output() cancel = new EventEmitter<void>();
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  formData: BudgetInputDto = {
-    id: '',
-    name: '',
-    description: '',
-    amount: 0,
-    status: Status.Active
-  };
+  readonly budget = input<BudgetOutputDto | null>(null);
+  readonly submitBudget = output<BudgetInputDto>();
+  readonly cancel = output<void>();
 
-  statusOptions = [
+  readonly isEditing = computed(() => this.budget() !== null);
+
+  readonly statusOptions = [
     { value: Status.Active, label: 'Active' },
     { value: Status.Inactive, label: 'Inactive' }
   ];
 
+  readonly form = this.fb.group({
+    name: ['', [Validators.required, NOT_BLANK]],
+    description: ['', [Validators.required, NOT_BLANK]],
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    status: [Status.Active, Validators.required]
+  });
+
   ngOnInit(): void {
-    if (this.budget) {
-      this.formData = {
-        id: this.budget.id,
-        amount: this.budget.totalAmount,
-        name: this.budget.name,
-        description: this.budget.description,
-        status: this.budget.status
-      };
+    const budget = this.budget();
+    if (budget) {
+      this.form.setValue({
+        name: budget.name,
+        description: budget.description,
+        amount: budget.totalAmount,
+        status: budget.status
+      });
     }
   }
 
   onSubmit(): void {
-    if (this.isValid()) {
-      this.submitBudget.emit(this.formData);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
-  }
-
-  onCancel(): void {
-    this.cancel.emit();
-  }
-
-  isValid(): boolean {
-    return this.formData.name.trim() !== ''
-      && this.formData.description.trim() !== ''
-      && this.formData.amount > 0
-      && this.formData.status !== undefined;
-  }
-
-  get isEditing(): boolean {
-    return this.budget !== null;
+    const value = this.form.getRawValue();
+    this.submitBudget.emit({
+      id: this.budget()?.id ?? '',
+      name: value.name.trim(),
+      description: value.description.trim(),
+      amount: value.amount,
+      status: value.status
+    });
   }
 }

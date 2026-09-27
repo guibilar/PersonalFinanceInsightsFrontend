@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -11,9 +11,8 @@ import {TransactionLinkingInputDto} from '../models/inputs/transaction-linking-i
   providedIn: 'root'
 })
 export class TransactionRepository {
+  private readonly http = inject(HttpClient);
   private readonly baseUrl: string = `${environment.apiUrl}/Transaction`;
-
-  constructor(private http: HttpClient) {}
   linkTransaction(linkingTransactionInputDto: TransactionLinkingInputDto): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/LinkTransaction`, linkingTransactionInputDto);
   }

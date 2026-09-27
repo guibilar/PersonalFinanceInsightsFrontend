@@ -17,7 +17,8 @@
   flex-direction: column;
 }
 
-.filter-row label {
+.filter-row label,
+.filter-row .filter-label {
   font-weight: 500;
   margin-bottom: 5px;
   color: #555;

@@ -1,28 +1,22 @@
-@if (!report) {
-  <div class="text-center">
-    <app-loader></app-loader>
-  </div>
-} @else {
-  <div class="categorized-table-container">
-    <table class="table table-striped">
-      <thead>
+<div class="categorized-table-container">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Expenditure (in CAD)</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of currentMonth()?.categoryValues | keyvalue; track entry.key) {
         <tr>
-          <th>Category</th>
-          <th>Expenditure (in CAD)</th>
+          <td [style.color]="getCategoryColor(entry.key)">{{ entry.key }}</td>
+          <td>{{ entry.value | currency }}</td>
         </tr>
-      </thead>
-      <tbody>
-        @for (entry of currentMonth?.categoryValues | keyvalue; track entry.key) {
-          <tr>
-            <td [style.color]="getCategoryColor(entry.key)">{{ entry.key }}</td>
-            <td>{{ entry.value | currency }}</td>
-          </tr>
-        }
-        <tr class="fw-bold">
-          <td>Total</td>
-          <td>{{ (currentMonth?.total ?? 0) | currency }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-}
+      }
+      <tr class="fw-bold">
+        <td>Total</td>
+        <td>{{ (currentMonth()?.total ?? 0) | currency }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

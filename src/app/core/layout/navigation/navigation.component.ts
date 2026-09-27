@@ -1,22 +1,21 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-navigation',
-  standalone: true,
-  imports: [RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './navigation.component.html',
-  styleUrls: ['./navigation.component.css']
+  styleUrls: ['./navigation.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NavigationComponent {
-  isMenuOpen = false;
+  readonly isMenuOpen = signal(false);
 
-  toggleMenu() {
-    this.isMenuOpen = !this.isMenuOpen;
+  toggleMenu(): void {
+    this.isMenuOpen.update((open) => !open);
   }
 
-  closeMenu() {
-    this.isMenuOpen = false;
+  closeMenu(): void {
+    this.isMenuOpen.set(false);
   }
 }

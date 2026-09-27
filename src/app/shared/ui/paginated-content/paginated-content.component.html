@@ -1,8 +1,8 @@
-@if (data) {
+@if (data(); as data) {
   <div class="paginated-content">
     <!-- Custom content -->
     <div class="content">
-      <ng-container *ngTemplateOutlet="contentTemplate; context: { items: data.items, data: data }"></ng-container>
+      <ng-container *ngTemplateOutlet="contentTemplate(); context: { items: data.items, data: data }"></ng-container>
     </div>
 
     <!-- Pagination controls -->
@@ -16,7 +16,7 @@
         </button>
 
         <div class="page-numbers">
-          @for (page of getPageNumbers(); track page) {
+          @for (page of pageNumbers(); track page) {
             <button
               class="page-button"
               [class.active]="page === data.page"
@@ -39,7 +39,7 @@
 
     <!-- Pagination info -->
     <div class="pagination-info">
-      Showing {{ (data.page - 1) * data.pageSize + 1 }} to {{ Math.min(data.page * data.pageSize, data.totalCount) }} of {{ data.totalCount }} items
+      Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
     </div>
   </div>
 }
