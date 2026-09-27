@@ -1,0 +1,34 @@
+.budget-card {
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: var(--bs-box-shadow);
+  }
+
+  &.is-inactive {
+    opacity: 0.7;
+  }
+}
+
+.description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
+}
+
+.btn-icon {
+  display: inline-flex;
+  padding: 0.3125rem;
+  color: var(--bs-secondary-color);
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    background: var(--bs-secondary-bg);
+  }
+}
+
+.btn-icon-danger:hover {
+  color: var(--bs-danger);
+}

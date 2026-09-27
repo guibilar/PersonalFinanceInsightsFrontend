@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { BudgetRepository } from '../../core/api/budget-repository';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
@@ -7,31 +7,59 @@ import { BudgetFilterInputDto } from '../../core/models/inputs/budget-filter-inp
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
 import { BudgetFormComponent } from './budget-form.component';
-import { BudgetFilterComponent } from './budget-filter.component';
+import { BudgetCriteria, BudgetToolbarComponent } from './budget-toolbar.component';
 import { PaginatedContentComponent } from '../../shared/ui/paginated-content/paginated-content.component';
-import { LoaderComponent } from '../../shared/ui/loader/loader.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
+import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { SidePanelComponent } from '../../shared/ui/side-panel/side-panel.component';
+import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { ToastService } from '../../shared/ui/toast/toast.service';
+
+export type BudgetHealth = 'ok' | 'warning' | 'over';
+
+/** Amber from 80% used, red at or over the limit. */
+export function budgetHealth(budget: BudgetOutputDto): BudgetHealth {
+  if (budget.percentageUsed >= 100) return 'over';
+  if (budget.percentageUsed >= 80) return 'warning';
+  return 'ok';
+}
+
+// A 3-column grid shows 4 full rows.
+const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-budget-list',
   imports: [
     CurrencyPipe,
+    DecimalPipe,
     BudgetFormComponent,
-    BudgetFilterComponent,
+    BudgetToolbarComponent,
     PaginatedContentComponent,
-    LoaderComponent,
     ErrorStateComponent,
+    IconComponent,
+    SidePanelComponent,
+    ConfirmDialogComponent,
+    SkeletonComponent,
   ],
   templateUrl: './budget-list.component.html',
+  styleUrl: './budget-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BudgetListComponent {
   private readonly budgetRepository = inject(BudgetRepository);
+  private readonly toasts = inject(ToastService);
 
-  readonly filter = signal<BudgetFilterInputDto>({ page: 1, pageSize: 10 });
-  readonly showForm = signal(false);
-  readonly editingBudget = signal<BudgetOutputDto | null>(null);
-  readonly actionError = signal<string | null>(null);
+  readonly filter = signal<BudgetFilterInputDto>({ page: 1, pageSize: PAGE_SIZE });
+  readonly criteria = computed<BudgetCriteria>(() => ({
+    name: this.filter().name,
+    status: this.filter().status,
+  }));
+  readonly hasCriteria = computed(() => !!(this.filter().name || this.filter().status));
+
+  /** undefined: panel closed; null: creating; a budget: editing it. */
+  readonly editing = signal<BudgetOutputDto | null | undefined>(undefined);
+  readonly deleting = signal<BudgetOutputDto | null>(null);
 
   readonly budgets = rxResource({
     params: () => this.filter(),
@@ -39,56 +67,45 @@ export class BudgetListComponent {
   });
 
   protected readonly Status = Status;
-  protected readonly Math = Math;
+  protected readonly health = budgetHealth;
+  protected readonly min = Math.min;
+  protected readonly abs = Math.abs;
 
-  onCreateBudget(): void {
-    this.editingBudget.set(null);
-    this.showForm.set(true);
-  }
-
-  onEditBudget(budget: BudgetOutputDto): void {
-    this.editingBudget.set(budget);
-    this.showForm.set(true);
-  }
-
-  onDeleteBudget(id: string): void {
-    if (!confirm('Are you sure you want to delete this budget?')) {
-      return;
-    }
-    this.budgetRepository.delete(id).subscribe({
-      next: () => this.budgets.reload(),
-      error: () => this.actionError.set('Could not delete the budget.'),
-    });
+  onCriteriaChange(criteria: BudgetCriteria): void {
+    this.filter.set({ ...criteria, page: 1, pageSize: PAGE_SIZE });
   }
 
   onPageChange(page: number): void {
     this.filter.update((filter) => ({ ...filter, page }));
   }
 
-  onFilterChange(newFilter: BudgetFilterInputDto): void {
-    this.filter.set({ ...newFilter, page: 1 });
-  }
-
-  onFormSubmit(budgetDto: BudgetInputDto): void {
-    const editing = this.editingBudget();
+  onFormSubmit(budget: BudgetInputDto): void {
+    const editing = this.editing();
     const request = editing
-      ? this.budgetRepository.update(editing.id, budgetDto)
-      : this.budgetRepository.create(budgetDto);
+      ? this.budgetRepository.update(editing.id, budget)
+      : this.budgetRepository.create(budget);
 
     request.subscribe({
       next: () => {
-        this.onFormCancel();
+        this.editing.set(undefined);
         this.budgets.reload();
+        this.toasts.success(editing ? `Saved “${budget.name}”` : `Created “${budget.name}”`);
       },
       error: () =>
-        this.actionError.set(
-          editing ? 'Could not update the budget.' : 'Could not create the budget.',
-        ),
+        this.toasts.error(editing ? 'Could not save the budget.' : 'Could not create the budget.'),
     });
   }
 
-  onFormCancel(): void {
-    this.showForm.set(false);
-    this.editingBudget.set(null);
+  confirmDelete(): void {
+    const budget = this.deleting();
+    if (!budget) return;
+    this.deleting.set(null);
+    this.budgetRepository.delete(budget.id).subscribe({
+      next: () => {
+        this.budgets.reload();
+        this.toasts.success(`Deleted “${budget.name}”`);
+      },
+      error: () => this.toasts.error(`Could not delete “${budget.name}”.`),
+    });
   }
 }

@@ -12,27 +12,6 @@
   </button>
 </div>
 
-@if (importResult(); as result) {
-  <div class="alert alert-success d-flex justify-content-between align-items-center" role="status">
-    <span>
-      Imported {{ result.added }} new {{ result.added === 1 ? 'transaction' : 'transactions' }}
-      @if (result.skipped > 0) {
-        ({{ result.skipped }} already imported)
-      }
-    </span>
-    <button
-      type="button"
-      class="btn-close"
-      aria-label="Dismiss"
-      (click)="importResult.set(null)"
-    ></button>
-  </div>
-}
-
-@if (actionError(); as error) {
-  <app-error-state [message]="error" actionLabel="Dismiss" (retry)="actionError.set(null)" />
-}
-
 <app-transaction-toolbar [filter]="filter()" (criteriaChange)="onCriteriaChange($event)" />
 
 <div class="card">
@@ -149,7 +128,7 @@
               <td>
                 @if (transaction.budget; as budget) {
                   <span
-                    class="badge rounded-pill text-bg-light border fw-medium d-inline-flex align-items-center gap-1"
+                    class="badge rounded-pill bg-body-secondary text-body border fw-medium d-inline-flex align-items-center gap-1"
                   >
                     {{ budget.name }}
                     <button

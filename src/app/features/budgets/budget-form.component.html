@@ -1,60 +1,58 @@
-<app-form-card [title]="isEditing() ? 'Edit Budget' : 'Create Budget'">
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <div class="mb-3">
-      <label for="budget-name" class="form-label">Name *</label>
-      <input
-        type="text"
-        id="budget-name"
-        class="form-control"
-        formControlName="name"
-        placeholder="Enter budget name"
-        [class.is-invalid]="isInvalid('name')"
-      />
-      <div class="invalid-feedback">Name is required.</div>
-    </div>
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div class="mb-3">
+    <label for="budget-name" class="form-label">Name *</label>
+    <input
+      type="text"
+      id="budget-name"
+      class="form-control"
+      formControlName="name"
+      placeholder="Enter budget name"
+      [class.is-invalid]="isInvalid('name')"
+    />
+    <div class="invalid-feedback">Name is required.</div>
+  </div>
 
-    <div class="mb-3">
-      <label for="budget-description" class="form-label">Description *</label>
-      <textarea
-        id="budget-description"
-        class="form-control"
-        formControlName="description"
-        rows="4"
-        placeholder="Enter budget description"
-        [class.is-invalid]="isInvalid('description')"
-      ></textarea>
-      <div class="invalid-feedback">Description is required.</div>
-    </div>
+  <div class="mb-3">
+    <label for="budget-description" class="form-label">Description *</label>
+    <textarea
+      id="budget-description"
+      class="form-control"
+      formControlName="description"
+      rows="4"
+      placeholder="Enter budget description"
+      [class.is-invalid]="isInvalid('description')"
+    ></textarea>
+    <div class="invalid-feedback">Description is required.</div>
+  </div>
 
-    <div class="mb-3">
-      <label for="budget-amount" class="form-label">Amount *</label>
-      <input
-        type="number"
-        id="budget-amount"
-        class="form-control"
-        formControlName="amount"
-        min="0.01"
-        step="0.01"
-        placeholder="Enter budget amount"
-        [class.is-invalid]="isInvalid('amount')"
-      />
-      <div class="invalid-feedback">Amount must be greater than 0.</div>
-    </div>
+  <div class="mb-3">
+    <label for="budget-amount" class="form-label">Amount *</label>
+    <input
+      type="number"
+      id="budget-amount"
+      class="form-control"
+      formControlName="amount"
+      min="0.01"
+      step="0.01"
+      placeholder="Enter budget amount"
+      [class.is-invalid]="isInvalid('amount')"
+    />
+    <div class="invalid-feedback">Amount must be greater than 0.</div>
+  </div>
 
-    <div class="mb-3">
-      <label for="budget-status" class="form-label">Status *</label>
-      <select id="budget-status" class="form-select" formControlName="status">
-        @for (option of statusOptions; track option.value) {
-          <option [ngValue]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </div>
+  <div class="mb-3">
+    <label for="budget-status" class="form-label">Status *</label>
+    <select id="budget-status" class="form-select" formControlName="status">
+      @for (option of statusOptions; track option.value) {
+        <option [ngValue]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </div>
 
-    <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
-      <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
-      <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
-        {{ isEditing() ? 'Update' : 'Create' }}
-      </button>
-    </div>
-  </form>
-</app-form-card>
+  <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
+      {{ isEditing() ? 'Update' : 'Create' }}
+    </button>
+  </div>
+</form>

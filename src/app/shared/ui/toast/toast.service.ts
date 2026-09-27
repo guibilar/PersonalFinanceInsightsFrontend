@@ -1,0 +1,41 @@
+import { Injectable, signal } from '@angular/core';
+
+export type ToastKind = 'success' | 'error';
+
+export interface Toast {
+  id: number;
+  kind: ToastKind;
+  message: string;
+}
+
+/** Short-lived notifications shown in the corner of the screen by ToastContainerComponent. */
+@Injectable({ providedIn: 'root' })
+export class ToastService {
+  static readonly DURATION_MS = 5000;
+
+  private nextId = 1;
+  private readonly items = signal<Toast[]>([]);
+  readonly toasts = this.items.asReadonly();
+
+  success(message: string): void {
+    this.show('success', message);
+  }
+
+  /** Errors stay until dismissed, so they can't be missed. */
+  error(message: string): void {
+    this.show('error', message);
+  }
+
+  dismiss(id: number): void {
+    this.items.update((toasts) => toasts.filter((toast) => toast.id !== id));
+  }
+
+  private show(kind: ToastKind, message: string): void {
+    const toast: Toast = { id: this.nextId++, kind, message };
+    // Keep at most 4 on screen.
+    this.items.update((toasts) => [...toasts, toast].slice(-4));
+    if (kind === 'success') {
+      setTimeout(() => this.dismiss(toast.id), ToastService.DURATION_MS);
+    }
+  }
+}
