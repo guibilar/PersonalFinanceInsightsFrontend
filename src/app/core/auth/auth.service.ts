@@ -3,7 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, firstValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-config';
-import { ChangePasswordInput, CurrentUser, LoginInput } from './auth.models';
+import { ChangePasswordInput, CurrentUser, LoginInput, SignedOutSessions } from './auth.models';
 
 /**
  * Who is signed in. The session itself is an HttpOnly cookie the browser sends with every request,
@@ -50,8 +50,14 @@ export class AuthService {
     );
   }
 
+  /** Also signs out every other session of the account; this one stays signed in. */
   changePassword(input: ChangePasswordInput): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/change-password`, input);
+  }
+
+  /** Ends every other session of the account (other browsers and devices); this one stays signed in. */
+  signOutOtherDevices(): Observable<SignedOutSessions> {
+    return this.http.post<SignedOutSessions>(`${this.baseUrl}/sign-out-others`, null);
   }
 
   /** The API rejected the session (expired, or signed out elsewhere). */

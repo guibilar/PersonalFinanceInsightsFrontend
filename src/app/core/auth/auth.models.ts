@@ -9,6 +9,11 @@ export interface LoginInput {
   rememberMe: boolean;
 }
 
+export interface SignedOutSessions {
+  /** How many other sessions (browsers, devices) were signed out. */
+  count: number;
+}
+
 export interface ChangePasswordInput {
   currentPassword: string;
   newPassword: string;
