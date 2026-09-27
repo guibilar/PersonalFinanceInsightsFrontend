@@ -2,7 +2,7 @@
   <form [formGroup]="form" (ngSubmit)="applyFilter()">
     <app-filter-panel (clear)="clearFilter()">
       @if (isFilterEnabled('transactionId')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-id" class="form-label">Transaction ID</label>
           <input
             type="text"
@@ -15,7 +15,7 @@
       }
 
       @if (isFilterEnabled('description')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-description" class="form-label">Description</label>
           <input
             type="text"
@@ -28,7 +28,7 @@
       }
 
       @if (isFilterEnabled('transactionType')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-type" class="form-label">Transaction Type</label>
           <select class="form-select" id="tx-filter-type" formControlName="transactionType">
             <option [ngValue]="null">All</option>
@@ -40,7 +40,7 @@
       }
 
       @if (isFilterEnabled('accountTypes')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <span class="form-label d-block">Account Types</span>
           @for (accountType of accountTypes; track accountType) {
             <div class="form-check form-check-inline">
@@ -60,7 +60,7 @@
       }
 
       @if (isFilterEnabled('category')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-category" class="form-label">Category</label>
           <select class="form-select" id="tx-filter-category" formControlName="category">
             <option [ngValue]="null">All</option>
@@ -72,7 +72,7 @@
       }
 
       @if (isFilterEnabled('startDate')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-start" class="form-label">Start Date</label>
           <input
             type="date"
@@ -84,14 +84,14 @@
       }
 
       @if (isFilterEnabled('endDate')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-end" class="form-label">End Date</label>
           <input type="date" class="form-control" id="tx-filter-end" formControlName="endDate" />
         </div>
       }
 
       @if (isFilterEnabled('budgetId')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-budget" class="form-label">Budget ID</label>
           <input
             type="text"
@@ -104,7 +104,7 @@
       }
 
       @if (isFilterEnabled('pageSize')) {
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 col-xl-3">
           <label for="tx-filter-page-size" class="form-label">Items per page</label>
           <select class="form-select" id="tx-filter-page-size" formControlName="pageSize">
             @for (size of pageSizeOptions; track size) {

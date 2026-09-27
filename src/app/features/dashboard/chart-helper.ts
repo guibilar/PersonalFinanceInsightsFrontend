@@ -38,8 +38,24 @@ function moveAverageLine(chart: Chart, average: number): void {
   }
 }
 
+/** Colours that depend on light/dark mode. */
+export interface ChartTheme {
+  text: string;
+  grid: string;
+  /** Surface behind the chart, used to separate doughnut slices. */
+  surface: string;
+}
+
+export const CHART_THEMES: Record<'light' | 'dark', ChartTheme> = {
+  light: { text: '#4b5563', grid: '#e4e7ee', surface: '#ffffff' },
+  dark: { text: '#cbd5e1', grid: '#2a3140', surface: '#171b24' },
+};
+
 export class ChartHelper {
-  static generateMonthlySpendingChartConfiguration(report: CategorizedReportOutputDto): {
+  static generateMonthlySpendingChartConfiguration(
+    report: CategorizedReportOutputDto,
+    theme: ChartTheme = CHART_THEMES.light,
+  ): {
     chartData: ChartData<'bar'>;
     chartOptions: ChartConfiguration<'bar'>['options'];
   } {
@@ -69,15 +85,15 @@ export class ChartHelper {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: { stacked: true },
-        y: { stacked: true },
+        x: { stacked: true, ticks: { color: theme.text }, grid: { color: theme.grid } },
+        y: { stacked: true, ticks: { color: theme.text }, grid: { color: theme.grid } },
       },
       plugins: {
         legend: {
           position: 'bottom',
           align: 'start',
           labels: {
-            color: '#333',
+            color: theme.text,
             // Category entries plus an extra, non-toggleable "Avg" entry for the average line.
             generateLabels: (chart) => [
               ...Chart.defaults.plugins.legend.labels.generateLabels(chart),
@@ -123,7 +139,10 @@ export class ChartHelper {
     return { chartData, chartOptions };
   }
 
-  static generateDoughnutChartConfiguration(report: CategorizedReportOutputDto): {
+  static generateDoughnutChartConfiguration(
+    report: CategorizedReportOutputDto,
+    theme: ChartTheme = CHART_THEMES.light,
+  ): {
     chartData: ChartData<'doughnut'>;
     chartOptions: ChartConfiguration<'doughnut'>['options'];
   } {
@@ -136,6 +155,7 @@ export class ChartHelper {
         {
           data: categories.map((category) => currentMonth[category] || 0),
           backgroundColor: categories.map((category) => CategoryColorHelper.getColor(category)),
+          borderColor: theme.surface,
         },
       ],
     };
@@ -146,7 +166,7 @@ export class ChartHelper {
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { color: '#333' },
+          labels: { color: theme.text },
         },
         tooltip: {
           callbacks: {

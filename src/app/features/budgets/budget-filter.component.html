@@ -1,6 +1,6 @@
 <form [formGroup]="form" (ngSubmit)="applyFilter()">
   <app-filter-panel (clear)="clearFilter()">
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6 col-xl-3">
       <label for="budget-filter-name" class="form-label">Name</label>
       <input
         type="text"
@@ -11,7 +11,7 @@
       />
     </div>
 
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6 col-xl-3">
       <label for="budget-filter-description" class="form-label">Description</label>
       <input
         type="text"
@@ -22,7 +22,7 @@
       />
     </div>
 
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6 col-xl-3">
       <label for="budget-filter-status" class="form-label">Status</label>
       <select id="budget-filter-status" class="form-select" formControlName="status">
         @for (option of statusOptions; track option.label) {
@@ -31,7 +31,7 @@
       </select>
     </div>
 
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6 col-xl-3">
       <label for="budget-filter-page-size" class="form-label">Items per page</label>
       <select id="budget-filter-page-size" class="form-select" formControlName="pageSize">
         @for (size of pageSizeOptions; track size) {

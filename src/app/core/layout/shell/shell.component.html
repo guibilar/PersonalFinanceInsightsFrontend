@@ -1,0 +1,93 @@
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<header class="topbar d-md-none">
+  <button
+    type="button"
+    class="btn btn-icon"
+    aria-label="Open menu"
+    aria-controls="sidebar"
+    [attr.aria-expanded]="mobileOpen()"
+    (click)="mobileOpen.set(true)"
+  >
+    <app-icon name="menu" />
+  </button>
+  <a routerLink="/" class="brand">
+    <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
+    Personal Finances
+  </a>
+</header>
+
+@if (mobileOpen()) {
+  <div class="backdrop d-md-none" (click)="mobileOpen.set(false)" aria-hidden="true"></div>
+}
+
+<nav
+  id="sidebar"
+  class="sidebar"
+  [class.collapsed]="collapsed()"
+  [class.open]="mobileOpen()"
+  aria-label="Main"
+>
+  <div class="sidebar-header">
+    <a routerLink="/" class="brand" [attr.title]="collapsed() ? 'Personal Finances' : null">
+      <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
+      <span class="label">Personal Finances</span>
+    </a>
+    <button
+      type="button"
+      class="btn btn-icon d-md-none ms-auto"
+      aria-label="Close menu"
+      (click)="mobileOpen.set(false)"
+    >
+      <app-icon name="close" />
+    </button>
+  </div>
+
+  <ul class="nav-list">
+    @for (link of links; track link.path) {
+      <li>
+        <a
+          class="nav-item"
+          [routerLink]="link.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: link.exact }"
+          ariaCurrentWhenActive="page"
+          [attr.title]="collapsed() ? link.label : null"
+        >
+          <app-icon [name]="link.icon" />
+          <span class="label">{{ link.label }}</span>
+        </a>
+      </li>
+    }
+  </ul>
+
+  <div class="sidebar-footer">
+    <button
+      type="button"
+      class="nav-item"
+      (click)="theme.toggle()"
+      [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+      [attr.title]="collapsed() ? 'Toggle theme' : null"
+    >
+      <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" />
+      <span class="label">{{ theme.theme() === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
+    </button>
+    <button
+      type="button"
+      class="nav-item d-none d-md-flex"
+      (click)="toggleCollapsed()"
+      [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      [attr.aria-expanded]="!collapsed()"
+      [attr.title]="collapsed() ? 'Expand sidebar' : null"
+    >
+      <app-icon name="sidebar" />
+      <span class="label">Collapse</span>
+    </button>
+  </div>
+</nav>
+
+<main id="main-content" class="content" tabindex="-1">
+  <div class="content-inner">
+    <router-outlet />
+  </div>
+</main>
