@@ -51,15 +51,33 @@ Components are standalone, OnPush and signal-based; the app runs zoneless.
 Styling is Bootstrap 5 only: `src/styles.scss` imports just the Bootstrap modules in
 use, so add a module there before using its classes.
 
-## Docker
+## Docker, with HTTPS through Tailscale
 
-```bash
-docker compose up --build   # http://localhost:5095
-```
+The app is served at **`https://<TS_HOSTNAME>.<your-tailnet>.ts.net`** to the devices on your tailnet,
+with a certificate Tailscale issues and renews. Nothing is opened on the router or published on the LAN:
+a `tailscale` container joins your tailnet as its own machine and forwards HTTPS to nginx
+(`tailscale/serve.json`), and nginx reaches the API over the private `finance` Docker network.
 
-nginx serves the app and proxies `/api/` to `API_UPSTREAM` (set in
-`docker-compose.yml`; the backend base URL without a path, e.g.
-`http://192.168.1.153:5096`). The same image works for any backend address.
+One-time setup:
+
+1. In the [Tailscale admin console](https://login.tailscale.com/admin/dns), turn on **MagicDNS** and
+   **HTTPS Certificates**.
+2. Under **Settings → Keys**, generate an **auth key** (a one-off key is enough).
+3. Start the backend project first (it creates the `finance` network): `docker compose up -d --build`
+   in PersonalFinanceInsightsBackend.
+4. Here: `cp .env.example .env`, put the key in `TS_AUTHKEY` (and pick `TS_HOSTNAME`, default `finance`),
+   then `docker compose up -d --build`.
+5. On the admin console's **Machines** page, open the new machine's menu and choose **Disable key
+   expiry**; otherwise it must be logged in again after 180 days.
+
+Then open `https://finance.<your-tailnet>.ts.net` from any device with Tailscale signed in to your tailnet
+(the first visit can take a few seconds while the certificate is issued). On the server itself nginx is
+also on `http://localhost:5095`. Troubleshooting: `docker compose logs tailscale` and
+`docker compose exec tailscale tailscale serve status`.
+
+nginx serves the app and proxies `/api/` to `API_UPSTREAM` (default `http://personal-finance-api:8080`,
+the API container on the `finance` network). It passes on Tailscale's `X-Forwarded-Proto: https`, so the
+API marks the session cookie `Secure`, and sends HSTS on HTTPS requests.
 
 nginx also:
 

@@ -1,4 +1,19 @@
 # Rendered by the nginx image at startup: ${API_UPSTREAM} comes from the environment.
+
+# How the browser really connected. Tailscale terminates HTTPS in front of nginx and says so in
+# X-Forwarded-Proto; nginx is published on localhost only, so that proxy is the only way in and its
+# header can be trusted. Passed on to the API (the session cookie becomes Secure) and drives HSTS.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+# Browsers that came in over HTTPS must keep using it. An empty value means nginx sends no header.
+map $forwarded_proto $hsts {
+    https   "max-age=31536000";
+    default "";
+}
+
 server {
     listen 5095;
     root /usr/share/nginx/html;
@@ -17,7 +32,7 @@ server {
         proxy_pass ${API_UPSTREAM};
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         include /etc/nginx/snippets/security-headers.conf;
     }
 
