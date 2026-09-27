@@ -84,6 +84,10 @@ per service.
 `docker/smoke-test.sh [base-url]` checks a running container: security headers, HSTS only over HTTPS,
 SPA routing, and that uploads over 1 MB get past nginx. CI builds the image and runs it on every change.
 
+The image is `nginxinc/nginx-unprivileged:stable-alpine`: nginx runs as uid 101, not root, on the
+stable branch. The tag moves with each stable release, so rebuild now and then with
+`docker compose build --pull && docker compose up -d` to pick up nginx and Alpine fixes.
+
 nginx serves the app and proxies `/api/` to `API_UPSTREAM` (default `http://personal-finance-api:8080`,
 the API container on the `finance` network). It passes on Tailscale's `X-Forwarded-Proto: https`, so the
 API marks the session cookie `Secure`, and sends HSTS on HTTPS requests.
