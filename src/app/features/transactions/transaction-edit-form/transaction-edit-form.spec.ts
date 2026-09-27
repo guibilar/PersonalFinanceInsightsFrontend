@@ -77,4 +77,17 @@ describe('TransactionEditForm', () => {
     expect(requested).toBe(1);
     expect(submitted).toEqual([]);
   });
+
+  it('limits the description to 200 characters, like the API', async () => {
+    component.form.controls.description.setValue('x'.repeat(201));
+    component.form.markAllAsTouched();
+    await fixture.whenStable();
+
+    component.onSubmit();
+
+    expect(submitted).toEqual([]);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('At most 200 characters.');
+    component.form.controls.description.setValue('x'.repeat(200));
+    expect(component.form.valid).toBe(true);
+  });
 });
