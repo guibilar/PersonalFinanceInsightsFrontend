@@ -4,14 +4,13 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
-import { FormCardComponent } from '../../../shared/ui/form-card/form-card.component';
 
 /** Matches the API's upload limit. */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 @Component({
   selector: 'app-statement-import',
-  imports: [ReactiveFormsModule, FormCardComponent],
+  imports: [ReactiveFormsModule],
   templateUrl: './statement-import.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

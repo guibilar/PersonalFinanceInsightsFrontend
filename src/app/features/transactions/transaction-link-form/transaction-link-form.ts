@@ -1,3 +1,4 @@
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, output } from '@angular/core';
 import {
   AbstractControl,
@@ -9,7 +10,6 @@ import {
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
-import { FormCardComponent } from '../../../shared/ui/form-card/form-card.component';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
@@ -19,7 +19,7 @@ function notEmptyGuid(control: AbstractControl<string>): ValidationErrors | null
 
 @Component({
   selector: 'app-transaction-link-form',
-  imports: [FormCardComponent, ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CurrencyPipe, DatePipe],
   templateUrl: './transaction-link-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

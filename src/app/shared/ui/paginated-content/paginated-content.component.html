@@ -46,7 +46,10 @@
     </nav>
   }
 
-  <p class="text-center text-body-secondary small mt-2 mb-0">
-    Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
-  </p>
+  <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mt-2">
+    <p class="text-body-secondary small mb-0">
+      Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
+    </p>
+    <ng-content select="[paginator-footer]" />
+  </div>
 }
