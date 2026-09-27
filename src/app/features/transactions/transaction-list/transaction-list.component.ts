@@ -84,6 +84,7 @@ export class TransactionListComponent {
     sortDirection: 'Descending',
   });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
+  readonly savingLink = signal(false);
   readonly showImport = signal(false);
   readonly editingTransaction = signal<TransactionOutputDto | null>(null);
   readonly savingEdit = signal(false);
@@ -175,14 +176,20 @@ export class TransactionListComponent {
   }
 
   onLinkSubmit(linking: TransactionLinkingInputDto): void {
+    if (this.savingLink()) return;
+    this.savingLink.set(true);
     this.transactionRepository.linkTransaction(linking).subscribe({
       next: () => {
+        this.savingLink.set(false);
         const budget = this.activeBudgets().find((b) => b.id === linking.budgetId);
         this.linkingTransaction.set(null);
         this.transactions.reload();
         this.toasts.success(budget ? `Linked to “${budget.name}”` : 'Transaction linked');
       },
-      error: () => this.toasts.error('Could not link the transaction.'),
+      error: () => {
+        this.savingLink.set(false);
+        this.toasts.error('Could not link the transaction.');
+      },
     });
   }
 

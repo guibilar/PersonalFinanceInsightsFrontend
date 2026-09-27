@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { trapTabKey } from '../focus-trap';
 
 let nextId = 0;
 
@@ -19,10 +20,14 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-confirm-dialog',
-  host: { '(document:keydown.escape)': 'cancelled.emit()' },
+  host: {
+    '(document:keydown.escape)': 'cancelled.emit()',
+    '(keydown)': 'onKeydown($event)',
+  },
   template: `
     <div class="dialog-backdrop" (click)="cancelled.emit()" aria-hidden="true"></div>
     <div
+      #dialog
       class="dialog card"
       role="alertdialog"
       aria-modal="true"
@@ -76,6 +81,7 @@ let nextId = 0;
 export class ConfirmDialogComponent implements OnDestroy {
   private readonly previousFocus = inject(DOCUMENT).activeElement as HTMLElement | null;
   private readonly cancelButton = viewChild.required<ElementRef<HTMLButtonElement>>('cancelButton');
+  private readonly dialog = viewChild.required<ElementRef<HTMLElement>>('dialog');
 
   readonly title = input.required<string>();
   readonly message = input.required<string>();
@@ -89,6 +95,11 @@ export class ConfirmDialogComponent implements OnDestroy {
 
   constructor() {
     afterNextRender(() => this.cancelButton().nativeElement.focus());
+  }
+
+  /** Tab stays on the two buttons while the dialog is open. */
+  onKeydown(event: KeyboardEvent): void {
+    trapTabKey(event, this.dialog().nativeElement);
   }
 
   ngOnDestroy(): void {

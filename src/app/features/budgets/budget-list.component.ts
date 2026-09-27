@@ -61,6 +61,7 @@ export class BudgetListComponent {
   /** undefined: panel closed; null: creating; a budget: editing it. */
   readonly editing = signal<BudgetOutputDto | null | undefined>(undefined);
   readonly deleting = signal<BudgetOutputDto | null>(null);
+  readonly saving = signal(false);
 
   readonly budgets = rxResource({
     params: () => this.filter(),
@@ -82,19 +83,24 @@ export class BudgetListComponent {
   }
 
   onFormSubmit(budget: BudgetInputDto): void {
+    if (this.saving()) return;
     const editing = this.editing();
     const request = editing
       ? this.budgetRepository.update(editing.id, budget)
       : this.budgetRepository.create(budget);
 
+    this.saving.set(true);
     request.subscribe({
       next: () => {
+        this.saving.set(false);
         this.editing.set(undefined);
         this.budgets.reload();
         this.toasts.success(editing ? `Saved “${budget.name}”` : `Created “${budget.name}”`);
       },
-      error: () =>
-        this.toasts.error(editing ? 'Could not save the budget.' : 'Could not create the budget.'),
+      error: () => {
+        this.saving.set(false);
+        this.toasts.error(editing ? 'Could not save the budget.' : 'Could not create the budget.');
+      },
     });
   }
 

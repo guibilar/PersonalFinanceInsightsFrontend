@@ -103,9 +103,7 @@ export class DashboardComponent {
     const previous = previousMonthTotal(year, this.today);
     const change = percentChange(spent, previous);
     if (change === null) return null;
-    const lastMonth = new Date(
-      Date.UTC(this.today.getUTCFullYear(), this.today.getUTCMonth() - 1, 1),
-    );
+    const lastMonth = new Date(this.today.getFullYear(), this.today.getMonth() - 1, 1);
     return {
       text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${monthLabel(lastMonth).split(' ')[0]}`,
       tone: change > 0 ? 'bad' : 'good',

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { IconComponent } from '../icon/icon.component';
+import { trapTabKey } from '../focus-trap';
 
 let nextId = 0;
 
@@ -21,7 +22,10 @@ let nextId = 0;
 @Component({
   selector: 'app-side-panel',
   imports: [IconComponent],
-  host: { '(document:keydown.escape)': 'closed.emit()' },
+  host: {
+    '(document:keydown.escape)': 'closed.emit()',
+    '(keydown)': 'onKeydown($event)',
+  },
   template: `
     <div class="panel-backdrop" (click)="closed.emit()" aria-hidden="true"></div>
     <aside
@@ -68,6 +72,11 @@ export class SidePanelComponent implements OnDestroy {
       );
       (field ?? this.panel().nativeElement).focus();
     });
+  }
+
+  /** Tab stays inside the panel while it is open. */
+  onKeydown(event: KeyboardEvent): void {
+    trapTabKey(event, this.panel().nativeElement);
   }
 
   ngOnDestroy(): void {

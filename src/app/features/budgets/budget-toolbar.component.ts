@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { debounceTime, filter } from 'rxjs';
 import { Status } from '../../core/models/enums/status';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 
@@ -78,7 +78,9 @@ export class BudgetToolbarComponent {
     this.search.valueChanges
       .pipe(
         debounceTime(BUDGET_SEARCH_DEBOUNCE_MS),
-        distinctUntilChanged(),
+        // Compare with the applied search, not the last typed one, so searching again after
+        // "Clear filters" works.
+        filter((name) => (name.trim() || undefined) !== this.criteria().name),
         takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((name) =>

@@ -17,11 +17,13 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        title: 'Dashboard · Personal Finances',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
         path: 'transactions',
+        title: 'Transactions · Personal Finances',
         loadComponent: () =>
           import('./features/transactions/transaction-list/transaction-list.component').then(
             (m) => m.TransactionListComponent,
@@ -29,6 +31,7 @@ export const routes: Routes = [
       },
       {
         path: 'budgets',
+        title: 'Budgets · Personal Finances',
         loadComponent: () =>
           import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
       },

@@ -25,7 +25,8 @@ import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto'
             style="height: 0.5rem"
             role="progressbar"
             [attr.aria-label]="budget.name + ' used'"
-            [attr.aria-valuenow]="budget.percentageUsed"
+            [attr.aria-valuenow]="min(budget.percentageUsed, 100)"
+            [attr.aria-valuetext]="(budget.percentageUsed | number: '1.0-0') + '% used'"
             aria-valuemin="0"
             aria-valuemax="100"
           >

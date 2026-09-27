@@ -28,6 +28,8 @@ export class TransactionLinkForm implements OnInit {
 
   readonly transaction = input.required<TransactionOutputDto>();
   readonly budgets = input<BudgetOutputDto[]>([]);
+  /** True while the parent is linking: blocks a second submit. */
+  readonly saving = input(false);
   readonly submitTransaction = output<TransactionLinkingInputDto>();
   readonly cancelled = output<void>();
 
@@ -43,7 +45,7 @@ export class TransactionLinkForm implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
+    if (this.form.invalid || this.saving()) {
       return;
     }
     this.submitTransaction.emit({

@@ -25,6 +25,8 @@ export class BudgetFormComponent implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly budget = input<BudgetOutputDto | null>(null);
+  /** True while the parent is saving: blocks a second submit (double-click would create two budgets). */
+  readonly saving = input(false);
   readonly submitBudget = output<BudgetInputDto>();
   readonly cancelled = output<void>();
 
@@ -75,6 +77,7 @@ export class BudgetFormComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
