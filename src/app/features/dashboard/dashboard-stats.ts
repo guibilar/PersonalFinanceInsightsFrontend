@@ -8,27 +8,66 @@ export interface CategoryShare {
   percent: number;
 }
 
-/**
- * Month label in the API's format ("MMM yyyy", invariant culture), e.g. "Sep 2026", for the date's local
- * calendar month. Local, like the API's reporting time zone: in UTC the evening of the last day of a month
- * is already the next month.
- */
-export function monthLabel(date: Date): string {
-  return `${date.toLocaleString('en-US', { month: 'short' })} ${date.getFullYear()}`;
-}
-
 export function spentThisMonth(currentMonth: CategorizedReportOutputDto): number {
   return currentMonth.monthlyData[0]?.total ?? 0;
 }
 
-/** Total of the calendar month before `now`, or null when the report doesn't cover it (e.g. in January). */
-export function previousMonthTotal(
-  yearReport: CategorizedReportOutputDto,
-  now: Date,
-): number | null {
+/**
+ * The part of last month that the API compares this month with: day 1 up to today's day of the month, or the
+ * whole month when it is shorter. "Aug 1–5" on September 5th, "Feb 1–28" on March 30th.
+ */
+export function previousMonthToDateLabel(now: Date): string {
   const previous = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const month = yearReport.monthlyData.find((m) => m.month === monthLabel(previous));
-  return month ? month.total : null;
+  const daysInPrevious = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  const lastDay = Math.min(now.getDate(), daysInPrevious);
+  const month = previous.toLocaleString('en-US', { month: 'short' });
+  return lastDay === 1 ? `${month} 1` : `${month} 1–${lastDay}`;
+}
+
+/**
+ * Index of the month a report label ("Sep 2026") stands for, counting months since year 0, so labels and
+ * dates compare as numbers; null for a label in another format.
+ */
+export function monthIndex(label: string): number | null {
+  const [name, year] = label.split(' ');
+  const month = MONTH_NAMES.indexOf(name);
+  return month >= 0 && /^\d{4}$/.test(year ?? '') ? Number(year) * 12 + month : null;
+}
+
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** What the monthly average is taken over, in the same terms as {@link finishedMonths}. */
+export function averageCaption(labels: string[], now: Date): string {
+  const current = now.getFullYear() * 12 + now.getMonth();
+  const finished = labels.filter((label) => (monthIndex(label) ?? current) < current).length;
+  if (finished > 0) return `Over ${finished} finished month${finished === 1 ? '' : 's'}`;
+  return labels.length > 0 ? 'This month so far' : 'No spending yet';
+}
+
+/**
+ * Positions of the months that are over, to average: the running month would pull the average down (and
+ * future-dated rows don't belong in it either). When no month is over yet (January), all of them.
+ */
+export function finishedMonths(labels: string[], now: Date): number[] {
+  const current = now.getFullYear() * 12 + now.getMonth();
+  const finished = labels.flatMap((label, index) => {
+    const month = monthIndex(label);
+    return month !== null && month < current ? [index] : [];
+  });
+  return finished.length > 0 ? finished : labels.map((_, index) => index);
 }
 
 /** Percentage change from `previous` to `current`, or null when there is nothing to compare with. */

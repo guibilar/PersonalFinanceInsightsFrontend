@@ -28,11 +28,11 @@ import { CategoryBreakdownComponent } from './category-breakdown/category-breakd
 import { BudgetOverviewComponent } from './budget-overview/budget-overview.component';
 import { RecentTransactionsComponent } from './recent-transactions/recent-transactions.component';
 import {
+  averageCaption,
   budgetsOverLimit,
   categoryShares,
-  monthLabel,
   percentChange,
-  previousMonthTotal,
+  previousMonthToDateLabel,
   spentThisMonth,
 } from './dashboard-stats';
 
@@ -98,17 +98,26 @@ export class DashboardComponent {
 
   readonly spentHint = computed<{ text: string; tone: StatTone; up: boolean } | null>(() => {
     const spent = this.spent();
-    const year = this.yearReport.value();
-    if (spent === null || !year) return null;
-    const previous = previousMonthTotal(year, this.today);
-    const change = percentChange(spent, previous);
+    const month = this.monthReport.value();
+    if (spent === null || !month) return null;
+    // Like for like: last month up to the same day, not all of it against a month in progress.
+    const change = percentChange(spent, month.previousMonthToDateTotal ?? null);
     if (change === null) return null;
-    const lastMonth = new Date(this.today.getFullYear(), this.today.getMonth() - 1, 1);
     return {
-      text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${monthLabel(lastMonth).split(' ')[0]}`,
+      text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${previousMonthToDateLabel(this.today)}`,
       tone: change > 0 ? 'bad' : 'good',
       up: change >= 0,
     };
+  });
+
+  readonly averageHint = computed(() => {
+    const year = this.yearReport.value();
+    return year
+      ? averageCaption(
+          year.monthlyData.map((month) => month.month),
+          this.today,
+        )
+      : '';
   });
 
   readonly topCategory = computed(() => {

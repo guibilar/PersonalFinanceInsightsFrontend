@@ -27,12 +27,7 @@
         label="Monthly average"
         icon="trending-up"
         [value]="format(year.averageMonthlyTotal)"
-        [hint]="
-          year.monthlyData.length +
-          ' month' +
-          (year.monthlyData.length === 1 ? '' : 's') +
-          ' this year'
-        "
+        [hint]="averageHint()"
       />
     } @else {
       <div class="card h-100">

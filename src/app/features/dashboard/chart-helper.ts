@@ -3,6 +3,7 @@ import { Chart, ChartConfiguration, ChartData } from 'chart.js';
 import type {} from 'chartjs-plugin-annotation';
 import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+import { finishedMonths } from './dashboard-stats';
 
 const AVERAGE_COLOR = 'red';
 const AVERAGE_ANNOTATION_ID = 'avgLine';
@@ -13,19 +14,19 @@ export function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
 }
 
-/** Average monthly spend across the categories currently visible in the chart. */
-export function visibleMonthlyAverage(chart: Chart): number {
-  const months = chart.data.labels?.length ?? 0;
-  if (months === 0) {
+/** Average monthly spend over the given months (positions), across the categories visible in the chart. */
+export function visibleMonthlyAverage(chart: Chart, months: number[]): number {
+  if (months.length === 0) {
     return 0;
   }
   const total = chart.data.datasets.reduce((sum, dataset, index) => {
     if (!chart.isDatasetVisible(index)) {
       return sum;
     }
-    return sum + (dataset.data as number[]).reduce((datasetSum, value) => datasetSum + value, 0);
+    const data = dataset.data as number[];
+    return sum + months.reduce((datasetSum, month) => datasetSum + (data[month] ?? 0), 0);
   }, 0);
-  return total / months;
+  return total / months.length;
 }
 
 function moveAverageLine(chart: Chart, average: number): void {
@@ -57,6 +58,7 @@ export class ChartHelper {
   static generateMonthlySpendingChartConfiguration(
     report: CategorizedReportOutputDto,
     theme: ChartTheme = CHART_THEMES.light,
+    now: Date = new Date(),
   ): {
     chartData: ChartData<'bar'>;
     chartOptions: ChartConfiguration<'bar'>['options'];
@@ -70,18 +72,23 @@ export class ChartHelper {
       })),
     };
 
+    // Finished months only, like the API's average: the running month isn't over yet.
+    const averaged = finishedMonths(
+      report.monthlyData.map((monthData) => monthData.month),
+      now,
+    );
     // Same formula the legend uses, applied before any category is hidden.
-    const months = report.monthlyData.length;
-    const total = report.monthlyData.reduce(
-      (sum, monthData) =>
+    const total = averaged.reduce(
+      (sum, month) =>
         sum +
         report.categories.reduce(
-          (monthSum, category) => monthSum + (monthData.categoryValues[category] || 0),
+          (monthSum, category) =>
+            monthSum + (report.monthlyData[month].categoryValues[category] || 0),
           0,
         ),
       0,
     );
-    const initialAverage = months > 0 ? total / months : 0;
+    const initialAverage = averaged.length > 0 ? total / averaged.length : 0;
 
     const chartOptions: ChartConfiguration<'bar'>['options'] = {
       responsive: true,
@@ -100,7 +107,7 @@ export class ChartHelper {
             generateLabels: (chart) => [
               ...Chart.defaults.plugins.legend.labels.generateLabels(chart),
               {
-                text: `Avg: ${formatCurrency(visibleMonthlyAverage(chart))}`,
+                text: `Avg: ${formatCurrency(visibleMonthlyAverage(chart, averaged))}`,
                 fillStyle: AVERAGE_COLOR,
                 strokeStyle: AVERAGE_COLOR,
                 lineWidth: 2,
@@ -114,7 +121,7 @@ export class ChartHelper {
             }
             const chart = legend.chart;
             chart.setDatasetVisibility(index, !chart.isDatasetVisible(index));
-            moveAverageLine(chart, visibleMonthlyAverage(chart));
+            moveAverageLine(chart, visibleMonthlyAverage(chart, averaged));
             chart.update();
           },
         },
