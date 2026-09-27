@@ -10,7 +10,10 @@
 
 <app-card-wrapper headerTitle="Current Month Spending Table" class="d-block mb-3">
   @if (currentMonthReport.error()) {
-    <app-error-state message="Could not load current month spending." (retry)="currentMonthReport.reload()" />
+    <app-error-state
+      message="Could not load current month spending."
+      (retry)="currentMonthReport.reload()"
+    />
   } @else if (currentMonthReport.value(); as report) {
     <app-current-month-categorized-table [report]="report" />
   } @else {
@@ -20,7 +23,10 @@
 
 <app-card-wrapper headerTitle="Current Month Spending">
   @if (currentMonthReport.error()) {
-    <app-error-state message="Could not load current month spending." (retry)="currentMonthReport.reload()" />
+    <app-error-state
+      message="Could not load current month spending."
+      (retry)="currentMonthReport.reload()"
+    />
   } @else if (currentMonthReport.value(); as report) {
     <app-current-month-categorized-chart [report]="report" />
   } @else {

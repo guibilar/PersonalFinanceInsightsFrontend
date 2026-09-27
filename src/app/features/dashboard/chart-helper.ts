@@ -1,52 +1,76 @@
-import {CategoryColorHelper} from '../../shared/utils/category-color-helper';
-import {
-  Chart,
-  ChartConfiguration,
-  ChartData,
-  LegendItem
-} from 'chart.js';
-import {CategorizedReportOutputDto} from '../../core/models/outputs/categorized-report-output-dto';
+import { Chart, ChartConfiguration, ChartData } from 'chart.js';
+import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
+import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+
+const AVERAGE_COLOR = 'red';
+const AVERAGE_ANNOTATION_ID = 'avgLine';
+
+const currencyFormatter = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
+
+export function formatCurrency(value: number): string {
+  return currencyFormatter.format(value);
+}
+
+/** Average monthly spend across the categories currently visible in the chart. */
+export function visibleMonthlyAverage(chart: Chart): number {
+  const months = chart.data.labels?.length ?? 0;
+  if (months === 0) {
+    return 0;
+  }
+  const total = chart.data.datasets.reduce((sum, dataset, index) => {
+    if (!chart.isDatasetVisible(index)) {
+      return sum;
+    }
+    return sum + (dataset.data as number[]).reduce((datasetSum, value) => datasetSum + value, 0);
+  }, 0);
+  return total / months;
+}
+
+function moveAverageLine(chart: Chart, average: number): void {
+  const annotations = chart.options.plugins?.annotation?.annotations;
+  if (!annotations || Array.isArray(annotations)) {
+    return;
+  }
+  const line = annotations[AVERAGE_ANNOTATION_ID];
+  if (line?.type === 'line') {
+    line.yMin = average;
+    line.yMax = average;
+  }
+}
 
 export class ChartHelper {
-  static generateMonthlySpendingChartConfiguration(apiResponse: CategorizedReportOutputDto): {
+  static generateMonthlySpendingChartConfiguration(report: CategorizedReportOutputDto): {
     chartData: ChartData<'bar'>;
-    chartOptions: ChartConfiguration<'bar'>['options']
+    chartOptions: ChartConfiguration<'bar'>['options'];
   } {
-    const months = apiResponse.monthlyData.map(monthData => monthData.month);
-    const categories = apiResponse.categories;
-
-    const datasets = categories.map(category => {
-      return {
-        label: category,
-        data: apiResponse.monthlyData.map(monthData => monthData.categoryValues[category] || 0),
-        backgroundColor: CategoryColorHelper.getColor(category),
-      };
-    });
-
     const chartData: ChartData<'bar'> = {
-      labels: months,
-      datasets: datasets,
+      labels: report.monthlyData.map((monthData) => monthData.month),
+      datasets: report.categories.map((category) => ({
+        label: category,
+        data: report.monthlyData.map((monthData) => monthData.categoryValues[category] || 0),
+        backgroundColor: CategoryColorHelper.getColor(category),
+      })),
     };
 
-    const totalValues = datasets.reduce((sum, dataset) => {
-      return (
+    // Same formula the legend uses, applied before any category is hidden.
+    const months = report.monthlyData.length;
+    const total = report.monthlyData.reduce(
+      (sum, monthData) =>
         sum +
-        dataset.data.reduce((categorySum, value) => categorySum + value, 0)
-      );
-    }, 0);
-
-    const averageValue = months.length > 0 ? totalValues / months.length : 0;
+        report.categories.reduce(
+          (monthSum, category) => monthSum + (monthData.categoryValues[category] || 0),
+          0,
+        ),
+      0,
+    );
+    const initialAverage = months > 0 ? total / months : 0;
 
     const chartOptions: ChartConfiguration<'bar'>['options'] = {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: {
-          stacked: true,
-        },
-        y: {
-          stacked: true,
-        },
+        x: { stacked: true },
+        y: { stacked: true },
       },
       plugins: {
         legend: {
@@ -54,89 +78,41 @@ export class ChartHelper {
           align: 'start',
           labels: {
             color: '#333',
-            generateLabels: (chart: any) => {
-              const originalGenerateLabels = Chart.defaults.plugins.legend.labels.generateLabels;
-              const labels = originalGenerateLabels(chart);
-
-              labels.push({
-                text: `Avg: ${averageValue.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`,
-                fillStyle: 'red',
-                strokeStyle: 'red',
+            // Category entries plus an extra, non-toggleable "Avg" entry for the average line.
+            generateLabels: (chart) => [
+              ...Chart.defaults.plugins.legend.labels.generateLabels(chart),
+              {
+                text: `Avg: ${formatCurrency(visibleMonthlyAverage(chart))}`,
+                fillStyle: AVERAGE_COLOR,
+                strokeStyle: AVERAGE_COLOR,
                 lineWidth: 2,
-              });
-
-              return labels;
-            },
+              },
+            ],
           },
-          onClick: (
-            event: any,
-            legendItem: LegendItem,
-            legend: any
-          ) => {
+          onClick: (_event, legendItem, legend) => {
+            const index = legendItem.datasetIndex;
+            if (index === undefined) {
+              return; // the "Avg" entry
+            }
             const chart = legend.chart;
-            const datasets = chart.data.datasets;
-
-            if (legendItem.text.startsWith('Avg:')) {
-              return;
-            }
-
-            const dataset = datasets.find(
-              (ds: any) => ds.label === legendItem.text
-            );
-
-            if (dataset) {
-              dataset.hidden = !dataset.hidden;
-            }
-
-            const visibleData = datasets.filter((ds: any) => !ds.hidden);
-
-            const totalSum = visibleData.reduce((sum: number, category: any) => {
-              return sum + category.data.reduce((sum: number, value: number) => sum + value, 0);
-            }, 0);
-
-            const dataPoints = visibleData[0]?.data.length || 0;
-            const newAverageValue = dataPoints > 0 ? totalSum / dataPoints : 0;
-
-            chart.options.plugins.legend.labels.generateLabels = (chart: any) => {
-              const originalGenerateLabels = Chart.defaults.plugins.legend.labels.generateLabels;
-              const labels = originalGenerateLabels(chart);
-
-              labels.push({
-                text: `Avg: ${newAverageValue.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`,
-                fillStyle: 'red',
-                strokeStyle: 'red',
-                lineWidth: 2,
-                hidden: false,
-              });
-
-              return labels;
-            };
-
-            const avgLineAnnotation = chart.options.plugins.annotation.annotations.avgLine as any;
-            if (avgLineAnnotation) {
-              avgLineAnnotation.yMin = newAverageValue;
-              avgLineAnnotation.yMax = newAverageValue;
-            }
-
+            chart.setDatasetVisibility(index, !chart.isDatasetVisible(index));
+            moveAverageLine(chart, visibleMonthlyAverage(chart));
             chart.update();
           },
         },
         tooltip: {
           callbacks: {
-            label: function (context) {
-              let value = context.raw as number;
-              return `${value.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`;
-            }
-          }
+            label: (context) => formatCurrency(context.raw as number),
+          },
         },
         annotation: {
           annotations: {
-            avgLine: {
+            [AVERAGE_ANNOTATION_ID]: {
               type: 'line',
               borderDash: [6, 3],
-              yMin: averageValue,
-              yMax: averageValue,
-              borderColor: 'red',
+              yMin: initialAverage,
+              yMax: initialAverage,
+              borderColor: AVERAGE_COLOR,
               borderWidth: 2,
             },
           },
@@ -144,29 +120,25 @@ export class ChartHelper {
       },
     };
 
-    return {chartData, chartOptions};
+    return { chartData, chartOptions };
   }
 
-  static generateDoughnutChartConfiguration(apiResponse: CategorizedReportOutputDto): {
+  static generateDoughnutChartConfiguration(report: CategorizedReportOutputDto): {
     chartData: ChartData<'doughnut'>;
     chartOptions: ChartConfiguration<'doughnut'>['options'];
   } {
-    const categories = apiResponse.categories ?? [];
-    const firstMonthData = apiResponse.monthlyData[0]?.categoryValues || {};
-    const data = categories.map(category => firstMonthData[category] || 0);
+    const categories = report.categories ?? [];
+    const currentMonth = report.monthlyData[0]?.categoryValues ?? {};
 
     const chartData: ChartData<'doughnut'> = {
       labels: categories,
       datasets: [
         {
-          data: data,
-          backgroundColor: categories.map(category =>
-            CategoryColorHelper.getColor(category)
-          ),
+          data: categories.map((category) => currentMonth[category] || 0),
+          backgroundColor: categories.map((category) => CategoryColorHelper.getColor(category)),
         },
       ],
     };
-
 
     const chartOptions: ChartConfiguration<'doughnut'>['options'] = {
       responsive: true,
@@ -174,17 +146,12 @@ export class ChartHelper {
       plugins: {
         legend: {
           position: 'bottom',
-          labels: {
-            color: '#333',
-          },
+          labels: { color: '#333' },
         },
         tooltip: {
           callbacks: {
-            label: function (context) {
-              let value = context.raw as number;
-              return `${value.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`;
-            }
-          }
+            label: (context) => formatCurrency(context.raw as number),
+          },
         },
       },
     };

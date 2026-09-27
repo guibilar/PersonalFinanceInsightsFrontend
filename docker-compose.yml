@@ -5,4 +5,5 @@ services:
       - "5095:5095"
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      # Address of the FinanceApi backend as seen from this container.
+      - API_UPSTREAM=http://192.168.1.153:5096

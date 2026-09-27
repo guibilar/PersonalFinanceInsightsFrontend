@@ -1,6 +1,6 @@
 export class CategoryColorHelper {
   // Fixed color map for categories
-  private static colorMap: { [key: string]: string } = {
+  private static colorMap: Record<string, string> = {
     Dining: '#1F76B5',
     Entertainment: '#FF7E0F',
     Groceries: '#2CA12D',
@@ -11,7 +11,7 @@ export class CategoryColorHelper {
     Shopping: '#7F7E7E',
     Subscriptions: '#BDBD23',
     Transportation: '#16BFCF',
-    Utilities: '#800080'
+    Utilities: '#800080',
   };
 
   // Get color by category

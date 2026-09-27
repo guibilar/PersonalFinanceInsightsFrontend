@@ -1,18 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { API_BASE_URL } from './api-config';
 import { BudgetInputDto } from '../models/inputs/budget-input-dto';
 import { BudgetFilterInputDto } from '../models/inputs/budget-filter-input-dto';
 import { BudgetOutputDto } from '../models/outputs/budget-output-dto';
 import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BudgetRepository {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl: string = `${environment.apiUrl}/Budget`;
+  private readonly baseUrl: string = `${API_BASE_URL}/Budget`;
 
   create(budgetDto: BudgetInputDto): Observable<void> {
     return this.http.post<void>(this.baseUrl, budgetDto);

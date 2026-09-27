@@ -6,6 +6,6 @@ import { NavigationComponent } from './core/layout/navigation/navigation.compone
   selector: 'app-root',
   imports: [RouterOutlet, NavigationComponent],
   templateUrl: './app.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {}

@@ -1,35 +1,20 @@
-# Stage 1: Build the Angular application
-FROM node:20-alpine AS build-stage
-
-# Set the working directory
+# Stage 1: build the Angular application
+FROM node:22-alpine AS build
 WORKDIR /app
 
-# Install Angular CLI globally to ensure we can build the Angular app
-RUN npm install -g @angular/cli@20.3.3
-
-# Copy package.json and package-lock.json for dependency installation
-COPY package*.json ./
-
-# Install dependencies
+COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy the rest of the application source code to the container
 COPY . .
+RUN npm run build
 
-# Debug and verify Angular build process
-RUN ng version && ng build --configuration production
+# Stage 2: serve with nginx
+FROM nginx:1.27-alpine
 
-# Stage 2: Serve the application using nginx
-FROM nginx:1.25-alpine AS production-stage
+# Backend base URL, without a path (requests keep their /api prefix).
+ENV API_UPSTREAM=http://backend:5096
 
-# Copy built files from the build stage to the nginx HTML folder
-COPY --from=build-stage /app/dist/PersonalFinancesFrontend/ /usr/share/nginx/html/
+COPY docker/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist/PersonalFinancesFrontend/browser/ /usr/share/nginx/html/
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Expose port 5095 to serve the application
 EXPOSE 5095
-
-# Start nginx when the container starts
-CMD ["nginx", "-g", "daemon off;"]

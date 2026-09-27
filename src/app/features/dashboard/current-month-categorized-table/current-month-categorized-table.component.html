@@ -15,7 +15,7 @@
       }
       <tr class="fw-bold">
         <td>Total</td>
-        <td>{{ (currentMonth()?.total ?? 0) | currency }}</td>
+        <td>{{ currentMonth()?.total ?? 0 | currency }}</td>
       </tr>
     </tbody>
   </table>

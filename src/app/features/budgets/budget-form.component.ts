@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
@@ -11,27 +19,27 @@ const NOT_BLANK = Validators.pattern(/\S/);
   selector: 'app-budget-form',
   imports: [FormCardComponent, ReactiveFormsModule],
   templateUrl: './budget-form.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BudgetFormComponent implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly budget = input<BudgetOutputDto | null>(null);
   readonly submitBudget = output<BudgetInputDto>();
-  readonly cancel = output<void>();
+  readonly cancelled = output<void>();
 
   readonly isEditing = computed(() => this.budget() !== null);
 
   readonly statusOptions = [
     { value: Status.Active, label: 'Active' },
-    { value: Status.Inactive, label: 'Inactive' }
+    { value: Status.Inactive, label: 'Inactive' },
   ];
 
   readonly form = this.fb.group({
     name: ['', [Validators.required, NOT_BLANK]],
     description: ['', [Validators.required, NOT_BLANK]],
     amount: [0, [Validators.required, Validators.min(0.01)]],
-    status: [Status.Active, Validators.required]
+    status: [Status.Active, Validators.required],
   });
 
   ngOnInit(): void {
@@ -41,7 +49,7 @@ export class BudgetFormComponent implements OnInit {
         name: budget.name,
         description: budget.description,
         amount: budget.totalAmount,
-        status: budget.status
+        status: budget.status,
       });
     }
   }
@@ -62,7 +70,7 @@ export class BudgetFormComponent implements OnInit {
       name: value.name.trim(),
       description: value.description.trim(),
       amount: value.amount,
-      status: value.status
+      status: value.status,
     });
   }
 }

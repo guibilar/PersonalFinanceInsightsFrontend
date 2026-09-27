@@ -9,7 +9,7 @@ import {
   DoughnutController,
   Legend,
   LinearScale,
-  Tooltip
+  Tooltip,
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { CardWrapperComponent } from '../../shared/ui/card-wrapper/card-wrapper.component';
@@ -30,7 +30,7 @@ Chart.register(
   DoughnutController,
   Tooltip,
   Legend,
-  annotationPlugin
+  annotationPlugin,
 );
 
 @Component({
@@ -41,20 +41,20 @@ Chart.register(
     CurrentMonthCategorizedTableComponent,
     CurrentMonthCategorizedChartComponent,
     LoaderComponent,
-    ErrorStateComponent
+    ErrorStateComponent,
   ],
   templateUrl: './dashboard.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
   private readonly reportsRepository = inject(ReportsRepository);
 
   readonly monthlyReport = rxResource({
-    stream: () => this.reportsRepository.getMonthlyCategorizedGraph()
+    stream: () => this.reportsRepository.getMonthlyCategorizedGraph(),
   });
 
   // Fetched once and shared by the table and the doughnut chart.
   readonly currentMonthReport = rxResource({
-    stream: () => this.reportsRepository.getCurrentMonthCategorizedGraph()
+    stream: () => this.reportsRepository.getCurrentMonthCategorizedGraph(),
   });
 }

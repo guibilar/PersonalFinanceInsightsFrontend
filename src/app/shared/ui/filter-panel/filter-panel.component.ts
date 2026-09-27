@@ -15,12 +15,14 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         </div>
         <div class="d-flex gap-2 mt-3">
           <button type="submit" class="btn btn-success">Apply Filter</button>
-          <button type="button" class="btn btn-outline-secondary" (click)="clear.emit()">Clear</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="clear.emit()">
+            Clear
+          </button>
         </div>
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterPanelComponent {
   readonly title = input('Filters');

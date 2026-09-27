@@ -1,18 +1,29 @@
 @if (enabledFilters().length > 0) {
   <form [formGroup]="form" (ngSubmit)="applyFilter()">
     <app-filter-panel (clear)="clearFilter()">
-
       @if (isFilterEnabled('transactionId')) {
         <div class="col-12 col-md-6">
           <label for="tx-filter-id" class="form-label">Transaction ID</label>
-          <input type="text" class="form-control" id="tx-filter-id" formControlName="transactionId" placeholder="Enter transaction ID">
+          <input
+            type="text"
+            class="form-control"
+            id="tx-filter-id"
+            formControlName="transactionId"
+            placeholder="Enter transaction ID"
+          />
         </div>
       }
 
       @if (isFilterEnabled('description')) {
         <div class="col-12 col-md-6">
           <label for="tx-filter-description" class="form-label">Description</label>
-          <input type="text" class="form-control" id="tx-filter-description" formControlName="description" placeholder="Search description">
+          <input
+            type="text"
+            class="form-control"
+            id="tx-filter-description"
+            formControlName="description"
+            placeholder="Search description"
+          />
         </div>
       }
 
@@ -38,8 +49,11 @@
                 class="form-check-input"
                 [id]="'tx-filter-account-' + accountType"
                 [checked]="isAccountTypeSelected(accountType)"
-                (change)="onAccountTypeChange(accountType, $any($event.target).checked)">
-              <label class="form-check-label" [for]="'tx-filter-account-' + accountType">{{ accountType }}</label>
+                (change)="onAccountTypeChange(accountType, $any($event.target).checked)"
+              />
+              <label class="form-check-label" [for]="'tx-filter-account-' + accountType">{{
+                accountType
+              }}</label>
             </div>
           }
         </div>
@@ -60,21 +74,32 @@
       @if (isFilterEnabled('startDate')) {
         <div class="col-12 col-md-6">
           <label for="tx-filter-start" class="form-label">Start Date</label>
-          <input type="date" class="form-control" id="tx-filter-start" formControlName="startDate">
+          <input
+            type="date"
+            class="form-control"
+            id="tx-filter-start"
+            formControlName="startDate"
+          />
         </div>
       }
 
       @if (isFilterEnabled('endDate')) {
         <div class="col-12 col-md-6">
           <label for="tx-filter-end" class="form-label">End Date</label>
-          <input type="date" class="form-control" id="tx-filter-end" formControlName="endDate">
+          <input type="date" class="form-control" id="tx-filter-end" formControlName="endDate" />
         </div>
       }
 
       @if (isFilterEnabled('budgetId')) {
         <div class="col-12 col-md-6">
           <label for="tx-filter-budget" class="form-label">Budget ID</label>
-          <input type="text" class="form-control" id="tx-filter-budget" formControlName="budgetId" placeholder="Enter budget ID">
+          <input
+            type="text"
+            class="form-control"
+            id="tx-filter-budget"
+            formControlName="budgetId"
+            placeholder="Enter budget ID"
+          />
         </div>
       }
 
@@ -88,7 +113,6 @@
           </select>
         </div>
       }
-
     </app-filter-panel>
   </form>
 }
