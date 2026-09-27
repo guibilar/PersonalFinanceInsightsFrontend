@@ -16,6 +16,14 @@ The app calls a relative `/api`. During development, `ng serve` forwards it to t
 backend using [`proxy.conf.json`](proxy.conf.json); change the target there if your
 backend runs elsewhere.
 
+## Signing in
+
+Every page except `/login` needs a signed-in user. The API keeps the session in an HttpOnly cookie,
+so the app never handles a token: it asks `GET /api/Auth/me` who is signed in, and any other 401 from
+the API sends you back to `/login` (returning to the same page afterwards). This relies on the app and
+the API sharing an origin, which the dev proxy and the nginx proxy both provide. Against a local API in
+Development, sign in as `dev` / `development-only`.
+
 ## Scripts
 
 | Command                | What it does                                    |

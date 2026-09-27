@@ -17,10 +17,11 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the navigation', () => {
+  it('hosts the pages and the toasts (the sidebar layout is a route, behind sign-in)', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.sidebar .brand')?.textContent).toContain('Personal Finances');
+    expect(compiled.querySelector('router-outlet')).not.toBeNull();
+    expect(compiled.querySelector('app-toast-container')).not.toBeNull();
   });
 });

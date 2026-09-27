@@ -1,0 +1,76 @@
+<main class="login-page">
+  <div class="login-card card">
+    <div class="card-body p-4 p-sm-5">
+      <div class="brand mb-4">
+        <span class="brand-mark"><app-icon name="logo" [size]="20" /></span>
+        Personal Finances
+      </div>
+      <h1 class="h4 mb-1">Sign in</h1>
+      <p class="text-body-secondary mb-4">to see your spending and budgets</p>
+
+      @if (sessionEnded && !error()) {
+        <div class="alert alert-warning py-2 small" role="status">
+          Your session ended. Sign in again to continue.
+        </div>
+      }
+      @if (error(); as message) {
+        <div class="alert alert-danger py-2 small" role="alert">{{ message }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="mb-3">
+          <label for="login-username" class="form-label">Username</label>
+          <input
+            id="login-username"
+            type="text"
+            class="form-control"
+            formControlName="username"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            [class.is-invalid]="form.controls.username.invalid && form.controls.username.touched"
+          />
+          <div class="invalid-feedback">Enter your username.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="login-password" class="form-label">Password</label>
+          <div class="input-group has-validation">
+            <input
+              id="login-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="form-control"
+              formControlName="password"
+              autocomplete="current-password"
+              [class.is-invalid]="form.controls.password.invalid && form.controls.password.touched"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              [attr.aria-pressed]="showPassword()"
+              (click)="showPassword.set(!showPassword())"
+            >
+              <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="16" />
+            </button>
+            <div class="invalid-feedback">Enter your password.</div>
+          </div>
+        </div>
+
+        <div class="form-check mb-4">
+          <input
+            id="login-remember"
+            type="checkbox"
+            class="form-check-input"
+            formControlName="rememberMe"
+          />
+          <label for="login-remember" class="form-check-label">Keep me signed in</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" [disabled]="submitting()">
+          {{ submitting() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</main>

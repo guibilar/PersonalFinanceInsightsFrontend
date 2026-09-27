@@ -1,7 +1,10 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ShellComponent } from './shell.component';
+import { AuthService } from '../../auth/auth.service';
 
 describe('ShellComponent', () => {
   beforeEach(() => {
@@ -10,7 +13,12 @@ describe('ShellComponent', () => {
       imports: [ShellComponent],
       providers: [
         provideZonelessChangeDetection(),
-        provideRouter([{ path: 'budgets', children: [] }]),
+        provideRouter([
+          { path: 'budgets', children: [] },
+          { path: 'login', children: [] },
+        ]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     });
   });
@@ -43,5 +51,39 @@ describe('ShellComponent', () => {
     await TestBed.inject(Router).navigateByUrl('/budgets');
 
     expect(fixture.componentInstance.mobileOpen()).toBeFalse();
+  });
+
+  it('shows who is signed in and signs out', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const auth = TestBed.inject(AuthService);
+    const loaded = auth.ensureLoaded();
+    http.expectOne('/api/Auth/me').flush({ username: 'alex' });
+    await loaded;
+    const fixture = TestBed.createComponent(ShellComponent);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.signed-in-as')?.textContent).toContain('alex');
+
+    const signOut = Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+      b.textContent?.includes('Sign out'),
+    )!;
+    signOut.click();
+    http.expectOne({ method: 'POST', url: '/api/Auth/logout' }).flush(null);
+    await fixture.whenStable();
+
+    expect(auth.user()).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/login');
+    http.verify();
+  });
+
+  it('opens the change-password panel', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    fixture.componentInstance.changingPassword.set(true);
+    await fixture.whenStable();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('app-change-password-form'),
+    ).not.toBeNull();
   });
 });

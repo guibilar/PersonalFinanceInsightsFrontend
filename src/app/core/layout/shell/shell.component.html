@@ -62,6 +62,35 @@
   </ul>
 
   <div class="sidebar-footer">
+    @if (auth.user(); as user) {
+      <div
+        class="nav-item signed-in-as"
+        [attr.title]="collapsed() ? 'Signed in as ' + user.username : null"
+      >
+        <app-icon name="user" />
+        <span class="label text-truncate">
+          <span class="visually-hidden">Signed in as </span>{{ user.username }}
+        </span>
+      </div>
+    }
+    <button
+      type="button"
+      class="nav-item"
+      (click)="changingPassword.set(true)"
+      [attr.title]="collapsed() ? 'Change password' : null"
+    >
+      <app-icon name="key" />
+      <span class="label">Change password</span>
+    </button>
+    <button
+      type="button"
+      class="nav-item"
+      (click)="signOut()"
+      [attr.title]="collapsed() ? 'Sign out' : null"
+    >
+      <app-icon name="log-out" />
+      <span class="label">Sign out</span>
+    </button>
     <button
       type="button"
       class="nav-item"
@@ -92,4 +121,11 @@
   </div>
 </main>
 
-<app-toast-container />
+@if (changingPassword()) {
+  <app-side-panel title="Change password" (closed)="changingPassword.set(false)">
+    <app-change-password-form
+      (changed)="onPasswordChanged()"
+      (cancelled)="changingPassword.set(false)"
+    />
+  </app-side-panel>
+}
