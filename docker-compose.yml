@@ -1,9 +1,43 @@
+# Copy .env.example to .env and set TS_AUTHKEY, then `docker compose up --build`.
+# Start the backend project first: it creates the "finance" network joined below.
 services:
   angular-app:
     build: .
-    ports:
-      - "5095:5095"
     restart: unless-stopped
     environment:
-      # Address of the FinanceApi backend as seen from this container.
-      - API_UPSTREAM=http://192.168.1.153:5096
+      # The API container, by name, on the shared "finance" network.
+      API_UPSTREAM: ${API_UPSTREAM:-http://personal-finance-api:8080}
+    # This machine only (e.g. `curl http://localhost:5095`); everyone else comes in over HTTPS
+    # through the tailscale service below.
+    ports:
+      - "127.0.0.1:5095:5095"
+    networks:
+      - default
+      - finance
+
+  # Joins your tailnet as its own machine and serves https://<TS_HOSTNAME>.<tailnet>.ts.net with a
+  # certificate Tailscale issues and renews, forwarding to nginx (tailscale/serve.json). Reachable only
+  # from your tailnet devices: nothing is opened on the router or published on the LAN.
+  tailscale:
+    image: tailscale/tailscale:stable
+    hostname: ${TS_HOSTNAME:-finance}
+    restart: unless-stopped
+    environment:
+      # Only needed for the first start; the login is then kept in the tailscale_state volume.
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+      # No kernel TUN device or extra privileges needed.
+      TS_USERSPACE: "true"
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+      - ./tailscale:/config:ro
+    depends_on:
+      - angular-app
+
+networks:
+  finance:
+    external: true
+
+volumes:
+  tailscale_state:
