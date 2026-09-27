@@ -90,6 +90,11 @@ export class TransactionListComponent {
   readonly savingEdit = signal(false);
   readonly confirmingRules = signal(false);
   readonly applyingRules = signal(false);
+  /** Asked to delete; the confirm dialog is showing. */
+  readonly deletingTransaction = signal<TransactionOutputDto | null>(null);
+  readonly removing = signal(false);
+  /** Deleted transactions are listed instead of the others, each with a Restore button. */
+  readonly showDeleted = computed(() => !!this.filter().hidden);
 
   readonly transactions = rxResource({
     params: () => this.filter(),
@@ -110,11 +115,21 @@ export class TransactionListComponent {
   protected readonly TransactionType = TransactionType;
 
   onCriteriaChange(criteria: TransactionCriteria): void {
-    this.filter.update(({ pageSize, sortBy, sortDirection }) => ({
+    this.filter.update(({ pageSize, sortBy, sortDirection, hidden }) => ({
       ...criteria,
       pageSize,
       sortBy,
       sortDirection,
+      hidden,
+      page: 1,
+    }));
+  }
+
+  /** Switches between the transactions and the deleted ones, keeping search and sort. */
+  toggleDeleted(): void {
+    this.filter.update((filter) => ({
+      ...filter,
+      hidden: filter.hidden ? undefined : true,
       page: 1,
     }));
   }
@@ -228,6 +243,36 @@ export class TransactionListComponent {
         this.applyingRules.set(false);
         this.toasts.error('Could not apply the category rules.');
       },
+    });
+  }
+
+  confirmDelete(): void {
+    const transaction = this.deletingTransaction();
+    if (!transaction || this.removing()) return;
+    this.removing.set(true);
+    this.transactionRepository.remove(transaction.id).subscribe({
+      next: () => {
+        this.removing.set(false);
+        this.deletingTransaction.set(null);
+        this.editingTransaction.set(null);
+        this.transactions.reload();
+        this.toasts.success(`Deleted “${transaction.description}”`);
+      },
+      error: () => {
+        this.removing.set(false);
+        this.deletingTransaction.set(null);
+        this.toasts.error('Could not delete the transaction.');
+      },
+    });
+  }
+
+  restore(transaction: TransactionOutputDto): void {
+    this.transactionRepository.restore(transaction.id).subscribe({
+      next: () => {
+        this.transactions.reload();
+        this.toasts.success(`Restored “${transaction.description}”`);
+      },
+      error: () => this.toasts.error('Could not restore the transaction.'),
     });
   }
 

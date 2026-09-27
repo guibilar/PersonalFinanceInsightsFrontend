@@ -14,6 +14,8 @@ export interface TransactionFilterInputDto {
   description?: string;
   category?: Category;
   budgetId?: string;
+  /** True: only deleted (hidden) transactions, to restore one. Otherwise only visible ones. */
+  hidden?: boolean;
   /** Defaults to Date, Descending (newest first) in the API. */
   sortBy?: TransactionSortField;
   sortDirection?: SortDirection;

@@ -21,6 +21,8 @@ export class TransactionEditForm implements OnInit {
   readonly saving = input(false);
   readonly submitUpdate = output<TransactionUpdateInputDto>();
   readonly cancelled = output<void>();
+  /** The parent asks for confirmation, then deletes. */
+  readonly deleteRequested = output<void>();
 
   readonly categories = Object.values(Category);
 

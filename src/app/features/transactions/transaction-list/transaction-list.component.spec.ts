@@ -146,6 +146,68 @@ describe('TransactionListComponent', () => {
       expect(component.savingEdit()).toBe(false);
     });
 
+    it('deletes only after confirming, then closes the panel and reloads', () => {
+      const toasts = TestBed.inject(ToastService);
+      component.editingTransaction.set(coffee);
+      component.deletingTransaction.set(coffee);
+      http.expectNone({ method: 'DELETE' });
+
+      component.confirmDelete();
+      component.confirmDelete(); // a double click sends one request
+      http.expectOne({ method: 'DELETE', url: '/api/Transaction/t1' }).flush(null);
+
+      expect(component.deletingTransaction()).toBeNull();
+      expect(component.editingTransaction()).toBeNull();
+      lastFilterRequest();
+      expect(toasts.toasts().map((t) => t.message)).toEqual(['Deleted “COFFEE”']);
+    });
+
+    it('keeps the transaction when deleting fails', () => {
+      component.editingTransaction.set(coffee);
+      component.deletingTransaction.set(coffee);
+
+      component.confirmDelete();
+      http
+        .expectOne({ method: 'DELETE', url: '/api/Transaction/t1' })
+        .flush(null, { status: 500, statusText: 'Error' });
+
+      expect(component.editingTransaction()).toEqual(coffee);
+      expect(component.removing()).toBe(false);
+      expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
+        expect.objectContaining({ kind: 'error' }),
+      );
+    });
+
+    it('lists deleted transactions, keeping search and sort, and restores one', async () => {
+      component.sort('Amount');
+      lastFilterRequest();
+      component.toggleDeleted();
+      expect(lastFilterRequest()).toEqual(
+        expect.objectContaining({ hidden: true, sortBy: 'Amount', page: 1 }),
+      );
+      expect(component.showDeleted()).toBe(true);
+
+      component.onCriteriaChange({ description: 'coffee' });
+      expect(lastFilterRequest()).toEqual(
+        expect.objectContaining({ hidden: true, description: 'coffee' }),
+      );
+      await fixture.whenStable();
+
+      component.restore({ ...coffee, hidden: true });
+      http.expectOne({ method: 'POST', url: '/api/Transaction/t1/Restore' }).flush(null);
+      lastFilterRequest();
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(['Restored “COFFEE”']);
+      await fixture.whenStable();
+
+      component.toggleDeleted();
+      expect(lastFilterRequest().hidden).toBeUndefined();
+      expect(component.showDeleted()).toBe(false);
+    });
+
     it('applies the category rules after confirming and reports what changed', () => {
       component.confirmingRules.set(true);
 

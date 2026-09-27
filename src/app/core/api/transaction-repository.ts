@@ -42,6 +42,18 @@ export class TransactionRepository {
     return this.http.post<CategoryRulesResultOutputDto>(`${this.baseUrl}/ApplyCategoryRules`, null);
   }
 
+  /**
+   * Deletes a transaction from lists, reports and budgets. The API keeps it hidden, so re-importing its
+   * statement doesn't add it back, and {@link restore} undoes it.
+   */
+  remove(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  restore(id: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/Restore`, null);
+  }
+
   filter(filterDto: TransactionFilterInputDto): Observable<PaginatedResult<TransactionOutputDto>> {
     return this.http.post<PaginatedResult<TransactionOutputDto>>(
       `${this.baseUrl}/Filter`,
