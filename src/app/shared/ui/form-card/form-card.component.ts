@@ -12,7 +12,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormCardComponent {
   readonly title = input.required<string>();

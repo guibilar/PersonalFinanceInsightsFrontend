@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import { CategorizedReportOutputDto } from '../models/outputs/categorized-report-output-dto';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ReportsRepository {
   private readonly http = inject(HttpClient);
@@ -16,6 +16,8 @@ export class ReportsRepository {
   }
 
   getCurrentMonthCategorizedGraph(): Observable<CategorizedReportOutputDto> {
-    return this.http.get<CategorizedReportOutputDto>(`${this.baseUrl}/current-month-categorized-graph`);
+    return this.http.get<CategorizedReportOutputDto>(
+      `${this.baseUrl}/current-month-categorized-graph`,
+    );
   }
 }

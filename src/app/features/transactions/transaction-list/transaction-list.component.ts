@@ -12,7 +12,10 @@ import { CategoryColorHelper } from '../../../shared/utils/category-color-helper
 import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
 import { LoaderComponent } from '../../../shared/ui/loader/loader.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
-import { FilterField, TransactionFilterComponent } from '../transaction-filter/transaction-filter.component';
+import {
+  FilterField,
+  TransactionFilterComponent,
+} from '../transaction-filter/transaction-filter.component';
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
 
 @Component({
@@ -25,15 +28,21 @@ import { TransactionLinkForm } from '../transaction-link-form/transaction-link-f
     TransactionFilterComponent,
     TransactionLinkForm,
     LoaderComponent,
-    ErrorStateComponent
+    ErrorStateComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionListComponent {
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly budgetRepository = inject(BudgetRepository);
 
-  readonly enabledFilters: FilterField[] = ['pageSize', 'startDate', 'endDate', 'category', 'description'];
+  readonly enabledFilters: FilterField[] = [
+    'pageSize',
+    'startDate',
+    'endDate',
+    'category',
+    'description',
+  ];
 
   readonly filter = signal<TransactionFilterInputDto>({ page: 1, pageSize: 10 });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
@@ -41,12 +50,12 @@ export class TransactionListComponent {
 
   readonly transactions = rxResource({
     params: () => this.filter(),
-    stream: ({ params }) => this.transactionRepository.filter(params)
+    stream: ({ params }) => this.transactionRepository.filter(params),
   });
 
   // Link dropdown needs every active budget, not just the first page.
   private readonly activeBudgetsResource = rxResource({
-    stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 })
+    stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 }),
   });
   readonly activeBudgets = computed(() => this.activeBudgetsResource.value()?.items ?? []);
 
@@ -74,14 +83,14 @@ export class TransactionListComponent {
         this.linkingTransaction.set(null);
         this.transactions.reload();
       },
-      error: () => this.actionError.set('Could not link the transaction.')
+      error: () => this.actionError.set('Could not link the transaction.'),
     });
   }
 
   onUnlinkSubmit(id: string): void {
     this.transactionRepository.unlinkTransaction(id).subscribe({
       next: () => this.transactions.reload(),
-      error: () => this.actionError.set('Could not unlink the transaction.')
+      error: () => this.actionError.set('Could not unlink the transaction.'),
     });
   }
 

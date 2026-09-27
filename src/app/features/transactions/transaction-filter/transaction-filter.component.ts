@@ -1,14 +1,14 @@
-import {ChangeDetectionStrategy, Component, effect, inject, input, output} from '@angular/core';
-import {NonNullableFormBuilder, ReactiveFormsModule} from '@angular/forms';
-import {TransactionFilterInputDto} from '../../../core/models/inputs/transaction-filter-input-dto';
-import {TransactionType} from '../../../core/models/enums/transaction-type';
-import {AccountType} from '../../../core/models/enums/account-type';
-import {Category} from '../../../core/models/enums/category';
-import {PAGE_SIZE_OPTIONS} from '../../../shared/utils/page-size-options';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
+import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
+import { TransactionType } from '../../../core/models/enums/transaction-type';
+import { AccountType } from '../../../core/models/enums/account-type';
+import { Category } from '../../../core/models/enums/category';
+import { PAGE_SIZE_OPTIONS } from '../../../shared/utils/page-size-options';
 import { FilterPanelComponent } from '../../../shared/ui/filter-panel/filter-panel.component';
 
 export type FilterField =
-  'description'
+  | 'description'
   | 'transactionType'
   | 'category'
   | 'accountTypes'
@@ -22,7 +22,7 @@ export type FilterField =
   selector: 'app-transaction-filter',
   imports: [FilterPanelComponent, ReactiveFormsModule],
   templateUrl: './transaction-filter.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionFilterComponent {
   private readonly fb = inject(NonNullableFormBuilder);
@@ -46,7 +46,7 @@ export class TransactionFilterComponent {
     startDate: '',
     endDate: '',
     budgetId: '',
-    pageSize: 10
+    pageSize: 10,
   });
 
   constructor() {
@@ -61,7 +61,7 @@ export class TransactionFilterComponent {
         startDate: filter.startDate ?? '',
         endDate: filter.endDate ?? '',
         budgetId: filter.budgetId ?? '',
-        pageSize: filter.pageSize
+        pageSize: filter.pageSize,
       });
     });
   }
@@ -92,7 +92,7 @@ export class TransactionFilterComponent {
       endDate: value.endDate || undefined,
       budgetId: value.budgetId.trim() || undefined,
       page: this.filter().page,
-      pageSize: value.pageSize
+      pageSize: value.pageSize,
     });
   }
 
@@ -107,11 +107,9 @@ export class TransactionFilterComponent {
       ['category', () => controls.category.reset()],
       ['startDate', () => controls.startDate.reset()],
       ['endDate', () => controls.endDate.reset()],
-      ['budgetId', () => controls.budgetId.reset()]
+      ['budgetId', () => controls.budgetId.reset()],
     ];
-    clearable
-      .filter(([field]) => this.isFilterEnabled(field))
-      .forEach(([, reset]) => reset());
+    clearable.filter(([field]) => this.isFilterEnabled(field)).forEach(([, reset]) => reset());
 
     this.applyFilter();
   }

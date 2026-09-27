@@ -11,7 +11,7 @@ export class CategoryColorHelper {
     Shopping: '#7F7E7E',
     Subscriptions: '#BDBD23',
     Transportation: '#16BFCF',
-    Utilities: '#800080'
+    Utilities: '#800080',
   };
 
   // Get color by category

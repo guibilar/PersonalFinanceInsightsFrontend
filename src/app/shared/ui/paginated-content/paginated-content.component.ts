@@ -4,7 +4,7 @@ import {
   TemplateRef,
   computed,
   input,
-  output
+  output,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { PaginatedResult } from '../../../core/models/outputs/paginated-result-output-dto';
@@ -18,7 +18,7 @@ export interface PaginatedContentContext<T> {
   selector: 'app-paginated-content',
   templateUrl: './paginated-content.component.html',
   imports: [NgTemplateOutlet],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaginatedContentComponent<T> {
   readonly data = input<PaginatedResult<T>>();

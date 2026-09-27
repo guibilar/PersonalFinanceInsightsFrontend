@@ -9,7 +9,7 @@ import { FilterPanelComponent } from '../../shared/ui/filter-panel/filter-panel.
   selector: 'app-budget-filter',
   imports: [FilterPanelComponent, ReactiveFormsModule],
   templateUrl: './budget-filter.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BudgetFilterComponent {
   private readonly fb = inject(NonNullableFormBuilder);
@@ -20,7 +20,7 @@ export class BudgetFilterComponent {
   readonly statusOptions = [
     { value: null, label: 'All' },
     { value: Status.Active, label: 'Active' },
-    { value: Status.Inactive, label: 'Inactive' }
+    { value: Status.Inactive, label: 'Inactive' },
   ];
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
 
@@ -29,7 +29,7 @@ export class BudgetFilterComponent {
     name: '',
     description: '',
     status: this.fb.control<Status | null>(null),
-    pageSize: 10
+    pageSize: 10,
   });
 
   constructor() {
@@ -39,7 +39,7 @@ export class BudgetFilterComponent {
         name: filter.name ?? '',
         description: filter.description ?? '',
         status: filter.status ?? null,
-        pageSize: filter.pageSize
+        pageSize: filter.pageSize,
       });
     });
   }
@@ -51,7 +51,7 @@ export class BudgetFilterComponent {
       description: description.trim() || undefined,
       status: status ?? undefined,
       page: this.filter().page,
-      pageSize
+      pageSize,
     });
   }
 

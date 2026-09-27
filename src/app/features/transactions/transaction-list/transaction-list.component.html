@@ -9,14 +9,16 @@
     [transaction]="transaction"
     [budgets]="activeBudgets()"
     (submitTransaction)="onFormSubmit($event)"
-    (cancel)="onFormCancel()">
+    (cancel)="onFormCancel()"
+  >
   </app-transaction-link-form>
 }
 
 <app-transaction-filter
   [enabledFilters]="enabledFilters"
   [filter]="filter()"
-  (filterChange)="onFilterChange($event)">
+  (filterChange)="onFilterChange($event)"
+>
 </app-transaction-filter>
 
 @if (transactions.error()) {
@@ -27,7 +29,8 @@
   <app-paginated-content
     [data]="transactions.value()"
     [contentTemplate]="transactionTemplate"
-    (pageChange)="onPageChange($event)">
+    (pageChange)="onPageChange($event)"
+  >
   </app-paginated-content>
 }
 
@@ -40,10 +43,14 @@
       <div class="col">
         <div class="card h-100 shadow-sm">
           <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <span class="small fw-medium text-body-secondary">{{ transaction.date | date:'dd/MM/yyyy' }}</span>
-            <span class="fs-5 fw-bold"
-                  [class.text-danger]="transaction.transactionType === TransactionType.Debit"
-                  [class.text-success]="transaction.transactionType === TransactionType.Credit">
+            <span class="small fw-medium text-body-secondary">{{
+              transaction.date | date: 'dd/MM/yyyy'
+            }}</span>
+            <span
+              class="fs-5 fw-bold"
+              [class.text-danger]="transaction.transactionType === TransactionType.Debit"
+              [class.text-success]="transaction.transactionType === TransactionType.Credit"
+            >
               {{ transaction.amount | currency }}
             </span>
           </div>
@@ -55,7 +62,10 @@
                 <dd class="col-7 text-end fw-semibold mb-1">{{ transaction.budget.name }}</dd>
               }
               <dt class="col-5 fw-medium text-body-secondary">Category</dt>
-              <dd class="col-7 text-end fw-semibold mb-1" [style.color]="getCategoryColor(transaction.category)">
+              <dd
+                class="col-7 text-end fw-semibold mb-1"
+                [style.color]="getCategoryColor(transaction.category)"
+              >
                 {{ transaction.category }}
               </dd>
               <dt class="col-5 fw-medium text-body-secondary">Account</dt>
@@ -65,9 +75,21 @@
             </dl>
             <div class="mt-auto">
               @if (!transaction.budget) {
-                <button type="button" class="btn btn-sm btn-secondary" (click)="onLinkingTransaction(transaction)">Link</button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-secondary"
+                  (click)="onLinkingTransaction(transaction)"
+                >
+                  Link
+                </button>
               } @else {
-                <button type="button" class="btn btn-sm btn-outline-danger" (click)="onUnlinkSubmit(transaction.id)">Unlink</button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="onUnlinkSubmit(transaction.id)"
+                >
+                  Unlink
+                </button>
               }
             </div>
           </div>

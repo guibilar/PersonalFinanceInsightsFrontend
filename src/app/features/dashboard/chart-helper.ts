@@ -1,24 +1,19 @@
-import {CategoryColorHelper} from '../../shared/utils/category-color-helper';
-import {
-  Chart,
-  ChartConfiguration,
-  ChartData,
-  LegendItem
-} from 'chart.js';
-import {CategorizedReportOutputDto} from '../../core/models/outputs/categorized-report-output-dto';
+import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
+import { Chart, ChartConfiguration, ChartData, LegendItem } from 'chart.js';
+import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 
 export class ChartHelper {
   static generateMonthlySpendingChartConfiguration(apiResponse: CategorizedReportOutputDto): {
     chartData: ChartData<'bar'>;
-    chartOptions: ChartConfiguration<'bar'>['options']
+    chartOptions: ChartConfiguration<'bar'>['options'];
   } {
-    const months = apiResponse.monthlyData.map(monthData => monthData.month);
+    const months = apiResponse.monthlyData.map((monthData) => monthData.month);
     const categories = apiResponse.categories;
 
-    const datasets = categories.map(category => {
+    const datasets = categories.map((category) => {
       return {
         label: category,
-        data: apiResponse.monthlyData.map(monthData => monthData.categoryValues[category] || 0),
+        data: apiResponse.monthlyData.map((monthData) => monthData.categoryValues[category] || 0),
         backgroundColor: CategoryColorHelper.getColor(category),
       };
     });
@@ -29,10 +24,7 @@ export class ChartHelper {
     };
 
     const totalValues = datasets.reduce((sum, dataset) => {
-      return (
-        sum +
-        dataset.data.reduce((categorySum, value) => categorySum + value, 0)
-      );
+      return sum + dataset.data.reduce((categorySum, value) => categorySum + value, 0);
     }, 0);
 
     const averageValue = months.length > 0 ? totalValues / months.length : 0;
@@ -59,7 +51,7 @@ export class ChartHelper {
               const labels = originalGenerateLabels(chart);
 
               labels.push({
-                text: `Avg: ${averageValue.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`,
+                text: `Avg: ${averageValue.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`,
                 fillStyle: 'red',
                 strokeStyle: 'red',
                 lineWidth: 2,
@@ -68,11 +60,7 @@ export class ChartHelper {
               return labels;
             },
           },
-          onClick: (
-            event: any,
-            legendItem: LegendItem,
-            legend: any
-          ) => {
+          onClick: (event: any, legendItem: LegendItem, legend: any) => {
             const chart = legend.chart;
             const datasets = chart.data.datasets;
 
@@ -80,9 +68,7 @@ export class ChartHelper {
               return;
             }
 
-            const dataset = datasets.find(
-              (ds: any) => ds.label === legendItem.text
-            );
+            const dataset = datasets.find((ds: any) => ds.label === legendItem.text);
 
             if (dataset) {
               dataset.hidden = !dataset.hidden;
@@ -102,7 +88,7 @@ export class ChartHelper {
               const labels = originalGenerateLabels(chart);
 
               labels.push({
-                text: `Avg: ${newAverageValue.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`,
+                text: `Avg: ${newAverageValue.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`,
                 fillStyle: 'red',
                 strokeStyle: 'red',
                 lineWidth: 2,
@@ -125,9 +111,9 @@ export class ChartHelper {
           callbacks: {
             label: function (context) {
               let value = context.raw as number;
-              return `${value.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`;
-            }
-          }
+              return `${value.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`;
+            },
+          },
         },
         annotation: {
           annotations: {
@@ -144,7 +130,7 @@ export class ChartHelper {
       },
     };
 
-    return {chartData, chartOptions};
+    return { chartData, chartOptions };
   }
 
   static generateDoughnutChartConfiguration(apiResponse: CategorizedReportOutputDto): {
@@ -153,20 +139,17 @@ export class ChartHelper {
   } {
     const categories = apiResponse.categories ?? [];
     const firstMonthData = apiResponse.monthlyData[0]?.categoryValues || {};
-    const data = categories.map(category => firstMonthData[category] || 0);
+    const data = categories.map((category) => firstMonthData[category] || 0);
 
     const chartData: ChartData<'doughnut'> = {
       labels: categories,
       datasets: [
         {
           data: data,
-          backgroundColor: categories.map(category =>
-            CategoryColorHelper.getColor(category)
-          ),
+          backgroundColor: categories.map((category) => CategoryColorHelper.getColor(category)),
         },
       ],
     };
-
 
     const chartOptions: ChartConfiguration<'doughnut'>['options'] = {
       responsive: true,
@@ -182,9 +165,9 @@ export class ChartHelper {
           callbacks: {
             label: function (context) {
               let value = context.raw as number;
-              return `${value.toLocaleString('en-CA', {style: 'currency', currency: 'CAD'})}`;
-            }
-          }
+              return `${value.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}`;
+            },
+          },
         },
       },
     };

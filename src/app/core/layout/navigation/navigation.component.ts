@@ -5,13 +5,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   selector: 'app-navigation',
   imports: [RouterLink, RouterLinkActive],
   templateUrl: './navigation.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavigationComponent {
   readonly links = [
     { path: '/', label: 'Dashboard', exact: true },
     { path: '/transactions', label: 'Transactions', exact: false },
-    { path: '/budgets', label: 'Budgets', exact: false }
+    { path: '/budgets', label: 'Budgets', exact: false },
   ];
 
   readonly isMenuOpen = signal(false);

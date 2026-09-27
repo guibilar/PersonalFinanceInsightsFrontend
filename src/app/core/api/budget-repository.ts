@@ -8,7 +8,7 @@ import { BudgetOutputDto } from '../models/outputs/budget-output-dto';
 import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BudgetRepository {
   private readonly http = inject(HttpClient);

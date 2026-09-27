@@ -1,11 +1,18 @@
 @if (data(); as data) {
-  <ng-container *ngTemplateOutlet="contentTemplate(); context: { items: data.items, data: data }"></ng-container>
+  <ng-container
+    *ngTemplateOutlet="contentTemplate(); context: { items: data.items, data: data }"
+  ></ng-container>
 
   @if (data.totalPages > 1) {
     <nav aria-label="Pagination" class="mt-4">
       <ul class="pagination justify-content-center flex-wrap mb-2">
         <li class="page-item" [class.disabled]="!data.hasPreviousPage">
-          <button type="button" class="page-link" [disabled]="!data.hasPreviousPage" (click)="onPageChange(data.page - 1)">
+          <button
+            type="button"
+            class="page-link"
+            [disabled]="!data.hasPreviousPage"
+            (click)="onPageChange(data.page - 1)"
+          >
             Previous
           </button>
         </li>
@@ -14,13 +21,24 @@
             <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
           } @else {
             <li class="page-item" [class.active]="page === data.page">
-              <button type="button" class="page-link" [attr.aria-current]="page === data.page ? 'page' : null"
-                      (click)="onPageChange(page)">{{ page }}</button>
+              <button
+                type="button"
+                class="page-link"
+                [attr.aria-current]="page === data.page ? 'page' : null"
+                (click)="onPageChange(page)"
+              >
+                {{ page }}
+              </button>
             </li>
           }
         }
         <li class="page-item" [class.disabled]="!data.hasNextPage">
-          <button type="button" class="page-link" [disabled]="!data.hasNextPage" (click)="onPageChange(data.page + 1)">
+          <button
+            type="button"
+            class="page-link"
+            [disabled]="!data.hasNextPage"
+            (click)="onPageChange(data.page + 1)"
+          >
             Next
           </button>
         </li>

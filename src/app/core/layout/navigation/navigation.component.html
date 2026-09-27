@@ -2,8 +2,14 @@
   <div class="container">
     <a routerLink="/" class="navbar-brand fw-bold" (click)="closeMenu()">Personal Finances</a>
 
-    <button type="button" class="navbar-toggler" aria-controls="main-nav" aria-label="Toggle navigation"
-            [attr.aria-expanded]="isMenuOpen()" (click)="toggleMenu()">
+    <button
+      type="button"
+      class="navbar-toggler"
+      aria-controls="main-nav"
+      aria-label="Toggle navigation"
+      [attr.aria-expanded]="isMenuOpen()"
+      (click)="toggleMenu()"
+    >
       <span class="navbar-toggler-icon"></span>
     </button>
 
@@ -11,8 +17,14 @@
       <ul class="navbar-nav ms-auto">
         @for (link of links; track link.path) {
           <li class="nav-item">
-            <a class="nav-link" [routerLink]="link.path" routerLinkActive="active"
-               [routerLinkActiveOptions]="{ exact: link.exact }" ariaCurrentWhenActive="page" (click)="closeMenu()">
+            <a
+              class="nav-link"
+              [routerLink]="link.path"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: link.exact }"
+              ariaCurrentWhenActive="page"
+              (click)="closeMenu()"
+            >
               {{ link.label }}
             </a>
           </li>

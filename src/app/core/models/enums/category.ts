@@ -9,5 +9,5 @@ export enum Category {
   Shopping = 'Shopping',
   Subscriptions = 'Subscriptions',
   Transportation = 'Transportation',
-  Utilities = 'Utilities'
+  Utilities = 'Utilities',
 }

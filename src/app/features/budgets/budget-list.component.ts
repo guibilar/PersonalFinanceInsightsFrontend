@@ -20,10 +20,10 @@ import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.com
     BudgetFilterComponent,
     PaginatedContentComponent,
     LoaderComponent,
-    ErrorStateComponent
+    ErrorStateComponent,
   ],
   templateUrl: './budget-list.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BudgetListComponent {
   private readonly budgetRepository = inject(BudgetRepository);
@@ -35,7 +35,7 @@ export class BudgetListComponent {
 
   readonly budgets = rxResource({
     params: () => this.filter(),
-    stream: ({ params }) => this.budgetRepository.filter(params)
+    stream: ({ params }) => this.budgetRepository.filter(params),
   });
 
   protected readonly Status = Status;
@@ -57,7 +57,7 @@ export class BudgetListComponent {
     }
     this.budgetRepository.delete(id).subscribe({
       next: () => this.budgets.reload(),
-      error: () => this.actionError.set('Could not delete the budget.')
+      error: () => this.actionError.set('Could not delete the budget.'),
     });
   }
 
@@ -80,7 +80,10 @@ export class BudgetListComponent {
         this.onFormCancel();
         this.budgets.reload();
       },
-      error: () => this.actionError.set(editing ? 'Could not update the budget.' : 'Could not create the budget.')
+      error: () =>
+        this.actionError.set(
+          editing ? 'Could not update the budget.' : 'Could not create the budget.',
+        ),
     });
   }
 
