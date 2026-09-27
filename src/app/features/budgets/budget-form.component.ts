@@ -11,13 +11,12 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
-import { FormCardComponent } from '../../shared/ui/form-card/form-card.component';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
 @Component({
   selector: 'app-budget-form',
-  imports: [FormCardComponent, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './budget-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

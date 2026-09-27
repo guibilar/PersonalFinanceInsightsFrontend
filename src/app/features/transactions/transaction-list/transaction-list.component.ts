@@ -20,6 +20,7 @@ import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { SidePanelComponent } from '../../../shared/ui/side-panel/side-panel.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import {
   TransactionCriteria,
   TransactionToolbarComponent,
@@ -61,6 +62,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
 export class TransactionListComponent {
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly budgetRepository = inject(BudgetRepository);
+  private readonly toasts = inject(ToastService);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly columns: Record<'date' | 'description' | 'category' | 'amount', SortableColumn> = {
@@ -77,9 +79,7 @@ export class TransactionListComponent {
     sortDirection: 'Descending',
   });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
-  readonly actionError = signal<string | null>(null);
   readonly showImport = signal(false);
-  readonly importResult = signal<ImportResultOutputDto | null>(null);
 
   readonly transactions = rxResource({
     params: () => this.filter(),
@@ -157,24 +157,33 @@ export class TransactionListComponent {
 
   onImported(result: ImportResultOutputDto): void {
     this.showImport.set(false);
-    this.importResult.set(result);
     this.transactions.reload();
+    const noun = result.added === 1 ? 'transaction' : 'transactions';
+    this.toasts.success(
+      `Imported ${result.added} new ${noun}` +
+        (result.skipped > 0 ? ` (${result.skipped} already imported)` : ''),
+    );
   }
 
   onLinkSubmit(linking: TransactionLinkingInputDto): void {
     this.transactionRepository.linkTransaction(linking).subscribe({
       next: () => {
+        const budget = this.activeBudgets().find((b) => b.id === linking.budgetId);
         this.linkingTransaction.set(null);
         this.transactions.reload();
+        this.toasts.success(budget ? `Linked to “${budget.name}”` : 'Transaction linked');
       },
-      error: () => this.actionError.set('Could not link the transaction.'),
+      error: () => this.toasts.error('Could not link the transaction.'),
     });
   }
 
   onUnlink(id: string): void {
     this.transactionRepository.unlinkTransaction(id).subscribe({
-      next: () => this.transactions.reload(),
-      error: () => this.actionError.set('Could not unlink the transaction.'),
+      next: () => {
+        this.transactions.reload();
+        this.toasts.success('Transaction unlinked');
+      },
+      error: () => this.toasts.error('Could not unlink the transaction.'),
     });
   }
 }

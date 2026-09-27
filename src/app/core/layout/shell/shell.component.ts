@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { ThemeService } from '../../theme/theme.service';
 import { IconComponent, IconName } from '../../../shared/ui/icon/icon.component';
+import { ToastContainerComponent } from '../../../shared/ui/toast/toast-container.component';
 
 const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 
@@ -17,7 +18,7 @@ interface NavLink {
 /** Sidebar layout: collapsible to icons on desktop, a slide-out menu on small screens. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, ToastContainerComponent],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
