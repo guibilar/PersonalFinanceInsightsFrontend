@@ -75,6 +75,9 @@ Then open `https://finance.<your-tailnet>.ts.net` from any device with Tailscale
 also on `http://localhost:5095`. Troubleshooting: `docker compose logs tailscale` and
 `docker compose exec tailscale tailscale serve status`.
 
+`docker/smoke-test.sh [base-url]` checks a running container: security headers, HSTS only over HTTPS,
+SPA routing, and that uploads over 1 MB get past nginx. CI builds the image and runs it on every change.
+
 nginx serves the app and proxies `/api/` to `API_UPSTREAM` (default `http://personal-finance-api:8080`,
 the API container on the `finance` network). It passes on Tailscale's `X-Forwarded-Proto: https`, so the
 API marks the session cookie `Secure`, and sends HSTS on HTTPS requests.
