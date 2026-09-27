@@ -1,4 +1,30 @@
-<h1 class="h3 mb-3">Transactions</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Transactions</h1>
+  <button type="button" class="btn btn-primary" (click)="showImport.set(true)">
+    Import Statement
+  </button>
+</div>
+
+@if (importResult(); as result) {
+  <div class="alert alert-success d-flex justify-content-between align-items-center" role="status">
+    <span>
+      Imported {{ result.added }} new {{ result.added === 1 ? 'transaction' : 'transactions' }}
+      @if (result.skipped > 0) {
+        ({{ result.skipped }} already imported)
+      }
+    </span>
+    <button
+      type="button"
+      class="btn-close"
+      aria-label="Dismiss"
+      (click)="importResult.set(null)"
+    ></button>
+  </div>
+}
+
+@if (showImport()) {
+  <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
+}
 
 @if (actionError(); as error) {
   <app-error-state [message]="error" actionLabel="Dismiss" (retry)="actionError.set(null)" />

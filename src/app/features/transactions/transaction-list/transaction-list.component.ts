@@ -17,6 +17,8 @@ import {
   TransactionFilterComponent,
 } from '../transaction-filter/transaction-filter.component';
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
+import { StatementImportComponent } from '../statement-import/statement-import.component';
+import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 
 @Component({
   selector: 'app-transaction-list',
@@ -27,6 +29,7 @@ import { TransactionLinkForm } from '../transaction-link-form/transaction-link-f
     PaginatedContentComponent,
     TransactionFilterComponent,
     TransactionLinkForm,
+    StatementImportComponent,
     LoaderComponent,
     ErrorStateComponent,
   ],
@@ -47,6 +50,8 @@ export class TransactionListComponent {
   readonly filter = signal<TransactionFilterInputDto>({ page: 1, pageSize: 10 });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
   readonly actionError = signal<string | null>(null);
+  readonly showImport = signal(false);
+  readonly importResult = signal<ImportResultOutputDto | null>(null);
 
   readonly transactions = rxResource({
     params: () => this.filter(),
@@ -60,6 +65,12 @@ export class TransactionListComponent {
   readonly activeBudgets = computed(() => this.activeBudgetsResource.value()?.items ?? []);
 
   protected readonly TransactionType = TransactionType;
+
+  onImported(result: ImportResultOutputDto): void {
+    this.showImport.set(false);
+    this.importResult.set(result);
+    this.transactions.reload();
+  }
 
   onPageChange(page: number): void {
     this.filter.update((filter) => ({ ...filter, page }));
