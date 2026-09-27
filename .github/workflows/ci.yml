@@ -4,18 +4,42 @@ on:
   push:
     branches: [master]
   pull_request:
+  # Weekly, so advisories published after the last commit still fail the audit.
+  schedule:
+    - cron: '17 6 * * 1'
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Production dependencies only: those ship to the browser. Dev-only advisories don't block.
+      - name: Known vulnerabilities
+        run: npm audit --omit=dev --audit-level=moderate
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test:ci
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the image
+        run: docker build -t finance-frontend .
+      - name: Start it (no API behind it)
+        run: |
+          docker run -d --name frontend -p 5095:5095 -e API_UPSTREAM=http://127.0.0.1:9 finance-frontend
+          for i in $(seq 1 30); do curl -sf http://localhost:5095/ > /dev/null && break; sleep 1; done
+      - name: Smoke test (headers, HTTPS handling, routing, upload limit)
+        run: docker/smoke-test.sh http://localhost:5095
+      - name: Container logs
+        if: failure()
+        run: docker logs frontend
