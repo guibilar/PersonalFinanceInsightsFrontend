@@ -1,0 +1,30 @@
+.login-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--bs-tertiary-bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 24rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 600;
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+  color: #fff;
+  background: var(--bs-primary);
+}

@@ -1,22 +1,38 @@
 import { Routes } from '@angular/router';
+import { authGuard, signedOutGuard } from './core/auth/auth.guards';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    canActivate: [signedOutGuard],
+    title: 'Sign in · Personal Finances',
+    loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    // Everything else needs a signed-in user and lives inside the sidebar layout.
     path: '',
     loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-  },
-  {
-    path: 'transactions',
-    loadComponent: () =>
-      import('./features/transactions/transaction-list/transaction-list.component').then(
-        (m) => m.TransactionListComponent,
-      ),
-  },
-  {
-    path: 'budgets',
-    loadComponent: () =>
-      import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
+      import('./core/layout/shell/shell.component').then((m) => m.ShellComponent),
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'transactions',
+        loadComponent: () =>
+          import('./features/transactions/transaction-list/transaction-list.component').then(
+            (m) => m.TransactionListComponent,
+          ),
+      },
+      {
+        path: 'budgets',
+        loadComponent: () =>
+          import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];

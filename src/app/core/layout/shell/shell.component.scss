@@ -126,6 +126,17 @@ $md: 768px;
   border-top: 1px solid var(--bs-border-color);
 }
 
+// Not a link: shows who is signed in, in the same row style as the buttons below it.
+.signed-in-as {
+  cursor: default;
+  font-weight: 600;
+  color: var(--bs-emphasis-color);
+
+  &:hover {
+    background: none;
+  }
+}
+
 .content {
   flex: 1;
   min-width: 0;
