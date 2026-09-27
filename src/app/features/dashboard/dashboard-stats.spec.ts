@@ -25,7 +25,7 @@ function report(
 
 describe('dashboard stats', () => {
   it('formats months like the API', () => {
-    expect(monthLabel(new Date(Date.UTC(2026, 8, 27)))).toBe('Sep 2026');
+    expect(monthLabel(new Date(2026, 8, 27))).toBe('Sep 2026');
   });
 
   it('reads this month total, or 0 without data', () => {
@@ -42,12 +42,14 @@ describe('dashboard stats', () => {
       { month: 'Sep 2026', values: { Dining: 100 } },
     ]);
 
-    expect(previousMonthTotal(year, new Date(Date.UTC(2026, 8, 15)))).toBe(80);
-    expect(previousMonthTotal(year, new Date(Date.UTC(2026, 0, 15)))).toBeNull();
+    expect(previousMonthTotal(year, new Date(2026, 8, 15))).toBe(80);
+    expect(previousMonthTotal(year, new Date(2026, 0, 15))).toBeNull();
+    // Late on the last day of September is still September here, whatever the date is in UTC.
+    expect(previousMonthTotal(year, new Date(2026, 8, 30, 23, 30))).toBe(80);
     expect(
       previousMonthTotal(
         report([{ month: 'Jul 2026', values: { Dining: 5 } }]),
-        new Date(Date.UTC(2026, 8, 1)),
+        new Date(2026, 8, 1),
       ),
     ).toBeNull();
   });

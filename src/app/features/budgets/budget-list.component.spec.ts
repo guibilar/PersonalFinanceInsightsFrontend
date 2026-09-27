@@ -108,6 +108,28 @@ describe('BudgetListComponent', () => {
     );
   });
 
+  it('sends one request when the form is submitted twice quickly', () => {
+    const budget = {
+      id: '',
+      name: 'Food',
+      description: 'd',
+      amount: 120,
+      status: Status.Active,
+      period: BudgetPeriod.Total,
+    };
+    component.editing.set(null);
+
+    component.onFormSubmit(budget);
+    component.onFormSubmit(budget);
+
+    const requests = http.match({ method: 'POST', url: '/api/Budget' });
+    expect(requests.length).toBe(1);
+    expect(component.saving()).toBeTrue();
+    requests[0].flush(null, { status: 201, statusText: 'Created' });
+    expect(component.saving()).toBeFalse();
+    http.match('/api/Budget/Filter').forEach((r) => r.flush(page));
+  });
+
   it('resets to page 1 when the criteria change', () => {
     component.onPageChange(2);
     component.onCriteriaChange({ status: Status.Inactive });

@@ -63,6 +63,24 @@ describe('SidePanelComponent', () => {
     fixture.nativeElement.remove();
   });
 
+  it('keeps Tab inside the panel', async () => {
+    const { fixture, el } = setup();
+    await openPanel(fixture, el);
+    const field = el.querySelector<HTMLInputElement>('#first-field')!;
+    const close = el.querySelector<HTMLButtonElement>('.btn-close-panel')!;
+    const tab = (target: HTMLElement, shiftKey = false) =>
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }),
+      );
+
+    expect(document.activeElement).toBe(field);
+    tab(field); // last focusable: wraps to the first (the close button)
+    expect(document.activeElement).toBe(close);
+    tab(close, true); // Shift+Tab from the first: wraps to the last
+    expect(document.activeElement).toBe(field);
+    fixture.nativeElement.remove();
+  });
+
   it('closes on backdrop click', async () => {
     const { fixture, host, el } = setup();
     await openPanel(fixture, el);

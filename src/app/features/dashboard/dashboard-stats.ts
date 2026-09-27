@@ -8,9 +8,13 @@ export interface CategoryShare {
   percent: number;
 }
 
-/** Month label in the API's format ("MMM yyyy", invariant culture), e.g. "Sep 2026". */
+/**
+ * Month label in the API's format ("MMM yyyy", invariant culture), e.g. "Sep 2026", for the date's local
+ * calendar month. Local, like the API's reporting time zone: in UTC the evening of the last day of a month
+ * is already the next month.
+ */
 export function monthLabel(date: Date): string {
-  return `${date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })} ${date.getUTCFullYear()}`;
+  return `${date.toLocaleString('en-US', { month: 'short' })} ${date.getFullYear()}`;
 }
 
 export function spentThisMonth(currentMonth: CategorizedReportOutputDto): number {
@@ -22,7 +26,7 @@ export function previousMonthTotal(
   yearReport: CategorizedReportOutputDto,
   now: Date,
 ): number | null {
-  const previous = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const previous = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const month = yearReport.monthlyData.find((m) => m.month === monthLabel(previous));
   return month ? month.total : null;
 }

@@ -193,11 +193,18 @@ $md: 768px;
     inset: 0 auto 0 0;
     z-index: 1045;
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    // Hidden (not just moved off screen) when closed, so Tab and screen readers skip it; visibility
+    // switches after the slide-out so the animation still shows.
+    visibility: hidden;
+    transition:
+      transform 0.2s ease,
+      visibility 0s linear 0.2s;
     box-shadow: var(--bs-box-shadow-lg);
 
     &.open {
       transform: none;
+      visibility: visible;
+      transition: transform 0.2s ease;
     }
   }
 

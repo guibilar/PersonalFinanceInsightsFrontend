@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, merge } from 'rxjs';
+import { debounceTime, filter, merge } from 'rxjs';
 import { Category } from '../../../core/models/enums/category';
 import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
@@ -81,7 +81,9 @@ export class TransactionToolbarComponent {
     merge(
       controls.description.valueChanges.pipe(
         debounceTime(SEARCH_DEBOUNCE_MS),
-        distinctUntilChanged(),
+        // Compare with the applied search, not the last typed one: after a chip or "Clear all"
+        // resets the field, typing the same words again must search again.
+        filter((value) => (value.trim() || undefined) !== this.filter().description),
       ),
       controls.category.valueChanges,
       controls.startDate.valueChanges,

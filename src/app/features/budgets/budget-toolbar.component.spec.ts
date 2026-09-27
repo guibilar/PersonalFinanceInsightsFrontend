@@ -39,6 +39,26 @@ describe('BudgetToolbarComponent', () => {
     }
   });
 
+  it('searches again for the same name after the filters were cleared', () => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date(2026, 8, 27));
+    try {
+      component.search.setValue('food');
+      jasmine.clock().tick(BUDGET_SEARCH_DEBOUNCE_MS);
+      fixture.componentRef.setInput('criteria', { status: Status.Active, name: 'food' });
+      fixture.detectChanges();
+      fixture.componentRef.setInput('criteria', {}); // "Clear filters"
+      fixture.detectChanges();
+
+      component.search.setValue('food');
+      jasmine.clock().tick(BUDGET_SEARCH_DEBOUNCE_MS);
+
+      expect(emitted.map((c) => c.name)).toEqual(['food', 'food']);
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
   it('switches status and marks the pressed button', async () => {
     await fixture.whenStable();
     const pressed = () =>

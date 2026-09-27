@@ -243,6 +243,7 @@
     <app-transaction-link-form
       [transaction]="transaction"
       [budgets]="activeBudgets()"
+      [saving]="savingLink()"
       (submitTransaction)="onLinkSubmit($event)"
       (cancelled)="linkingTransaction.set(null)"
     />

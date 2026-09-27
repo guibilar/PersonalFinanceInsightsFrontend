@@ -47,6 +47,45 @@ describe('TransactionToolbarComponent', () => {
     }
   });
 
+  it('searches again for the same words after the search chip was removed', () => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date(2026, 8, 27));
+    try {
+      create();
+      const search = component.form.controls.description;
+      search.setValue('coffee');
+      jasmine.clock().tick(SEARCH_DEBOUNCE_MS);
+      fixture.componentRef.setInput('filter', { page: 1, pageSize: 10, description: 'coffee' });
+      fixture.detectChanges();
+
+      component.remove('description');
+      fixture.componentRef.setInput('filter', { page: 1, pageSize: 10 });
+      fixture.detectChanges();
+      search.setValue('coffee');
+      jasmine.clock().tick(SEARCH_DEBOUNCE_MS);
+
+      expect(emitted.map((c) => c.description)).toEqual(['coffee', undefined, 'coffee']);
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('does not search again when the text ends up unchanged', () => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date(2026, 8, 27));
+    try {
+      create({ page: 1, pageSize: 10, description: 'coffee' });
+
+      component.form.controls.description.setValue('coffe');
+      component.form.controls.description.setValue('coffee ');
+      jasmine.clock().tick(SEARCH_DEBOUNCE_MS);
+
+      expect(emitted).toEqual([]);
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
   it('applies category and dates immediately', () => {
     create();
 
