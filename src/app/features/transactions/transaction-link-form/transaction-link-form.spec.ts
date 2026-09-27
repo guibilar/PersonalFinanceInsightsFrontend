@@ -41,7 +41,7 @@ describe('TransactionLinkForm', () => {
     component.onSubmit();
 
     expect(component.form.controls.budgetId.value).toBe('');
-    expect(component.form.invalid).toBeTrue();
+    expect(component.form.invalid).toBe(true);
     expect(submitted).toEqual([]);
   });
 

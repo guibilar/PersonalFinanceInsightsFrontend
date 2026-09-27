@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -9,7 +10,7 @@ describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
   let http: HttpTestingController;
-  let navigate: jasmine.Spy;
+  let navigate: Mock;
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
@@ -21,7 +22,7 @@ describe('LoginComponent', () => {
         provideRouter([]),
       ],
     });
-    navigate = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
@@ -39,7 +40,7 @@ describe('LoginComponent', () => {
 
   it('does not send an empty form', () => {
     component.onSubmit();
-    expect(component.form.controls.username.touched).toBeTrue();
+    expect(component.form.controls.username.touched).toBe(true);
   });
 
   it('signs in and goes back to the page that asked for it', () => {
@@ -49,7 +50,7 @@ describe('LoginComponent', () => {
       password: 'secret',
       rememberMe: true,
     });
-    expect(component.submitting()).toBeTrue();
+    expect(component.submitting()).toBe(true);
 
     request.flush({ username: 'alex' });
 
@@ -68,7 +69,7 @@ describe('LoginComponent', () => {
     );
     await fixture.whenStable();
 
-    expect(component.submitting()).toBeFalse();
+    expect(component.submitting()).toBe(false);
     expect(component.form.controls.password.value).toBe('');
     expect(component.form.controls.username.value).toBe('alex');
     expect(fixture.nativeElement.querySelector('[role=alert]').textContent).toContain(

@@ -8,7 +8,7 @@ describe('ThemeService', () => {
   function create(stored: string | null, systemDark: boolean): ThemeService {
     if (stored === null) localStorage.removeItem(THEME_STORAGE_KEY);
     else localStorage.setItem(THEME_STORAGE_KEY, stored);
-    spyOn(window, 'matchMedia').and.returnValue({
+    vi.spyOn(window, 'matchMedia').mockReturnValue({
       matches: systemDark,
       addEventListener: () => undefined,
     } as unknown as MediaQueryList);

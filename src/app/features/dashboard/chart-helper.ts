@@ -1,4 +1,6 @@
 import { Chart, ChartConfiguration, ChartData } from 'chart.js';
+// The plugin's typings add `plugins.annotation` to the chart options (registered in the dashboard).
+import type {} from 'chartjs-plugin-annotation';
 import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 

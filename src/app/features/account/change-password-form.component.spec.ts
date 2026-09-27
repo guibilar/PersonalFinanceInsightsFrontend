@@ -40,11 +40,11 @@ describe('ChangePasswordFormComponent', () => {
   it('needs 12 characters and a matching confirmation before sending anything', () => {
     component.form.setValue({ ...valid, newPassword: 'short', confirmPassword: 'short' });
     component.onSubmit();
-    expect(component.form.controls.newPassword.hasError('minlength')).toBeTrue();
+    expect(component.form.controls.newPassword.hasError('minlength')).toBe(true);
 
     component.form.setValue({ ...valid, confirmPassword: 'something else entirely' });
     component.onSubmit();
-    expect(component.form.hasError('mismatch')).toBeTrue();
+    expect(component.form.hasError('mismatch')).toBe(true);
   });
 
   it('sends the current and new password, then reports success', () => {

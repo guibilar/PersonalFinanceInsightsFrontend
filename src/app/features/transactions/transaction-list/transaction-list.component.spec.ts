@@ -53,24 +53,24 @@ describe('TransactionListComponent', () => {
 
   it('loads newest first by default', () => {
     expect(lastFilterRequest()).toEqual(
-      jasmine.objectContaining({ sortBy: 'Date', sortDirection: 'Descending', page: 1 }),
+      expect.objectContaining({ sortBy: 'Date', sortDirection: 'Descending', page: 1 }),
     );
   });
 
   it('flips direction on the same column and uses the natural direction for a new one', () => {
     component.sort('Date');
     expect(lastFilterRequest()).toEqual(
-      jasmine.objectContaining({ sortBy: 'Date', sortDirection: 'Ascending' }),
+      expect.objectContaining({ sortBy: 'Date', sortDirection: 'Ascending' }),
     );
 
     component.sort('Description');
     expect(lastFilterRequest()).toEqual(
-      jasmine.objectContaining({ sortBy: 'Description', sortDirection: 'Ascending' }),
+      expect.objectContaining({ sortBy: 'Description', sortDirection: 'Ascending' }),
     );
 
     component.sort('Amount');
     expect(lastFilterRequest()).toEqual(
-      jasmine.objectContaining({ sortBy: 'Amount', sortDirection: 'Descending' }),
+      expect.objectContaining({ sortBy: 'Amount', sortDirection: 'Descending' }),
     );
     expect(component.ariaSort('Amount')).toBe('descending');
     expect(component.ariaSort('Date')).toBe('none');
@@ -89,7 +89,7 @@ describe('TransactionListComponent', () => {
       pageSize: 50,
       page: 1,
     });
-    expect(component.hasCriteria()).toBeTrue();
+    expect(component.hasCriteria()).toBe(true);
   });
 
   describe('editing and category rules', () => {
@@ -116,7 +116,7 @@ describe('TransactionListComponent', () => {
       component.onEditSubmit({ description: 'Coffee', category: Category.Dining });
       const put = http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' });
       expect(put.request.body).toEqual({ description: 'Coffee', category: Category.Dining });
-      expect(component.savingEdit()).toBeTrue();
+      expect(component.savingEdit()).toBe(true);
       put.flush({
         ...coffee,
         description: 'Coffee',
@@ -125,7 +125,7 @@ describe('TransactionListComponent', () => {
       });
 
       expect(component.editingTransaction()).toBeNull();
-      expect(component.savingEdit()).toBeFalse();
+      expect(component.savingEdit()).toBe(false);
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)
@@ -143,20 +143,20 @@ describe('TransactionListComponent', () => {
         .flush(null, { status: 500, statusText: 'Error' });
 
       expect(component.editingTransaction()).toEqual(coffee);
-      expect(component.savingEdit()).toBeFalse();
+      expect(component.savingEdit()).toBe(false);
     });
 
     it('applies the category rules after confirming and reports what changed', () => {
       component.confirmingRules.set(true);
 
       component.applyCategoryRules();
-      expect(component.confirmingRules()).toBeFalse();
-      expect(component.applyingRules()).toBeTrue();
+      expect(component.confirmingRules()).toBe(false);
+      expect(component.applyingRules()).toBe(true);
       http
         .expectOne({ method: 'POST', url: '/api/Transaction/ApplyCategoryRules' })
         .flush({ checked: 40, updated: 3 });
 
-      expect(component.applyingRules()).toBeFalse();
+      expect(component.applyingRules()).toBe(false);
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)

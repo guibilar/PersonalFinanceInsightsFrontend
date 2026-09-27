@@ -58,7 +58,7 @@ describe('SidePanelComponent', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await fixture.whenStable();
 
-    expect(host.open()).toBeFalse();
+    expect(host.open()).toBe(false);
     expect(document.activeElement?.id).toBe('opener');
     fixture.nativeElement.remove();
   });
@@ -87,7 +87,7 @@ describe('SidePanelComponent', () => {
 
     el.querySelector<HTMLElement>('.panel-backdrop')!.click();
 
-    expect(host.open()).toBeFalse();
+    expect(host.open()).toBe(false);
     fixture.nativeElement.remove();
   });
 });

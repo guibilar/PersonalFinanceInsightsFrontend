@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -9,7 +10,7 @@ import { AuthService } from './auth.service';
 describe('authInterceptor', () => {
   let http: HttpClient;
   let backend: HttpTestingController;
-  let sessionEnded: jasmine.Spy;
+  let sessionEnded: Mock;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -22,14 +23,14 @@ describe('authInterceptor', () => {
     });
     http = TestBed.inject(HttpClient);
     backend = TestBed.inject(HttpTestingController);
-    sessionEnded = spyOn(TestBed.inject(AuthService), 'sessionEnded');
+    sessionEnded = vi.spyOn(TestBed.inject(AuthService), 'sessionEnded').mockReturnValue(undefined);
   });
 
   function unauthorized(url: string) {
     let failed = false;
     http.post(url, {}).subscribe({ error: () => (failed = true) });
     backend.expectOne(url).flush(null, { status: 401, statusText: 'Unauthorized' });
-    expect(failed).withContext('the caller still gets the error').toBeTrue();
+    expect(failed, 'the caller still gets the error').toBe(true);
   }
 
   it('ends the session on a 401 from the API', () => {

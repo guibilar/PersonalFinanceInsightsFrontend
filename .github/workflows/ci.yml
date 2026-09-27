@@ -24,7 +24,16 @@ jobs:
         run: npm audit --omit=dev --audit-level=moderate
       - run: npm run lint
       - run: npm run format:check
+      - name: Browser for the unit tests
+        run: npx playwright install --with-deps --only-shell chromium
       - run: npm run test:ci
+      - name: Screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-failure-screenshots
+          path: .vitest/attachments
+          if-no-files-found: ignore
       - run: npm run build
 
   docker:

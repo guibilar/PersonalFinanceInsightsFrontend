@@ -48,7 +48,7 @@ describe('AuthService', () => {
   it('asks again after a server error instead of assuming signed out', async () => {
     const failed = auth.ensureLoaded();
     http.expectOne('/api/Auth/me').flush(null, { status: 503, statusText: 'Unavailable' });
-    await expectAsync(failed).toBeRejected();
+    await expect(failed).rejects.toThrow();
 
     const retried = auth.ensureLoaded();
     http.expectOne('/api/Auth/me').flush({ username: 'alex' });
