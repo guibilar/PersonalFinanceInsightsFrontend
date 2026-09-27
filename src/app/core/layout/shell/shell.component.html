@@ -85,6 +85,15 @@
     <button
       type="button"
       class="nav-item"
+      (click)="confirmingSignOutOthers.set(true)"
+      [attr.title]="collapsed() ? 'Sign out other devices' : null"
+    >
+      <app-icon name="devices" />
+      <span class="label">Sign out other devices</span>
+    </button>
+    <button
+      type="button"
+      class="nav-item"
       (click)="signOut()"
       [attr.title]="collapsed() ? 'Sign out' : null"
     >
@@ -128,4 +137,14 @@
       (cancelled)="changingPassword.set(false)"
     />
   </app-side-panel>
+}
+
+@if (confirmingSignOutOthers()) {
+  <app-confirm-dialog
+    title="Sign out other devices?"
+    message="Every other browser and device signed in to your account is signed out and will need your password again. This one stays signed in."
+    confirmLabel="Sign out others"
+    (confirmed)="signOutOtherDevices()"
+    (cancelled)="confirmingSignOutOthers.set(false)"
+  />
 }

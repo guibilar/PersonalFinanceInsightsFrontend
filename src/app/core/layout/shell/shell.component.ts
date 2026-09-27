@@ -8,6 +8,7 @@ import { SidePanelComponent } from '../../../shared/ui/side-panel/side-panel.com
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { AuthService } from '../../auth/auth.service';
 import { ChangePasswordFormComponent } from '../../../features/account/change-password-form.component';
+import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 
@@ -28,6 +29,7 @@ interface NavLink {
     IconComponent,
     SidePanelComponent,
     ChangePasswordFormComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -47,6 +49,7 @@ export class ShellComponent {
   readonly collapsed = signal(readFlag(COLLAPSED_STORAGE_KEY));
   readonly mobileOpen = signal(false);
   readonly changingPassword = signal(false);
+  readonly confirmingSignOutOthers = signal(false);
 
   constructor() {
     // Close the slide-out menu after navigating.
@@ -60,7 +63,20 @@ export class ShellComponent {
 
   onPasswordChanged(): void {
     this.changingPassword.set(false);
-    this.toasts.success('Password changed');
+    this.toasts.success('Password changed. Other devices were signed out.');
+  }
+
+  signOutOtherDevices(): void {
+    this.confirmingSignOutOthers.set(false);
+    this.auth.signOutOtherDevices().subscribe({
+      next: ({ count }) =>
+        this.toasts.success(
+          count === 0
+            ? 'No other devices were signed in'
+            : `Signed out ${count} other ${count === 1 ? 'session' : 'sessions'}`,
+        ),
+      error: () => this.toasts.error('Could not sign out the other devices. Try again.'),
+    });
   }
 
   signOut(): void {

@@ -5,6 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ShellComponent } from './shell.component';
 import { AuthService } from '../../auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('ShellComponent', () => {
   beforeEach(() => {
@@ -65,8 +66,8 @@ describe('ShellComponent', () => {
 
     expect(element.querySelector('.signed-in-as')?.textContent).toContain('alex');
 
-    const signOut = Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
-      b.textContent?.includes('Sign out'),
+    const signOut = Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find(
+      (b) => b.textContent?.trim() === 'Sign out',
     )!;
     signOut.click();
     http.expectOne({ method: 'POST', url: '/api/Auth/logout' }).flush(null);
@@ -85,5 +86,28 @@ describe('ShellComponent', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('app-change-password-form'),
     ).not.toBeNull();
+  });
+
+  it('signs out the other devices after confirming, and says how many', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    const shell = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    const toasts = TestBed.inject(ToastService);
+
+    shell.confirmingSignOutOthers.set(true);
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sign out other devices?');
+    http.expectNone('/api/Auth/sign-out-others');
+
+    shell.signOutOtherDevices();
+    http.expectOne({ method: 'POST', url: '/api/Auth/sign-out-others' }).flush({ count: 2 });
+    shell.signOutOtherDevices();
+    http.expectOne('/api/Auth/sign-out-others').flush({ count: 0 });
+
+    expect(shell.confirmingSignOutOthers()).toBe(false);
+    expect(toasts.toasts().map((t) => t.message)).toEqual([
+      'Signed out 2 other sessions',
+      'No other devices were signed in',
+    ]);
   });
 });
