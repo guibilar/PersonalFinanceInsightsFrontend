@@ -64,7 +64,7 @@
   @if (items.length === 0) {
     <p class="text-center text-body-secondary py-5 mb-0">No transactions found.</p>
   }
-  <div class="row row-cols-1 row-cols-md-2 g-3">
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
     @for (transaction of items; track transaction.id) {
       <div class="col">
         <div class="card h-100 shadow-sm">
@@ -88,11 +88,12 @@
                 <dd class="col-7 text-end fw-semibold mb-1">{{ transaction.budget.name }}</dd>
               }
               <dt class="col-5 fw-medium text-body-secondary">Category</dt>
-              <dd
-                class="col-7 text-end fw-semibold mb-1"
-                [style.color]="getCategoryColor(transaction.category)"
-              >
-                {{ transaction.category }}
+              <dd class="col-7 text-end fw-semibold mb-1">
+                <span
+                  class="category-dot"
+                  [style.background-color]="getCategoryColor(transaction.category)"
+                ></span
+                >{{ transaction.category }}
               </dd>
               <dt class="col-5 fw-medium text-body-secondary">Account</dt>
               <dd class="col-7 text-end fw-semibold mb-1">{{ transaction.account }}</dd>

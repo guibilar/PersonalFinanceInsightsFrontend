@@ -9,7 +9,10 @@
     <tbody>
       @for (entry of currentMonth()?.categoryValues | keyvalue; track entry.key) {
         <tr>
-          <td [style.color]="getCategoryColor(entry.key)">{{ entry.key }}</td>
+          <td>
+            <span class="category-dot" [style.background-color]="getCategoryColor(entry.key)"></span
+            >{{ entry.key }}
+          </td>
           <td>{{ entry.value | currency }}</td>
         </tr>
       }

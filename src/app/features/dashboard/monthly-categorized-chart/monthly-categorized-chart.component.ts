@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartHelper } from '../chart-helper';
+import { CHART_THEMES, ChartHelper } from '../chart-helper';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
 
 @Component({
@@ -10,8 +11,13 @@ import { CategorizedReportOutputDto } from '../../../core/models/outputs/categor
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MonthlyCategorizedChartComponent {
+  private readonly theme = inject(ThemeService);
+
   readonly report = input.required<CategorizedReportOutputDto>();
   readonly chart = computed(() =>
-    ChartHelper.generateMonthlySpendingChartConfiguration(this.report()),
+    ChartHelper.generateMonthlySpendingChartConfiguration(
+      this.report(),
+      CHART_THEMES[this.theme.theme()],
+    ),
   );
 }
