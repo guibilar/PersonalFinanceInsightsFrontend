@@ -49,7 +49,7 @@ that `npm test` opens).
 src/app/
   core/       api/ (repositories, API base URL), models/, layout/navigation
   shared/     ui/ (card, filter panel, form card, loader, error state, paginator), utils/
-  features/   dashboard/, transactions/, budgets/   (lazy-loaded routes)
+  features/   dashboard/, transactions/, budgets/, rules/   (lazy-loaded routes)
 ```
 
 Components are standalone, OnPush and signal-based; the app runs zoneless.

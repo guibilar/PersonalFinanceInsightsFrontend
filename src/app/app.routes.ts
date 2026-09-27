@@ -35,6 +35,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
       },
+      {
+        path: 'rules',
+        title: 'Rules · Personal Finances',
+        loadComponent: () =>
+          import('./features/rules/rule-list.component').then((m) => m.RuleListComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
