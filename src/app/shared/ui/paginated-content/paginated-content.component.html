@@ -1,45 +1,34 @@
 @if (data(); as data) {
-  <div class="paginated-content">
-    <!-- Custom content -->
-    <div class="content">
-      <ng-container *ngTemplateOutlet="contentTemplate(); context: { items: data.items, data: data }"></ng-container>
-    </div>
+  <ng-container *ngTemplateOutlet="contentTemplate(); context: { items: data.items, data: data }"></ng-container>
 
-    <!-- Pagination controls -->
-    @if (data.totalPages > 1) {
-      <div class="pagination">
-        <button
-          class="pagination-button"
-          [disabled]="!data.hasPreviousPage"
-          (click)="onPageChange(data.page - 1)">
-          Previous
-        </button>
-
-        <div class="page-numbers">
-          @for (page of pageNumbers(); track page) {
-            <button
-              class="page-button"
-              [class.active]="page === data.page"
-              [class.ellipsis]="page === -1"
-              [disabled]="page === -1"
-              (click)="onPageChange(page)">
-              {{ page === -1 ? '...' : page }}
-            </button>
+  @if (data.totalPages > 1) {
+    <nav aria-label="Pagination" class="mt-4">
+      <ul class="pagination justify-content-center flex-wrap mb-2">
+        <li class="page-item" [class.disabled]="!data.hasPreviousPage">
+          <button type="button" class="page-link" [disabled]="!data.hasPreviousPage" (click)="onPageChange(data.page - 1)">
+            Previous
+          </button>
+        </li>
+        @for (page of pageNumbers(); track $index) {
+          @if (page === -1) {
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          } @else {
+            <li class="page-item" [class.active]="page === data.page">
+              <button type="button" class="page-link" [attr.aria-current]="page === data.page ? 'page' : null"
+                      (click)="onPageChange(page)">{{ page }}</button>
+            </li>
           }
-        </div>
+        }
+        <li class="page-item" [class.disabled]="!data.hasNextPage">
+          <button type="button" class="page-link" [disabled]="!data.hasNextPage" (click)="onPageChange(data.page + 1)">
+            Next
+          </button>
+        </li>
+      </ul>
+    </nav>
+  }
 
-        <button
-          class="pagination-button"
-          [disabled]="!data.hasNextPage"
-          (click)="onPageChange(data.page + 1)">
-          Next
-        </button>
-      </div>
-    }
-
-    <!-- Pagination info -->
-    <div class="pagination-info">
-      Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
-    </div>
-  </div>
+  <p class="text-center text-body-secondary small mt-2 mb-0">
+    Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
+  </p>
 }

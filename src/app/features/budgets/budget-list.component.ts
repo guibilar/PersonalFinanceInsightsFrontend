@@ -23,7 +23,6 @@ import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.com
     ErrorStateComponent
   ],
   templateUrl: './budget-list.component.html',
-  styleUrls: ['./budget-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BudgetListComponent {

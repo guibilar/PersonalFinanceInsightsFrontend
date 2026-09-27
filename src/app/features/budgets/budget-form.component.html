@@ -1,40 +1,40 @@
-<div class="form-container">
-  <div class="form-header">
-    <h3>{{ isEditing() ? 'Edit Budget' : 'Create Budget' }}</h3>
-  </div>
-
+<app-form-card [title]="isEditing() ? 'Edit Budget' : 'Create Budget'">
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="budget-name">Name *</label>
-      <input type="text" id="budget-name" formControlName="name" class="form-control" placeholder="Enter budget name">
+    <div class="mb-3">
+      <label for="budget-name" class="form-label">Name *</label>
+      <input type="text" id="budget-name" class="form-control" formControlName="name" placeholder="Enter budget name"
+             [class.is-invalid]="isInvalid('name')">
+      <div class="invalid-feedback">Name is required.</div>
     </div>
 
-    <div class="form-group">
-      <label for="budget-description">Description *</label>
-      <textarea id="budget-description" formControlName="description" class="form-control" rows="4"
-                placeholder="Enter budget description"></textarea>
+    <div class="mb-3">
+      <label for="budget-description" class="form-label">Description *</label>
+      <textarea id="budget-description" class="form-control" formControlName="description" rows="4"
+                placeholder="Enter budget description" [class.is-invalid]="isInvalid('description')"></textarea>
+      <div class="invalid-feedback">Description is required.</div>
     </div>
 
-    <div class="form-group">
-      <label for="budget-amount">Amount *</label>
-      <input type="number" id="budget-amount" formControlName="amount" class="form-control" min="0.01" step="0.01"
-             placeholder="Enter budget amount">
+    <div class="mb-3">
+      <label for="budget-amount" class="form-label">Amount *</label>
+      <input type="number" id="budget-amount" class="form-control" formControlName="amount" min="0.01" step="0.01"
+             placeholder="Enter budget amount" [class.is-invalid]="isInvalid('amount')">
+      <div class="invalid-feedback">Amount must be greater than 0.</div>
     </div>
 
-    <div class="form-group">
-      <label for="budget-status">Status *</label>
-      <select id="budget-status" formControlName="status" class="form-control">
+    <div class="mb-3">
+      <label for="budget-status" class="form-label">Status *</label>
+      <select id="budget-status" class="form-select" formControlName="status">
         @for (option of statusOptions; track option.value) {
           <option [ngValue]="option.value">{{ option.label }}</option>
         }
       </select>
     </div>
 
-    <div class="form-actions">
+    <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
       <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
         {{ isEditing() ? 'Update' : 'Create' }}
       </button>
     </div>
   </form>
-</div>
+</app-form-card>

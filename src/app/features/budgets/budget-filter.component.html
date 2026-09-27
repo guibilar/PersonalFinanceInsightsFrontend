@@ -1,38 +1,32 @@
-<form class="filter-container" [formGroup]="form" (ngSubmit)="applyFilter()">
-  <div class="filter-section">
-    <h3>Filters</h3>
-
-    <div class="filter-row">
-      <label for="budget-filter-name">Name:</label>
-      <input type="text" id="budget-filter-name" formControlName="name" placeholder="Search by name">
+<form [formGroup]="form" (ngSubmit)="applyFilter()">
+  <app-filter-panel (clear)="clearFilter()">
+    <div class="col-12 col-md-6">
+      <label for="budget-filter-name" class="form-label">Name</label>
+      <input type="text" id="budget-filter-name" class="form-control" formControlName="name" placeholder="Search by name">
     </div>
 
-    <div class="filter-row">
-      <label for="budget-filter-description">Description:</label>
-      <input type="text" id="budget-filter-description" formControlName="description" placeholder="Search by description">
+    <div class="col-12 col-md-6">
+      <label for="budget-filter-description" class="form-label">Description</label>
+      <input type="text" id="budget-filter-description" class="form-control" formControlName="description"
+             placeholder="Search by description">
     </div>
 
-    <div class="filter-row">
-      <label for="budget-filter-status">Status:</label>
-      <select id="budget-filter-status" formControlName="status">
+    <div class="col-12 col-md-6">
+      <label for="budget-filter-status" class="form-label">Status</label>
+      <select id="budget-filter-status" class="form-select" formControlName="status">
         @for (option of statusOptions; track option.label) {
           <option [ngValue]="option.value">{{ option.label }}</option>
         }
       </select>
     </div>
 
-    <div class="filter-row">
-      <label for="budget-filter-page-size">Items per page:</label>
-      <select id="budget-filter-page-size" formControlName="pageSize">
+    <div class="col-12 col-md-6">
+      <label for="budget-filter-page-size" class="form-label">Items per page</label>
+      <select id="budget-filter-page-size" class="form-select" formControlName="pageSize">
         @for (size of pageSizeOptions; track size) {
           <option [ngValue]="size">{{ size }}</option>
         }
       </select>
     </div>
-
-    <div class="filter-actions">
-      <button type="submit" class="btn-apply">Apply Filter</button>
-      <button type="button" class="btn-clear" (click)="clearFilter()">Clear</button>
-    </div>
-  </div>
+  </app-filter-panel>
 </form>

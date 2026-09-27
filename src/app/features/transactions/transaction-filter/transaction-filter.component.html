@@ -1,26 +1,25 @@
 @if (enabledFilters().length > 0) {
-  <form class="filter-container" [formGroup]="form" (ngSubmit)="applyFilter()">
-    <div class="filter-section">
-      <h3>Filters</h3>
+  <form [formGroup]="form" (ngSubmit)="applyFilter()">
+    <app-filter-panel (clear)="clearFilter()">
 
       @if (isFilterEnabled('transactionId')) {
-        <div class="filter-row">
-          <label for="tx-filter-id">Transaction ID:</label>
-          <input type="text" id="tx-filter-id" formControlName="transactionId" placeholder="Enter transaction ID">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-id" class="form-label">Transaction ID</label>
+          <input type="text" class="form-control" id="tx-filter-id" formControlName="transactionId" placeholder="Enter transaction ID">
         </div>
       }
 
       @if (isFilterEnabled('description')) {
-        <div class="filter-row">
-          <label for="tx-filter-description">Description:</label>
-          <input type="text" id="tx-filter-description" formControlName="description" placeholder="Search description">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-description" class="form-label">Description</label>
+          <input type="text" class="form-control" id="tx-filter-description" formControlName="description" placeholder="Search description">
         </div>
       }
 
       @if (isFilterEnabled('transactionType')) {
-        <div class="filter-row">
-          <label for="tx-filter-type">Transaction Type:</label>
-          <select id="tx-filter-type" formControlName="transactionType">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-type" class="form-label">Transaction Type</label>
+          <select class="form-select" id="tx-filter-type" formControlName="transactionType">
             <option [ngValue]="null">All</option>
             @for (type of transactionTypes; track type) {
               <option [ngValue]="type">{{ type }}</option>
@@ -30,26 +29,26 @@
       }
 
       @if (isFilterEnabled('accountTypes')) {
-        <div class="filter-row">
-          <span class="filter-label">Account Types:</span>
-          <div class="checkbox-group">
-            @for (accountType of accountTypes; track accountType) {
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  [checked]="isAccountTypeSelected(accountType)"
-                  (change)="onAccountTypeChange(accountType, $any($event.target).checked)">
-                {{ accountType }}
-              </label>
-            }
-          </div>
+        <div class="col-12 col-md-6">
+          <span class="form-label d-block">Account Types</span>
+          @for (accountType of accountTypes; track accountType) {
+            <div class="form-check form-check-inline">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                [id]="'tx-filter-account-' + accountType"
+                [checked]="isAccountTypeSelected(accountType)"
+                (change)="onAccountTypeChange(accountType, $any($event.target).checked)">
+              <label class="form-check-label" [for]="'tx-filter-account-' + accountType">{{ accountType }}</label>
+            </div>
+          }
         </div>
       }
 
       @if (isFilterEnabled('category')) {
-        <div class="filter-row">
-          <label for="tx-filter-category">Category:</label>
-          <select id="tx-filter-category" formControlName="category">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-category" class="form-label">Category</label>
+          <select class="form-select" id="tx-filter-category" formControlName="category">
             <option [ngValue]="null">All</option>
             @for (category of categories; track category) {
               <option [ngValue]="category">{{ category }}</option>
@@ -59,30 +58,30 @@
       }
 
       @if (isFilterEnabled('startDate')) {
-        <div class="filter-row">
-          <label for="tx-filter-start">Start Date:</label>
-          <input type="date" id="tx-filter-start" formControlName="startDate">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-start" class="form-label">Start Date</label>
+          <input type="date" class="form-control" id="tx-filter-start" formControlName="startDate">
         </div>
       }
 
       @if (isFilterEnabled('endDate')) {
-        <div class="filter-row">
-          <label for="tx-filter-end">End Date:</label>
-          <input type="date" id="tx-filter-end" formControlName="endDate">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-end" class="form-label">End Date</label>
+          <input type="date" class="form-control" id="tx-filter-end" formControlName="endDate">
         </div>
       }
 
       @if (isFilterEnabled('budgetId')) {
-        <div class="filter-row">
-          <label for="tx-filter-budget">Budget ID:</label>
-          <input type="text" id="tx-filter-budget" formControlName="budgetId" placeholder="Enter budget ID">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-budget" class="form-label">Budget ID</label>
+          <input type="text" class="form-control" id="tx-filter-budget" formControlName="budgetId" placeholder="Enter budget ID">
         </div>
       }
 
       @if (isFilterEnabled('pageSize')) {
-        <div class="filter-row">
-          <label for="tx-filter-page-size">Items per page:</label>
-          <select id="tx-filter-page-size" formControlName="pageSize">
+        <div class="col-12 col-md-6">
+          <label for="tx-filter-page-size" class="form-label">Items per page</label>
+          <select class="form-select" id="tx-filter-page-size" formControlName="pageSize">
             @for (size of pageSizeOptions; track size) {
               <option [ngValue]="size">{{ size }}</option>
             }
@@ -90,10 +89,6 @@
         </div>
       }
 
-      <div class="filter-actions">
-        <button type="submit" class="btn-apply">Apply Filter</button>
-        <button type="button" class="btn-clear" (click)="clearFilter()">Clear</button>
-      </div>
-    </div>
+    </app-filter-panel>
   </form>
 }

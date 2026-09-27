@@ -27,7 +27,6 @@ import { TransactionLinkForm } from '../transaction-link-form/transaction-link-f
     LoaderComponent,
     ErrorStateComponent
   ],
-  styleUrls: ['./transaction-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransactionListComponent {

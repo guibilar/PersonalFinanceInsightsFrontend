@@ -1,12 +1,10 @@
-<div class="form-container">
-  <div class="form-header">
-    <h3>Linking Transaction</h3>
-  </div>
-
+<app-form-card title="Link Transaction">
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="link-budget">Budget *</label>
-      <select id="link-budget" formControlName="budgetId" class="form-control">
+    <p class="text-body-secondary">{{ transaction().description }}</p>
+
+    <div class="mb-3">
+      <label for="link-budget" class="form-label">Budget *</label>
+      <select id="link-budget" formControlName="budgetId" class="form-select">
         <option value="" disabled>Select a budget</option>
         @for (option of budgets(); track option.id) {
           <option [value]="option.id">{{ option.name }}</option>
@@ -14,9 +12,9 @@
       </select>
     </div>
 
-    <div class="form-actions">
+    <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
       <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Link</button>
     </div>
   </form>
-</div>
+</app-form-card>

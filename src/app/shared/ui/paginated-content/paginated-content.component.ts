@@ -18,7 +18,6 @@ export interface PaginatedContentContext<T> {
   selector: 'app-paginated-content',
   templateUrl: './paginated-content.component.html',
   imports: [NgTemplateOutlet],
-  styleUrls: ['./paginated-content.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PaginatedContentComponent<T> {

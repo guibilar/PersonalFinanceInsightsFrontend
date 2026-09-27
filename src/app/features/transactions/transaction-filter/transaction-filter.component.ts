@@ -5,6 +5,7 @@ import {TransactionType} from '../../../core/models/enums/transaction-type';
 import {AccountType} from '../../../core/models/enums/account-type';
 import {Category} from '../../../core/models/enums/category';
 import {PAGE_SIZE_OPTIONS} from '../../../shared/utils/page-size-options';
+import { FilterPanelComponent } from '../../../shared/ui/filter-panel/filter-panel.component';
 
 export type FilterField =
   'description'
@@ -19,9 +20,8 @@ export type FilterField =
 
 @Component({
   selector: 'app-transaction-filter',
-  imports: [ReactiveFormsModule],
+  imports: [FilterPanelComponent, ReactiveFormsModule],
   templateUrl: './transaction-filter.component.html',
-  styleUrls: ['./transaction-filter.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransactionFilterComponent {
