@@ -15,6 +15,7 @@ function transaction(budgetId: string): TransactionOutputDto {
     amount: 10,
     description: 'Coffee',
     category: Category.Dining,
+    categoryLocked: false,
     account: AccountType.CreditCard,
     budgetId,
   };

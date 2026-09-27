@@ -1,4 +1,5 @@
 import { Status } from '../enums/status';
+import { BudgetPeriod } from '../enums/budget-period';
 
 export interface BudgetInputDto {
   id: string;
@@ -6,4 +7,5 @@ export interface BudgetInputDto {
   description: string;
   amount: number;
   status: Status;
+  period: BudgetPeriod;
 }

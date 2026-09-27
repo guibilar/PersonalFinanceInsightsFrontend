@@ -5,6 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { BudgetListComponent, budgetHealth } from './budget-list.component';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
+import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
 const food: BudgetOutputDto = {
@@ -12,6 +13,7 @@ const food: BudgetOutputDto = {
   name: 'Food',
   description: 'd',
   status: Status.Active,
+  period: BudgetPeriod.Total,
   totalAmount: 100,
   totalSpent: 50,
   totalRemaining: 50,
@@ -94,6 +96,7 @@ describe('BudgetListComponent', () => {
       description: 'd',
       amount: 120,
       status: Status.Active,
+      period: BudgetPeriod.Total,
     });
     http
       .expectOne({ method: 'PUT', url: '/api/Budget/b1' })

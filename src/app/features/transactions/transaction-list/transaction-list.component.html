@@ -3,13 +3,24 @@
     <h1 class="h3 mb-1">Transactions</h1>
     <p class="text-body-secondary mb-0">Search, sort and link your spending to budgets</p>
   </div>
-  <button
-    type="button"
-    class="btn btn-primary d-inline-flex align-items-center gap-2"
-    (click)="showImport.set(true)"
-  >
-    <app-icon name="upload" [size]="16" /> Import statement
-  </button>
+  <div class="d-flex flex-wrap gap-2">
+    <button
+      type="button"
+      class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+      [disabled]="applyingRules()"
+      (click)="confirmingRules.set(true)"
+    >
+      <app-icon name="refresh" [size]="16" />
+      {{ applyingRules() ? 'Applying…' : 'Apply category rules' }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary d-inline-flex align-items-center gap-2"
+      (click)="showImport.set(true)"
+    >
+      <app-icon name="upload" [size]="16" /> Import statement
+    </button>
+  </div>
 </div>
 
 <app-transaction-toolbar [filter]="filter()" (criteriaChange)="onCriteriaChange($event)" />
@@ -96,6 +107,9 @@
                 <app-icon [name]="sortIcon(columns.amount.field)" [size]="14" />
               </button>
             </th>
+            <th scope="col" class="text-end d-none d-sm-table-cell">
+              <span class="visually-hidden">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -105,7 +119,19 @@
                 {{ transaction.date | date: 'mediumDate' : 'UTC' }}
               </td>
               <td class="description-cell">
-                <div class="fw-medium text-truncate">{{ transaction.description }}</div>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="fw-medium text-truncate">{{ transaction.description }}</span>
+                  <!-- Phones: no room for an actions column, so edit sits next to the name. -->
+                  <button
+                    type="button"
+                    class="btn btn-icon d-sm-none flex-shrink-0"
+                    [attr.aria-label]="'Edit ' + transaction.description"
+                    title="Edit"
+                    (click)="editingTransaction.set(transaction)"
+                  >
+                    <app-icon name="pencil" [size]="14" />
+                  </button>
+                </div>
                 <div class="small text-body-secondary d-md-none">
                   {{ transaction.date | date: 'MMM d' : 'UTC' }} ·
                   <span
@@ -121,6 +147,12 @@
                   [style.background-color]="getCategoryColor(transaction.category)"
                 ></span
                 >{{ transaction.category }}
+                @if (transaction.categoryLocked) {
+                  <span title="Picked by hand: kept when category rules are re-applied">
+                    <app-icon name="lock" [size]="12" class="lock-icon" />
+                    <span class="visually-hidden">(picked by hand)</span>
+                  </span>
+                }
               </td>
               <td class="d-none d-lg-table-cell text-body-secondary small">
                 {{ transaction.account }}
@@ -160,6 +192,17 @@
                 {{ transaction.transactionType === TransactionType.Credit ? '+' : '−'
                 }}{{ transaction.amount | currency }}
               </td>
+              <td class="text-end d-none d-sm-table-cell">
+                <button
+                  type="button"
+                  class="btn btn-icon"
+                  [attr.aria-label]="'Edit ' + transaction.description"
+                  title="Edit"
+                  (click)="editingTransaction.set(transaction)"
+                >
+                  <app-icon name="pencil" [size]="16" />
+                </button>
+              </td>
             </tr>
           }
         </tbody>
@@ -172,6 +215,27 @@
   <app-side-panel title="Import statement" (closed)="showImport.set(false)">
     <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
   </app-side-panel>
+}
+
+@if (editingTransaction(); as transaction) {
+  <app-side-panel title="Edit transaction" (closed)="editingTransaction.set(null)">
+    <app-transaction-edit-form
+      [transaction]="transaction"
+      [saving]="savingEdit()"
+      (submitUpdate)="onEditSubmit($event)"
+      (cancelled)="editingTransaction.set(null)"
+    />
+  </app-side-panel>
+}
+
+@if (confirmingRules()) {
+  <app-confirm-dialog
+    title="Apply category rules?"
+    message="Every transaction is re-categorised with the current rules. Categories you picked by hand, savings transactions and the fixed monthly rent are left as they are."
+    confirmLabel="Apply rules"
+    (confirmed)="applyCategoryRules()"
+    (cancelled)="confirmingRules.set(false)"
+  />
 }
 
 @if (linkingTransaction(); as transaction) {

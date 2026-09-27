@@ -71,6 +71,11 @@
               <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                 <h2 class="h6 fw-semibold mb-0 text-truncate">{{ budget.name }}</h2>
                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                  @if (budget.period === BudgetPeriod.Monthly) {
+                    <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis"
+                      >Monthly</span
+                    >
+                  }
                   @if (budget.status === Status.Inactive) {
                     <span class="badge rounded-pill text-bg-secondary">Inactive</span>
                   }
@@ -102,7 +107,8 @@
                     {{ budget.totalSpent | currency }}
                   </span>
                   <span class="text-body-secondary small"
-                    >of {{ budget.totalAmount | currency }}</span
+                    >of {{ budget.totalAmount | currency
+                    }}{{ budget.period === BudgetPeriod.Monthly ? ' this month' : '' }}</span
                   >
                 </div>
                 <div

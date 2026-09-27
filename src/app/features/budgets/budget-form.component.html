@@ -40,6 +40,25 @@
     <div class="invalid-feedback">Amount must be greater than 0.</div>
   </div>
 
+  <fieldset class="mb-3">
+    <legend class="form-label fs-6 mb-1">Period *</legend>
+    @for (option of periodOptions; track option.value) {
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          formControlName="period"
+          [id]="'budget-period-' + option.value"
+          [value]="option.value"
+        />
+        <label class="form-check-label" [for]="'budget-period-' + option.value">
+          {{ option.label }}
+          <span class="d-block small text-body-secondary">{{ option.hint }}</span>
+        </label>
+      </div>
+    }
+  </fieldset>
+
   <div class="mb-3">
     <label for="budget-status" class="form-label">Status *</label>
     <select id="budget-status" class="form-select" formControlName="status">

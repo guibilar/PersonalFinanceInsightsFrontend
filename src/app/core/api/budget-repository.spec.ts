@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BudgetRepository } from './budget-repository';
 import { Status } from '../models/enums/status';
+import { BudgetPeriod } from '../models/enums/budget-period';
 
 describe('BudgetRepository', () => {
   let repository: BudgetRepository;
@@ -34,7 +35,14 @@ describe('BudgetRepository', () => {
   });
 
   it('updates and deletes by id', () => {
-    const budget = { id: 'b1', name: 'Food', description: 'd', amount: 10, status: Status.Active };
+    const budget = {
+      id: 'b1',
+      name: 'Food',
+      description: 'd',
+      amount: 10,
+      status: Status.Active,
+      period: BudgetPeriod.Total,
+    };
     repository.update('b1', budget).subscribe();
     repository.delete('b1').subscribe();
 

@@ -8,6 +8,8 @@ import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
 import { TransactionLinkingInputDto } from '../models/inputs/transaction-linking-input-dto';
 import { ImportResultOutputDto } from '../models/outputs/import-result-output-dto';
 import { AccountType } from '../models/enums/account-type';
+import { TransactionUpdateInputDto } from '../models/inputs/transaction-update-input-dto';
+import { CategoryRulesResultOutputDto } from '../models/outputs/category-rules-result-output-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -28,6 +30,16 @@ export class TransactionRepository {
     form.append('file', file, file.name);
     form.append('account', account);
     return this.http.post<ImportResultOutputDto>(`${this.baseUrl}/Import`, form);
+  }
+
+  /** Corrects description and category; the category is then kept when rules are re-applied. */
+  update(id: string, update: TransactionUpdateInputDto): Observable<TransactionOutputDto> {
+    return this.http.put<TransactionOutputDto>(`${this.baseUrl}/${id}`, update);
+  }
+
+  /** Re-runs the current category rules over every transaction whose category wasn't picked by hand. */
+  applyCategoryRules(): Observable<CategoryRulesResultOutputDto> {
+    return this.http.post<CategoryRulesResultOutputDto>(`${this.baseUrl}/ApplyCategoryRules`, null);
   }
 
   filter(filterDto: TransactionFilterInputDto): Observable<PaginatedResult<TransactionOutputDto>> {
