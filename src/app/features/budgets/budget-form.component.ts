@@ -12,6 +12,7 @@ import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
+import { TEXT_LIMITS } from '../../core/models/text-limits';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -51,8 +52,11 @@ export class BudgetFormComponent implements OnInit {
   ];
 
   readonly form = this.fb.group({
-    name: ['', [Validators.required, NOT_BLANK]],
-    description: ['', [Validators.required, NOT_BLANK]],
+    name: ['', [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.budgetName)]],
+    description: [
+      '',
+      [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.budgetDescription)],
+    ],
     amount: [0, [Validators.required, Validators.min(0.01)]],
     status: [Status.Active, Validators.required],
     period: [BudgetPeriod.Total, Validators.required],
@@ -70,6 +74,8 @@ export class BudgetFormComponent implements OnInit {
       });
     }
   }
+
+  readonly limits = TEXT_LIMITS;
 
   isInvalid(control: 'name' | 'description' | 'amount'): boolean {
     const c = this.form.controls[control];

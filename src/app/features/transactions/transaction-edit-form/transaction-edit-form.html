@@ -11,9 +11,16 @@
       id="edit-description"
       class="form-control"
       formControlName="description"
+      [maxlength]="maxDescription"
       [class.is-invalid]="form.controls.description.invalid && form.controls.description.touched"
     />
-    <div class="invalid-feedback">Description is required.</div>
+    <div class="invalid-feedback">
+      @if (form.controls.description.hasError('maxlength')) {
+        At most {{ maxDescription }} characters.
+      } @else {
+        Description is required.
+      }
+    </div>
   </div>
 
   <div class="mb-3">

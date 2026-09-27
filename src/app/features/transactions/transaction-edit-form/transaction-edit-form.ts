@@ -4,6 +4,7 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { Category } from '../../../core/models/enums/category';
 import { TransactionUpdateInputDto } from '../../../core/models/inputs/transaction-update-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { TEXT_LIMITS } from '../../../core/models/text-limits';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -25,9 +26,13 @@ export class TransactionEditForm implements OnInit {
   readonly deleteRequested = output<void>();
 
   readonly categories = Object.values(Category);
+  readonly maxDescription = TEXT_LIMITS.transactionDescription;
 
   readonly form = this.fb.group({
-    description: ['', [Validators.required, NOT_BLANK]],
+    description: [
+      '',
+      [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.transactionDescription)],
+    ],
     category: [Category.Other, Validators.required],
   });
 

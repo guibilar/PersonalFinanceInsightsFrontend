@@ -33,6 +33,27 @@ describe('BudgetFormComponent', () => {
     expect(submitted).toEqual([]);
   });
 
+  it('limits names to 100 and descriptions to 500 characters, like the API', async () => {
+    create();
+    const el = fixture.nativeElement as HTMLElement;
+    const at = (n: number) => 'x'.repeat(n);
+
+    component.form.patchValue({ name: at(100), description: at(500) });
+    expect(component.form.controls.name.valid && component.form.controls.description.valid).toBe(
+      true,
+    );
+
+    component.form.patchValue({ name: at(101), description: at(501) });
+    component.form.markAllAsTouched();
+    await fixture.whenStable();
+
+    expect(component.form.controls.name.hasError('maxlength')).toBe(true);
+    expect(component.form.controls.description.hasError('maxlength')).toBe(true);
+    expect(el.querySelector('#budget-name')!.getAttribute('maxlength')).toBe('100');
+    expect(el.textContent).toContain('At most 100 characters.');
+    expect(el.textContent).toContain('At most 500 characters.');
+  });
+
   it('rejects blank text and non-positive amounts', () => {
     create();
 
