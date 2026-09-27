@@ -25,10 +25,15 @@ export type FilterField =
   styleUrls: ['./transaction-filter.component.css']
 })
 export class TransactionFilterComponent {
-  @Input() filter: TransactionFilterInputDto = {
+  // Edited locally; the parent only sees changes on apply/clear.
+  filter: TransactionFilterInputDto = {
     Page: 1,
     PageSize: 10
   };
+
+  @Input('filter') set filterInput(value: TransactionFilterInputDto) {
+    this.filter = { ...value, AccountType: value.AccountType ? [...value.AccountType] : undefined };
+  }
   @Input() enabledFilters: FilterField[] = [];
 
   @Output() filterChange = new EventEmitter<TransactionFilterInputDto>();
@@ -63,7 +68,7 @@ export class TransactionFilterComponent {
   }
 
   applyFilter(): void {
-    this.filterChange.emit(this.filter);
+    this.filterChange.emit({ ...this.filter });
   }
 
   clearFilter(): void {
