@@ -104,7 +104,7 @@ describe('BudgetListComponent', () => {
 
     expect(component.editing()).toBe(food);
     expect(toasts.toasts()[0]).toEqual(
-      jasmine.objectContaining({ kind: 'error', message: 'Could not save the budget.' }),
+      expect.objectContaining({ kind: 'error', message: 'Could not save the budget.' }),
     );
   });
 
@@ -124,9 +124,9 @@ describe('BudgetListComponent', () => {
 
     const requests = http.match({ method: 'POST', url: '/api/Budget' });
     expect(requests.length).toBe(1);
-    expect(component.saving()).toBeTrue();
+    expect(component.saving()).toBe(true);
     requests[0].flush(null, { status: 201, statusText: 'Created' });
-    expect(component.saving()).toBeFalse();
+    expect(component.saving()).toBe(false);
     http.match('/api/Budget/Filter').forEach((r) => r.flush(page));
   });
 

@@ -30,13 +30,18 @@ Development, sign in as `dev` / `development-only`.
 | ---------------------- | ----------------------------------------------- |
 | `npm start`            | Dev server with the API proxy                   |
 | `npm run build`        | Production build into `dist/`                   |
-| `npm test`             | Unit tests (Karma, watch mode)                  |
-| `npm run test:ci`      | Unit tests once, headless Chrome                |
+| `npm test`             | Unit tests (Vitest in Chromium, watch mode)     |
+| `npm run test:ci`      | Unit tests once, headless Chromium              |
 | `npm run lint`         | ESLint (angular-eslint) for TypeScript and HTML |
 | `npm run format`       | Format with Prettier                            |
 | `npm run format:check` | Check formatting (used in CI)                   |
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR.
+
+The tests run in a real browser (Vitest browser mode through Playwright), because some of them need
+layout and focus behaviour that a simulated DOM doesn't have. Before the first run, download the
+browser once: `npx playwright install chromium-headless-shell` (add `chromium` for the visible browser
+that `npm test` opens).
 
 ## Project structure
 

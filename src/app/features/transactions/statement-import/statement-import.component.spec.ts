@@ -41,15 +41,15 @@ describe('StatementImportComponent', () => {
   }
 
   it('needs an account and a file before importing', async () => {
-    expect(submitButton().disabled).toBeTrue();
+    expect(submitButton().disabled).toBe(true);
 
     component.form.controls.account.setValue(AccountType.Chequing);
     await fixture.whenStable();
-    expect(submitButton().disabled).toBeTrue();
+    expect(submitButton().disabled).toBe(true);
 
     selectFile(new File(['x'], 'statement.csv'));
     await fixture.whenStable();
-    expect(submitButton().disabled).toBeFalse();
+    expect(submitButton().disabled).toBe(false);
   });
 
   it('rejects files over 5 MB without uploading', () => {
@@ -64,10 +64,10 @@ describe('StatementImportComponent', () => {
     selectFile(new File(['x'], 'statement.csv'));
 
     component.onSubmit();
-    expect(component.uploading()).toBeTrue();
+    expect(component.uploading()).toBe(true);
     http.expectOne('/api/Transaction/Import').flush({ read: 3, added: 2, skipped: 1 });
 
-    expect(component.uploading()).toBeFalse();
+    expect(component.uploading()).toBe(false);
     expect(imported).toEqual([{ read: 3, added: 2, skipped: 1 }]);
   });
 

@@ -40,7 +40,7 @@ describe('ShellComponent', () => {
 
     shell.toggleCollapsed();
 
-    expect(shell.collapsed()).toBeTrue();
+    expect(shell.collapsed()).toBe(true);
     expect(localStorage.getItem('sidebar-collapsed')).toBe('true');
   });
 
@@ -50,7 +50,7 @@ describe('ShellComponent', () => {
 
     await TestBed.inject(Router).navigateByUrl('/budgets');
 
-    expect(fixture.componentInstance.mobileOpen()).toBeFalse();
+    expect(fixture.componentInstance.mobileOpen()).toBe(false);
   });
 
   it('shows who is signed in and signs out', async () => {

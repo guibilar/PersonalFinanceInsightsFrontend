@@ -27,34 +27,34 @@ describe('TransactionToolbarComponent', () => {
   }
 
   it('debounces search and emits trimmed text once', () => {
-    // No zone.js in this app, so fake timers come from Jasmine; debounceTime also reads the clock.
-    jasmine.clock().install();
-    jasmine.clock().mockDate(new Date(2026, 8, 27));
+    // No zone.js in this app, so fake timers come from Vitest; debounceTime also reads the clock.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 27));
     try {
       create();
 
       component.form.controls.description.setValue('cof');
       component.form.controls.description.setValue(' coffee ');
-      jasmine.clock().tick(SEARCH_DEBOUNCE_MS - 1);
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS - 1);
       expect(emitted).toEqual([]);
 
-      jasmine.clock().tick(1);
+      vi.advanceTimersByTime(1);
       expect(emitted).toEqual([
         { description: 'coffee', category: undefined, startDate: undefined, endDate: undefined },
       ]);
     } finally {
-      jasmine.clock().uninstall();
+      vi.useRealTimers();
     }
   });
 
   it('searches again for the same words after the search chip was removed', () => {
-    jasmine.clock().install();
-    jasmine.clock().mockDate(new Date(2026, 8, 27));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 27));
     try {
       create();
       const search = component.form.controls.description;
       search.setValue('coffee');
-      jasmine.clock().tick(SEARCH_DEBOUNCE_MS);
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
       fixture.componentRef.setInput('filter', { page: 1, pageSize: 10, description: 'coffee' });
       fixture.detectChanges();
 
@@ -62,27 +62,27 @@ describe('TransactionToolbarComponent', () => {
       fixture.componentRef.setInput('filter', { page: 1, pageSize: 10 });
       fixture.detectChanges();
       search.setValue('coffee');
-      jasmine.clock().tick(SEARCH_DEBOUNCE_MS);
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
 
       expect(emitted.map((c) => c.description)).toEqual(['coffee', undefined, 'coffee']);
     } finally {
-      jasmine.clock().uninstall();
+      vi.useRealTimers();
     }
   });
 
   it('does not search again when the text ends up unchanged', () => {
-    jasmine.clock().install();
-    jasmine.clock().mockDate(new Date(2026, 8, 27));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 27));
     try {
       create({ page: 1, pageSize: 10, description: 'coffee' });
 
       component.form.controls.description.setValue('coffe');
       component.form.controls.description.setValue('coffee ');
-      jasmine.clock().tick(SEARCH_DEBOUNCE_MS);
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
 
       expect(emitted).toEqual([]);
     } finally {
-      jasmine.clock().uninstall();
+      vi.useRealTimers();
     }
   });
 

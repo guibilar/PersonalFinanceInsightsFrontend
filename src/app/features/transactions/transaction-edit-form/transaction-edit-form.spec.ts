@@ -53,7 +53,7 @@ describe('TransactionEditForm', () => {
     component.onSubmit();
 
     expect(submitted).toEqual([]);
-    expect(component.form.controls.description.touched).toBeTrue();
+    expect(component.form.controls.description.touched).toBe(true);
   });
 
   it('disables Save while saving', () => {
@@ -61,7 +61,7 @@ describe('TransactionEditForm', () => {
     fixture.detectChanges();
 
     const save: HTMLButtonElement = fixture.nativeElement.querySelector('button[type=submit]');
-    expect(save.disabled).toBeTrue();
+    expect(save.disabled).toBe(true);
     expect(save.textContent).toContain('Saving');
   });
 });

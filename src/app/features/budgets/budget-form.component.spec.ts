@@ -29,7 +29,7 @@ describe('BudgetFormComponent', () => {
 
     component.onSubmit();
 
-    expect(component.form.invalid).toBeTrue();
+    expect(component.form.invalid).toBe(true);
     expect(submitted).toEqual([]);
   });
 
@@ -44,8 +44,8 @@ describe('BudgetFormComponent', () => {
       period: BudgetPeriod.Total,
     });
 
-    expect(component.form.controls.name.invalid).toBeTrue();
-    expect(component.form.controls.amount.invalid).toBeTrue();
+    expect(component.form.controls.name.invalid).toBe(true);
+    expect(component.form.controls.amount.invalid).toBe(true);
   });
 
   it('emits a trimmed DTO for a new budget', () => {
@@ -85,7 +85,7 @@ describe('BudgetFormComponent', () => {
       percentageUsed: 0,
     });
 
-    expect(component.isEditing()).toBeTrue();
+    expect(component.isEditing()).toBe(true);
     expect(component.form.getRawValue()).toEqual({
       name: 'Food',
       description: 'Groceries',
