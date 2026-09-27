@@ -1,10 +1,22 @@
 import { Routes } from '@angular/router';
-import { TransactionListComponent } from './transaction-list/transaction-list.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { BudgetListComponent } from './budget/budget-list.component';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent },
-  { path: 'transactions', component: TransactionListComponent },
-  { path: 'budgets', component: BudgetListComponent }
+  {
+    path: '',
+    loadComponent: () =>
+      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+  },
+  {
+    path: 'transactions',
+    loadComponent: () =>
+      import('./features/transactions/transaction-list/transaction-list.component').then(
+        (m) => m.TransactionListComponent,
+      ),
+  },
+  {
+    path: 'budgets',
+    loadComponent: () =>
+      import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
+  },
+  { path: '**', redirectTo: '' },
 ];
