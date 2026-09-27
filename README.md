@@ -1,11 +1,11 @@
 # Personal Finances Frontend
 
-Angular 20 frontend for the Personal Finance Insights API: a spending dashboard,
+Angular 22 frontend for the Personal Finance Insights API: a spending dashboard,
 transaction list with budget linking, and budget management.
 
 ## Getting started
 
-Requires Node 22 and the backend (`FinanceApi`) running on `http://localhost:5096`.
+Requires Node 24 (or 22.22.3+) and the backend (`FinanceApi`) running on `http://localhost:5096`.
 
 ```bash
 npm ci
