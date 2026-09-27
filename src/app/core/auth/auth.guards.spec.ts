@@ -30,10 +30,20 @@ describe('auth guards', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
+  // The router starts the guard a few ticks after navigateByUrl; wait for its request rather than
+  // assume how many.
+  async function nextRequest(url: string) {
+    for (let tick = 0; tick < 50; tick++) {
+      const [request] = http.match(url);
+      if (request) return request;
+      await new Promise((resolve) => setTimeout(resolve));
+    }
+    return http.expectOne(url); // fails with Angular's message
+  }
+
   async function navigate(url: string, me: object | null) {
     const done = router.navigateByUrl(url);
-    await Promise.resolve();
-    const request = http.expectOne('/api/Auth/me');
+    const request = await nextRequest('/api/Auth/me');
     if (me) request.flush(me);
     else request.flush(null, { status: 401, statusText: 'Unauthorized' });
     await done;
