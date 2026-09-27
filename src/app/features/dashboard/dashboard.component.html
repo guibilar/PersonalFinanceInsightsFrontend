@@ -1,35 +1,172 @@
-<app-card-wrapper headerTitle="Monthly Spending" class="d-block mb-3">
-  @if (monthlyReport.error()) {
-    <app-error-state message="Could not load monthly spending." (retry)="monthlyReport.reload()" />
-  } @else if (monthlyReport.value(); as report) {
-    <app-monthly-categorized-chart [report]="report" />
-  } @else {
-    <app-loader />
-  }
-</app-card-wrapper>
+<div class="mb-4">
+  <h1 class="h3 mb-1">Dashboard</h1>
+  <p class="text-body-secondary mb-0">Your spending in {{ monthName }}</p>
+</div>
 
-<app-card-wrapper headerTitle="Current Month Spending Table" class="d-block mb-3">
-  @if (currentMonthReport.error()) {
-    <app-error-state
-      message="Could not load current month spending."
-      (retry)="currentMonthReport.reload()"
-    />
-  } @else if (currentMonthReport.value(); as report) {
-    <app-current-month-categorized-table [report]="report" />
-  } @else {
-    <app-loader />
-  }
-</app-card-wrapper>
+<!-- Headline numbers -->
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-3">
+  <div class="col">
+    @if (spent() !== null) {
+      <app-stat-card
+        label="Spent this month"
+        icon="calendar"
+        [value]="format(spent()!)"
+        [hint]="spentHint()?.text"
+        [hintIcon]="spentHint() ? (spentHint()!.up ? 'trending-up' : 'trending-down') : null"
+        [tone]="spentHint()?.tone ?? 'neutral'"
+      />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+  <div class="col">
+    @if (yearReport.value(); as year) {
+      <app-stat-card
+        label="Monthly average"
+        icon="trending-up"
+        [value]="format(year.averageMonthlyTotal)"
+        [hint]="
+          year.monthlyData.length +
+          ' month' +
+          (year.monthlyData.length === 1 ? '' : 's') +
+          ' this year'
+        "
+      />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+  <div class="col">
+    @if (monthReport.value()) {
+      <app-stat-card
+        label="Top category"
+        icon="tag"
+        [value]="topCategory()?.category ?? '—'"
+        [hint]="topCategory() ? format(topCategory()!.amount) + ' this month' : 'No spending yet'"
+      />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+  <div class="col">
+    @if (budgetSummary(); as summary) {
+      <app-stat-card
+        label="Budgets"
+        icon="budgets"
+        [value]="summary.total === 0 ? 'None yet' : summary.over + ' of ' + summary.total + ' over'"
+        [hint]="
+          summary.total === 0
+            ? 'Create one to track a limit'
+            : summary.over === 0
+              ? 'All within limits'
+              : 'Review your budgets'
+        "
+        [tone]="summary.total === 0 ? 'neutral' : summary.over === 0 ? 'good' : 'bad'"
+      />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+</div>
 
-<app-card-wrapper headerTitle="Current Month Spending">
-  @if (currentMonthReport.error()) {
-    <app-error-state
-      message="Could not load current month spending."
-      (retry)="currentMonthReport.reload()"
-    />
-  } @else if (currentMonthReport.value(); as report) {
-    <app-current-month-categorized-chart [report]="report" />
-  } @else {
-    <app-loader />
-  }
-</app-card-wrapper>
+<!-- Charts -->
+<div class="row g-3 mb-3">
+  <div class="col-12 col-xl-8">
+    <app-card-wrapper headerTitle="Monthly spending" subtitle="By category, this year">
+      @if (yearReport.error()) {
+        <app-error-state message="Could not load monthly spending." (retry)="yearReport.reload()" />
+      } @else if (yearReport.value(); as report) {
+        @if (report.monthlyData.length > 0) {
+          <app-monthly-categorized-chart [report]="report" />
+        } @else {
+          <p class="text-body-secondary text-center py-5 mb-0">
+            No spending recorded this year yet.
+          </p>
+        }
+      } @else {
+        <app-skeleton [lines]="6" height="2.5rem" />
+      }
+    </app-card-wrapper>
+  </div>
+  <div class="col-12 col-xl-4">
+    <app-card-wrapper headerTitle="This month by category" [subtitle]="monthName">
+      @if (monthReport.error()) {
+        <app-error-state
+          message="Could not load this month's spending."
+          (retry)="monthReport.reload()"
+        />
+      } @else if (monthReport.value(); as report) {
+        @if (report.monthlyData.length > 0) {
+          <app-category-breakdown [report]="report" />
+        } @else {
+          <p class="text-body-secondary text-center py-5 mb-0">
+            No spending this month yet.<br />
+            <a routerLink="/transactions">Import a statement</a>
+          </p>
+        }
+      } @else {
+        <app-skeleton [lines]="6" />
+      }
+    </app-card-wrapper>
+  </div>
+</div>
+
+<!-- Budgets and latest activity -->
+<div class="row g-3">
+  <div class="col-12 col-xl-6">
+    <app-card-wrapper headerTitle="Budgets at a glance">
+      <a
+        card-actions
+        routerLink="/budgets"
+        class="small text-decoration-none d-inline-flex align-items-center gap-1"
+      >
+        Manage <app-icon name="arrow-right" [size]="14" />
+      </a>
+      @if (budgets.error()) {
+        <app-error-state message="Could not load budgets." (retry)="budgets.reload()" />
+      } @else if (budgets.value(); as page) {
+        @if (page.items.length > 0) {
+          <app-budget-overview [budgets]="page.items" />
+        } @else {
+          <p class="text-body-secondary text-center py-4 mb-0">
+            No active budgets. <a routerLink="/budgets">Create one</a>
+          </p>
+        }
+      } @else {
+        <app-skeleton [lines]="4" />
+      }
+    </app-card-wrapper>
+  </div>
+  <div class="col-12 col-xl-6">
+    <app-card-wrapper headerTitle="Recent transactions">
+      <a
+        card-actions
+        routerLink="/transactions"
+        class="small text-decoration-none d-inline-flex align-items-center gap-1"
+      >
+        View all <app-icon name="arrow-right" [size]="14" />
+      </a>
+      @if (recent.error()) {
+        <app-error-state message="Could not load transactions." (retry)="recent.reload()" />
+      } @else if (recent.value(); as page) {
+        @if (page.items.length > 0) {
+          <app-recent-transactions [transactions]="page.items" />
+        } @else {
+          <p class="text-body-secondary text-center py-4 mb-0">
+            No transactions yet. <a routerLink="/transactions">Import a statement</a>
+          </p>
+        }
+      } @else {
+        <app-skeleton [lines]="5" height="2rem" />
+      }
+    </app-card-wrapper>
+  </div>
+</div>
