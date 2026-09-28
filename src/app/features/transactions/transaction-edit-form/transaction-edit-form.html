@@ -35,6 +35,74 @@
     </div>
   </div>
 
+  @if (categoryChanged()) {
+    <div class="rounded border p-3 mb-3">
+      <div class="form-check mb-0">
+        <input
+          type="checkbox"
+          id="edit-also-similar"
+          class="form-check-input"
+          formControlName="alsoSimilar"
+          aria-describedby="edit-also-similar-hint"
+        />
+        <label for="edit-also-similar" class="form-check-label">
+          Also categorise similar transactions
+        </label>
+        <div id="edit-also-similar-hint" class="form-text mt-0">
+          Adds a rule, checked first, so this merchant is {{ form.controls.category.value }} from
+          now on, and applies the rules to your transactions.
+        </div>
+      </div>
+
+      @if (form.controls.alsoSimilar.value) {
+        <div class="mt-3">
+          <label for="edit-rule-keyword" class="form-label">Descriptions containing</label>
+          <input
+            type="text"
+            id="edit-rule-keyword"
+            class="form-control text-uppercase"
+            formControlName="ruleKeyword"
+            autocomplete="off"
+            aria-describedby="edit-rule-preview"
+            [maxlength]="maxKeyword"
+            [class.is-invalid]="
+              form.controls.ruleKeyword.invalid && form.controls.ruleKeyword.touched
+            "
+          />
+          <div class="invalid-feedback">
+            @if (form.controls.ruleKeyword.hasError('maxlength')) {
+              At most {{ maxKeyword }} characters.
+            } @else {
+              A keyword is required.
+            }
+          </div>
+          <div id="edit-rule-preview" class="form-text" aria-live="polite">
+            @if (preview.isLoading()) {
+              Checking your transactions…
+            } @else if (preview.error()) {
+              Could not check how many transactions would change.
+            } @else if (preview.value(); as result) {
+              @if (result.count === 0) {
+                No other transactions will change.
+              } @else {
+                {{ result.count }} other
+                {{ result.count === 1 ? 'transaction' : 'transactions' }} will change to
+                {{ form.controls.category.value }}{{ result.examples.length ? ', e.g.' : '.' }}
+              }
+            }
+          </div>
+          @if (!preview.isLoading() && preview.value()?.examples?.length) {
+            <ul class="small text-body-secondary mb-0 mt-1 ps-3 examples">
+              @for (example of preview.value()!.examples; track example) {
+                <li class="text-truncate">{{ example }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    </div>
+  }
+
   <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
     <button
       type="button"

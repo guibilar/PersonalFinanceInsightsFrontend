@@ -47,6 +47,8 @@ jobs:
         run: |
           docker run -d --name frontend -p 5095:5095 -e API_UPSTREAM=http://127.0.0.1:9 finance-frontend
           for i in $(seq 1 30); do curl -sf http://localhost:5095/ > /dev/null && break; sleep 1; done
+      - name: nginx runs as a non-root user
+        run: test "$(docker exec frontend id -u)" != 0
       - name: Smoke test (headers, HTTPS handling, routing, upload limit)
         run: docker/smoke-test.sh http://localhost:5095
       - name: Container logs

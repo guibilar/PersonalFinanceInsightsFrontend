@@ -44,6 +44,7 @@ export class ShellComponent {
     { path: '/', label: 'Dashboard', icon: 'dashboard', exact: true },
     { path: '/transactions', label: 'Transactions', icon: 'transactions', exact: false },
     { path: '/budgets', label: 'Budgets', icon: 'budgets', exact: false },
+    { path: '/rules', label: 'Rules', icon: 'rules', exact: false },
   ];
 
   readonly collapsed = signal(readFlag(COLLAPSED_STORAGE_KEY));

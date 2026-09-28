@@ -113,7 +113,7 @@ describe('TransactionListComponent', () => {
     it('saves an edit, closes the panel and reloads', () => {
       component.editingTransaction.set(coffee);
 
-      component.onEditSubmit({ description: 'Coffee', category: Category.Dining });
+      component.onEditSubmit({ update: { description: 'Coffee', category: Category.Dining } });
       const put = http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' });
       expect(put.request.body).toEqual({ description: 'Coffee', category: Category.Dining });
       expect(component.savingEdit()).toBe(true);
@@ -134,10 +134,69 @@ describe('TransactionListComponent', () => {
       ).toEqual(['Transaction updated']);
     });
 
+    it('can also add a rule first and apply the rules, with one toast for it all', () => {
+      component.editingTransaction.set(coffee);
+      const rule = { keyword: 'COFFEE', category: Category.Dining, position: 0 };
+
+      component.onEditSubmit({
+        update: { description: 'COFFEE', category: Category.Dining },
+        rule,
+      });
+      http
+        .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
+        .flush({ ...coffee, category: Category.Dining, categoryLocked: true });
+      const create = http.expectOne({ method: 'POST', url: '/api/CategoryRules' });
+      expect(create.request.body).toEqual(rule);
+      expect(component.editingTransaction()).toEqual(coffee);
+      create.flush({ id: 'r1', ...rule });
+      http
+        .expectOne({ method: 'POST', url: '/api/Transaction/ApplyCategoryRules' })
+        .flush({ checked: 40, updated: 2 });
+
+      expect(component.editingTransaction()).toBeNull();
+      expect(component.savingEdit()).toBe(false);
+      lastFilterRequest();
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual([
+        'Transaction updated. Rule “COFFEE” added and 2 other transactions recategorised',
+      ]);
+    });
+
+    it('says why the rule was not added, and still closes the saved edit', () => {
+      component.editingTransaction.set(coffee);
+      const rule = { keyword: 'COFFEE', category: Category.Dining, position: 0 };
+
+      component.onEditSubmit({
+        update: { description: 'COFFEE', category: Category.Dining },
+        rule,
+      });
+      http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' }).flush(coffee);
+      http
+        .expectOne({ method: 'POST', url: '/api/CategoryRules' })
+        .flush(
+          { status: 409, detail: 'A rule for "COFFEE" already exists.' },
+          { status: 409, statusText: 'Conflict' },
+        );
+
+      http.expectNone('/api/Transaction/ApplyCategoryRules');
+      expect(component.editingTransaction()).toBeNull();
+      lastFilterRequest();
+      expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
+        expect.objectContaining({
+          kind: 'error',
+          message:
+            'Transaction updated, but the rule could not be added: A rule for "COFFEE" already exists.',
+        }),
+      );
+    });
+
     it('keeps the panel open when saving fails', () => {
       component.editingTransaction.set(coffee);
 
-      component.onEditSubmit({ description: 'Coffee', category: Category.Dining });
+      component.onEditSubmit({ update: { description: 'Coffee', category: Category.Dining } });
       http
         .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
         .flush(null, { status: 500, statusText: 'Error' });

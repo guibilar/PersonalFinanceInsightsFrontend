@@ -1,0 +1,64 @@
+.search {
+  min-width: 14rem;
+}
+
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  &.is-reloading {
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+}
+
+.rule-row {
+  padding: 0.625rem 1rem;
+
+  & + & {
+    border-top: var(--bs-border-width) solid var(--bs-border-color-translucent);
+  }
+}
+
+.rule-position {
+  min-width: 2ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+// Keywords line up in a column on wider screens; on phones the category goes underneath.
+@media (min-width: 576px) {
+  .rule-keyword {
+    flex: 0 1 60%;
+  }
+}
+
+.btn-icon {
+  display: inline-flex;
+  padding: 0.3125rem;
+  color: var(--bs-secondary-color);
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    background: var(--bs-secondary-bg);
+  }
+
+  &:disabled {
+    border-color: transparent;
+  }
+}
+
+.btn-icon-danger:hover {
+  color: var(--bs-danger);
+}
+
+@media (max-width: 575.98px) {
+  .rule-row {
+    padding: 0.5rem 0.625rem;
+  }
+}

@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { switchMap, tap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
+import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { BudgetRepository } from '../../../core/api/budget-repository';
 import {
   SortDirection,
@@ -9,7 +11,7 @@ import {
   TransactionSortField,
 } from '../../../core/models/inputs/transaction-filter-input-dto';
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
-import { TransactionUpdateInputDto } from '../../../core/models/inputs/transaction-update-input-dto';
+import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { Status } from '../../../core/models/enums/status';
@@ -23,12 +25,20 @@ import { SidePanelComponent } from '../../../shared/ui/side-panel/side-panel.com
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { conflictDetail } from '../../../shared/utils/problem-detail';
+import {
+  APPLY_RULES_CONFIRMATION,
+  describeRulesResult,
+} from '../../../shared/utils/category-rules-messages';
 import {
   TransactionCriteria,
   TransactionToolbarComponent,
 } from '../transaction-toolbar/transaction-toolbar.component';
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
-import { TransactionEditForm } from '../transaction-edit-form/transaction-edit-form';
+import {
+  TransactionEditForm,
+  TransactionEditSubmission,
+} from '../transaction-edit-form/transaction-edit-form';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
 
 interface SortableColumn {
@@ -67,6 +77,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
 export class TransactionListComponent {
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly budgetRepository = inject(BudgetRepository);
+  private readonly categoryRuleRepository = inject(CategoryRuleRepository);
   private readonly toasts = inject(ToastService);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
@@ -113,6 +124,7 @@ export class TransactionListComponent {
   readonly activeBudgets = computed(() => this.activeBudgetsResource.value()?.items ?? []);
 
   protected readonly TransactionType = TransactionType;
+  protected readonly applyRulesConfirmation = APPLY_RULES_CONFIRMATION;
 
   onCriteriaChange(criteria: TransactionCriteria): void {
     this.filter.update(({ pageSize, sortBy, sortDirection, hidden }) => ({
@@ -208,16 +220,18 @@ export class TransactionListComponent {
     });
   }
 
-  onEditSubmit(update: TransactionUpdateInputDto): void {
+  onEditSubmit({ update, rule }: TransactionEditSubmission): void {
     const transaction = this.editingTransaction();
-    if (!transaction) return;
+    if (!transaction || this.savingEdit()) return;
     this.savingEdit.set(true);
     this.transactionRepository.update(transaction.id, update).subscribe({
       next: () => {
-        this.savingEdit.set(false);
-        this.editingTransaction.set(null);
-        this.transactions.reload();
-        this.toasts.success('Transaction updated');
+        if (rule) {
+          this.addRuleAndApply(rule);
+        } else {
+          this.finishEdit();
+          this.toasts.success('Transaction updated');
+        }
       },
       error: () => {
         this.savingEdit.set(false);
@@ -226,18 +240,49 @@ export class TransactionListComponent {
     });
   }
 
+  /** After the edit is saved: the rule goes first, then the rules are applied, with one toast for it all. */
+  private addRuleAndApply(rule: CategoryRuleInputDto): void {
+    let added = false;
+    this.categoryRuleRepository
+      .create(rule)
+      .pipe(
+        tap(() => (added = true)),
+        switchMap(() => this.transactionRepository.applyCategoryRules()),
+      )
+      .subscribe({
+        next: ({ updated }) => {
+          this.finishEdit();
+          const others = `${updated} other ${updated === 1 ? 'transaction' : 'transactions'}`;
+          this.toasts.success(
+            `Transaction updated. Rule “${rule.keyword}” added and ${others} recategorised`,
+          );
+        },
+        error: (error: unknown) => {
+          // The transaction itself is saved either way.
+          this.finishEdit();
+          this.toasts.error(
+            added
+              ? `Transaction updated and rule “${rule.keyword}” added, but the rules could not be applied.`
+              : `Transaction updated, but the rule could not be added: ${conflictDetail(error, 'please try again.')}`,
+          );
+        },
+      });
+  }
+
+  private finishEdit(): void {
+    this.savingEdit.set(false);
+    this.editingTransaction.set(null);
+    this.transactions.reload();
+  }
+
   applyCategoryRules(): void {
     this.confirmingRules.set(false);
     this.applyingRules.set(true);
     this.transactionRepository.applyCategoryRules().subscribe({
-      next: ({ checked, updated }) => {
+      next: (result) => {
         this.applyingRules.set(false);
         this.transactions.reload();
-        this.toasts.success(
-          updated === 0
-            ? `All ${checked} categories already match the rules`
-            : `Recategorised ${updated} of ${checked} transactions`,
-        );
+        this.toasts.success(describeRulesResult(result));
       },
       error: () => {
         this.applyingRules.set(false);

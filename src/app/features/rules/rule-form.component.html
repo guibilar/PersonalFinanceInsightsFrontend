@@ -1,0 +1,83 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div class="mb-3">
+    <label for="rule-keyword" class="form-label">Description contains *</label>
+    <input
+      type="text"
+      id="rule-keyword"
+      class="form-control text-uppercase"
+      formControlName="keyword"
+      placeholder="CORNER STORE"
+      autocomplete="off"
+      aria-describedby="rule-keyword-hint"
+      [maxlength]="maxKeyword"
+      [class.is-invalid]="form.controls.keyword.invalid && form.controls.keyword.touched"
+    />
+    <div class="invalid-feedback">
+      @if (form.controls.keyword.hasError('maxlength')) {
+        At most {{ maxKeyword }} characters.
+      } @else {
+        A keyword is required.
+      }
+    </div>
+    <div id="rule-keyword-hint" class="form-text">
+      Matched anywhere in a transaction's description, ignoring case.
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="rule-category" class="form-label">Category *</label>
+    <select id="rule-category" class="form-select" formControlName="category">
+      @for (category of categories; track category) {
+        <option [ngValue]="category">{{ category }}</option>
+      }
+    </select>
+  </div>
+
+  @if (!isEditing()) {
+    <fieldset class="mb-3">
+      <legend class="form-label fs-6 mb-1">Order</legend>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          id="rule-placement-first"
+          formControlName="placement"
+          value="first"
+        />
+        <label class="form-check-label" for="rule-placement-first">
+          First
+          <span class="d-block small text-body-secondary"
+            >Checked before every other rule, so it wins when several match.</span
+          >
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          id="rule-placement-last"
+          formControlName="placement"
+          value="last"
+        />
+        <label class="form-check-label" for="rule-placement-last">
+          Last
+          <span class="d-block small text-body-secondary"
+            >Only used when no other rule matches.</span
+          >
+        </label>
+      </div>
+    </fieldset>
+  }
+
+  <p class="small text-body-secondary">
+    Rules apply to statements imported from now on. Use “Apply to transactions” to update the ones
+    already imported.
+  </p>
+
+  <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Saving…' : isEditing() ? 'Update' : 'Add rule' }}
+    </button>
+  </div>
+</form>
