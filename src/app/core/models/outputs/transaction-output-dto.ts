@@ -1,6 +1,7 @@
 import { Category } from '../enums/category';
 import { TransactionType } from '../enums/transaction-type';
 import { AccountType } from '../enums/account-type';
+import { Flow } from '../enums/flow';
 import { BudgetOutputDto } from './budget-output-dto';
 
 export interface TransactionOutputDto {
@@ -14,7 +15,13 @@ export interface TransactionOutputDto {
   /** Deleted: kept only so re-importing its statement doesn't add it back. */
   hidden?: boolean;
   transactionType?: TransactionType;
-  account: AccountType;
+  accountId: string;
+  accountName: string;
+  accountType: AccountType;
+  /** What it counts as in the reports. */
+  flow: Flow;
+  /** Picked by hand: re-applying the flow rules leaves it alone. */
+  flowLocked: boolean;
   budgetId: string;
   budget?: BudgetOutputDto | null;
 }

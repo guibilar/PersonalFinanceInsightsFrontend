@@ -27,6 +27,8 @@ describe('RuleListComponent', () => {
   async function load(list: CategoryRuleOutputDto[] = rules): Promise<void> {
     TestBed.tick();
     http.expectOne({ method: 'GET', url: '/api/CategoryRules' }).flush(list);
+    // The flow rules below have their own tests.
+    http.match({ method: 'GET', url: '/api/FlowRules' }).forEach((r) => r.flush([]));
     // Let the load settle: reload() is ignored while a load is still in progress.
     await fixture.whenStable();
   }
@@ -89,6 +91,7 @@ describe('RuleListComponent', () => {
   it('offers a retry when loading fails', async () => {
     TestBed.tick();
     http.expectOne('/api/CategoryRules').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/FlowRules').flush([]);
     await fixture.whenStable();
 
     expect(root().querySelector('[role=alert]')!.textContent).toContain(
@@ -163,18 +166,26 @@ describe('RuleListComponent', () => {
     expect(messages()).toEqual(['Deleted “UBER”']);
   });
 
-  it('applies the rules to transactions after confirming', async () => {
+  it('shows the flow rules below the category rules', async () => {
+    await load();
+
+    expect(root().querySelector('app-flow-rule-list h2')!.textContent).toContain(
+      'Money in and transfers',
+    );
+  });
+
+  it('applies the category and flow rules to transactions after confirming', async () => {
     await load();
     component.confirmingApply.set(true);
 
     component.applyRules();
     expect(component.applying()).toBe(true);
     http
-      .expectOne({ method: 'POST', url: '/api/Transaction/ApplyCategoryRules' })
+      .expectOne({ method: 'POST', url: '/api/Transaction/ApplyRules' })
       .flush({ checked: 40, updated: 3 });
 
     expect(component.confirmingApply()).toBe(false);
     expect(component.applying()).toBe(false);
-    expect(messages()).toEqual(['Recategorised 3 of 40 transactions']);
+    expect(messages()).toEqual(['Updated 3 of 40 transactions']);
   });
 });

@@ -27,6 +27,7 @@ import { MonthlyCategorizedChartComponent } from './monthly-categorized-chart/mo
 import { CategoryBreakdownComponent } from './category-breakdown/category-breakdown.component';
 import { BudgetOverviewComponent } from './budget-overview/budget-overview.component';
 import { RecentTransactionsComponent } from './recent-transactions/recent-transactions.component';
+import { CashFlowComponent } from './cash-flow/cash-flow.component';
 import {
   averageCaption,
   budgetsOverLimit,
@@ -64,6 +65,7 @@ const RECENT_TRANSACTIONS = 6;
     CategoryBreakdownComponent,
     BudgetOverviewComponent,
     RecentTransactionsComponent,
+    CashFlowComponent,
   ],
   templateUrl: './dashboard.component.html',
   providers: [CurrencyPipe],
@@ -83,6 +85,9 @@ export class DashboardComponent {
   });
   readonly monthReport = rxResource({
     stream: () => this.reportsRepository.getCurrentMonthCategorizedGraph(),
+  });
+  readonly cashFlow = rxResource({
+    stream: () => this.reportsRepository.getCashFlow(),
   });
   readonly budgets = rxResource({
     stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 }),

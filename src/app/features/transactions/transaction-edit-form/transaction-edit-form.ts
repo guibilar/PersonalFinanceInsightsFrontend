@@ -14,11 +14,13 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { Category } from '../../../core/models/enums/category';
+import { Flow } from '../../../core/models/enums/flow';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionUpdateInputDto } from '../../../core/models/inputs/transaction-update-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { TEXT_LIMITS } from '../../../core/models/text-limits';
 import { suggestRuleKeyword } from '../../../shared/utils/suggest-rule-keyword';
+import { FLOW_DESCRIPTIONS, FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -30,7 +32,10 @@ export interface TransactionEditSubmission {
   rule?: CategoryRuleInputDto;
 }
 
-/** Corrects an imported transaction's description and category. Date, amount and account come from the bank. */
+/**
+ * Corrects an imported transaction's description, category and flow. Date, amount and account come from the
+ * bank.
+ */
 @Component({
   selector: 'app-transaction-edit-form',
   imports: [ReactiveFormsModule, CurrencyPipe, DatePipe],
@@ -50,6 +55,14 @@ export class TransactionEditForm implements OnInit {
   readonly deleteRequested = output<void>();
 
   readonly categories = Object.values(Category);
+  readonly flowLabels = FLOW_LABELS;
+  readonly flowDescriptions = FLOW_DESCRIPTIONS;
+  /** Only what fits the direction: money out can't be income, money in can't be spending. */
+  readonly flows = computed(() => {
+    const { transactionType, flow } = this.transaction();
+    const allowed = flowsFor(transactionType);
+    return allowed.includes(flow) ? allowed : [flow, ...allowed];
+  });
   readonly maxDescription = TEXT_LIMITS.transactionDescription;
   readonly maxKeyword = TEXT_LIMITS.categoryRuleKeyword;
 
@@ -59,6 +72,7 @@ export class TransactionEditForm implements OnInit {
       [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.transactionDescription)],
     ],
     category: [Category.Other, Validators.required],
+    flow: [Flow.Spending, Validators.required],
     alsoSimilar: [false],
     // Enabled only while alsoSimilar is checked, so it can't block saving otherwise.
     ruleKeyword: [
@@ -68,6 +82,7 @@ export class TransactionEditForm implements OnInit {
   });
 
   private readonly category = toSignal(this.form.controls.category.valueChanges);
+  readonly selectedFlow = toSignal(this.form.controls.flow.valueChanges);
   readonly categoryChanged = computed(() => {
     const category = this.category();
     return category !== undefined && category !== this.transaction().category;
@@ -89,8 +104,13 @@ export class TransactionEditForm implements OnInit {
   });
 
   ngOnInit(): void {
-    const { description, category } = this.transaction();
-    this.form.patchValue({ description, category, ruleKeyword: suggestRuleKeyword(description) });
+    const { description, category, flow } = this.transaction();
+    this.form.patchValue({
+      description,
+      category,
+      flow,
+      ruleKeyword: suggestRuleKeyword(description),
+    });
 
     const { alsoSimilar, ruleKeyword } = this.form.controls;
     alsoSimilar.valueChanges
@@ -116,10 +136,15 @@ export class TransactionEditForm implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const { description, category } = this.form.getRawValue();
+    const { description, category, flow } = this.form.getRawValue();
     const rule = this.pendingRule();
     this.submitUpdate.emit({
-      update: { description: description.trim(), category },
+      update: {
+        description: description.trim(),
+        category,
+        // Sent only when changed: the API then keeps it when the rules are re-applied.
+        ...(flow !== this.transaction().flow ? { flow } : {}),
+      },
       ...(rule ? { rule: { ...rule, position: 0 } } : {}),
     });
   }

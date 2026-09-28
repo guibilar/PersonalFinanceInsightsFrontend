@@ -31,6 +31,26 @@
       </select>
     </div>
 
+    <div class="flex-grow-1 flex-md-grow-0">
+      <label for="tx-account" class="visually-hidden">Account</label>
+      <select id="tx-account" class="form-select" formControlName="accountId">
+        <option [ngValue]="null">All accounts</option>
+        @for (account of accounts(); track account.id) {
+          <option [ngValue]="account.id">{{ account.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="flex-grow-1 flex-md-grow-0">
+      <label for="tx-flow" class="visually-hidden">Flow</label>
+      <select id="tx-flow" class="form-select" formControlName="flow">
+        <option [ngValue]="null">All flows</option>
+        @for (flow of flows; track flow) {
+          <option [ngValue]="flow">{{ flowLabels[flow] }}</option>
+        }
+      </select>
+    </div>
+
     <div class="d-flex flex-wrap gap-2 flex-grow-1 flex-md-grow-0">
       <div class="d-flex align-items-center gap-2 flex-grow-1">
         <label for="tx-from" class="small text-body-secondary">From</label>

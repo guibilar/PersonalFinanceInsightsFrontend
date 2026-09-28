@@ -41,6 +41,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/rules/rule-list.component').then((m) => m.RuleListComponent),
       },
+      {
+        // The bank accounts statements are imported into; features/account is the user's own account.
+        path: 'accounts',
+        title: 'Accounts · Personal Finances',
+        loadComponent: () =>
+          import('./features/bank-accounts/bank-account-list.component').then(
+            (m) => m.BankAccountListComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

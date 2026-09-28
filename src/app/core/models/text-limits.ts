@@ -4,4 +4,6 @@ export const TEXT_LIMITS = {
   budgetDescription: 500,
   transactionDescription: 200,
   categoryRuleKeyword: 100,
+  accountName: 100,
+  flowRuleKeyword: 100,
 } as const;

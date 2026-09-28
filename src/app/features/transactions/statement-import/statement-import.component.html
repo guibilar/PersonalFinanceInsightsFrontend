@@ -6,18 +6,33 @@
 
   <div class="mb-3">
     <label for="import-account" class="form-label">Account *</label>
-    <select
-      id="import-account"
-      class="form-select"
-      formControlName="account"
-      [class.is-invalid]="form.controls.account.invalid && form.controls.account.touched"
-    >
-      <option [ngValue]="null" disabled>Select the account</option>
-      @for (option of accountOptions; track option.value) {
-        <option [ngValue]="option.value">{{ option.label }}</option>
-      }
-    </select>
-    <div class="invalid-feedback">Choose which account the statement is from.</div>
+    @if (accounts.error()) {
+      <div class="alert alert-danger py-2 d-flex align-items-center gap-2" role="alert">
+        Could not load your accounts.
+        <button type="button" class="btn btn-link btn-sm p-0 ms-auto" (click)="accounts.reload()">
+          Retry
+        </button>
+      </div>
+    } @else if (accounts.value()?.length === 0) {
+      <p class="small mb-0">
+        You have no accounts yet. <a routerLink="/accounts">Add one</a> to import its statements.
+      </p>
+    } @else {
+      <select
+        id="import-account"
+        class="form-select"
+        formControlName="accountId"
+        [class.is-invalid]="form.controls.accountId.invalid && form.controls.accountId.touched"
+      >
+        <option [ngValue]="null" disabled>
+          {{ accounts.isLoading() ? 'Loading accounts…' : 'Select the account' }}
+        </option>
+        @for (account of accounts.value(); track account.id) {
+          <option [ngValue]="account.id">{{ accountLabel(account) }}</option>
+        }
+      </select>
+      <div class="invalid-feedback">Choose which account the statement is from.</div>
+    }
   </div>
 
   <div class="mb-3">
@@ -35,6 +50,20 @@
       <div class="invalid-feedback">{{ message }}</div>
     }
   </div>
+
+  @if (mismatch(); as message) {
+    <div class="alert alert-warning py-2" role="alert">
+      <p class="mb-2">{{ message }}</p>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        [disabled]="uploading()"
+        (click)="onSubmit(true)"
+      >
+        Import anyway
+      </button>
+    </div>
+  }
 
   @if (error(); as message) {
     <div class="alert alert-danger py-2" role="alert">{{ message }}</div>

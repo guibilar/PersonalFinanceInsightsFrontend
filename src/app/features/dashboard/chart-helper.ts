@@ -3,9 +3,17 @@ import { Chart, ChartConfiguration, ChartData } from 'chart.js';
 import type {} from 'chartjs-plugin-annotation';
 import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { finishedMonths } from './dashboard-stats';
 
 const AVERAGE_COLOR = 'red';
+
+/** The theme's success, danger and primary colours (styles.scss), so the bars match the rest of the app. */
+export const CASH_FLOW_COLORS = {
+  income: '#16a34a',
+  spending: '#dc2626',
+  saved: '#4f46e5',
+} as const;
 const AVERAGE_ANNOTATION_ID = 'avgLine';
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
@@ -178,6 +186,61 @@ export class ChartHelper {
         tooltip: {
           callbacks: {
             label: (context) => formatCurrency(context.raw as number),
+          },
+        },
+      },
+    };
+
+    return { chartData, chartOptions };
+  }
+
+  /** Income, spending and saved side by side per month; the tooltip adds the month's net. */
+  static generateCashFlowChartConfiguration(
+    report: CashFlowReportOutputDto,
+    theme: ChartTheme = CHART_THEMES.light,
+  ): {
+    chartData: ChartData<'bar'>;
+    chartOptions: ChartConfiguration<'bar'>['options'];
+  } {
+    const months = report.months;
+    const chartData: ChartData<'bar'> = {
+      labels: months.map((month) => month.month),
+      datasets: [
+        {
+          label: 'Income',
+          data: months.map((month) => month.income),
+          backgroundColor: CASH_FLOW_COLORS.income,
+        },
+        {
+          label: 'Spending',
+          data: months.map((month) => month.spending),
+          backgroundColor: CASH_FLOW_COLORS.spending,
+        },
+        {
+          label: 'Saved',
+          data: months.map((month) => month.saved),
+          backgroundColor: CASH_FLOW_COLORS.saved,
+        },
+      ],
+    };
+
+    const chartOptions: ChartConfiguration<'bar'>['options'] = {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: theme.text }, grid: { color: theme.grid } },
+        y: { ticks: { color: theme.text }, grid: { color: theme.grid } },
+      },
+      plugins: {
+        legend: { position: 'bottom', align: 'start', labels: { color: theme.text } },
+        tooltip: {
+          callbacks: {
+            label: (context) =>
+              `${context.dataset.label}: ${formatCurrency(context.raw as number)}`,
+            footer: (items) => {
+              const month = months[items[0]?.dataIndex ?? -1];
+              return month ? `Net: ${formatCurrency(month.net)}` : '';
+            },
           },
         },
       },
