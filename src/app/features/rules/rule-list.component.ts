@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CategoryRuleRepository } from '../../core/api/category-rule-repository';
 import { TransactionRepository } from '../../core/api/transaction-repository';
@@ -20,9 +22,11 @@ import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RuleFormComponent } from './rule-form.component';
 import { FlowRuleListComponent } from './flow-rule-list.component';
 
+type RulesTab = 'categories' | 'flows';
+
 /**
- * The rules page: the category rules, in the order they are checked (add, edit, reorder, delete), the flow
- * rules below them, and applying both to the stored transactions.
+ * The rules page: a tab for the category rules, in the order they are checked (add, edit, reorder, delete), a tab
+ * for the flow rules, and applying both to the stored transactions.
  */
 @Component({
   selector: 'app-rule-list',
@@ -44,6 +48,20 @@ export class RuleListComponent {
   private readonly ruleRepository = inject(CategoryRuleRepository);
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly toasts = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly tabs: { id: RulesTab; label: string }[] = [
+    { id: 'categories', label: 'Categories' },
+    { id: 'flows', label: 'Money in and transfers' },
+  ];
+  /** In the URL (?tab=flows), so a reload or a link opens the same tab. */
+  readonly activeTab = toSignal(
+    this.route.queryParamMap.pipe(
+      map((params): RulesTab => (params.get('tab') === 'flows' ? 'flows' : 'categories')),
+    ),
+    { initialValue: 'categories' as RulesTab },
+  );
 
   readonly rules = rxResource({ stream: () => this.ruleRepository.getAll() });
 
@@ -72,6 +90,32 @@ export class RuleListComponent {
   readonly applying = signal(false);
 
   protected readonly applyRulesConfirmation = APPLY_RULES_CONFIRMATION;
+
+  selectTab(tab: RulesTab): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'categories' ? null : tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  /** Arrow keys, Home and End move between the tabs (and open them), as in the ARIA tabs pattern. */
+  onTabKeydown(event: KeyboardEvent): void {
+    const index = this.tabs.findIndex((tab) => tab.id === this.activeTab());
+    const last = this.tabs.length - 1;
+    const next = {
+      ArrowRight: index === last ? 0 : index + 1,
+      ArrowLeft: index === 0 ? last : index - 1,
+      Home: 0,
+      End: last,
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    const tab = this.tabs[next].id;
+    this.selectTab(tab);
+    document.getElementById(`rules-tab-${tab}`)?.focus();
+  }
 
   categoryColor(category: string): string {
     return CategoryColorHelper.getColor(category);

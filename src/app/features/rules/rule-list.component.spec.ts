@@ -2,6 +2,8 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter, Router } from '@angular/router';
+import { provideLocationMocks } from '@angular/common/testing';
 import { RuleListComponent } from './rule-list.component';
 import { Category } from '../../core/models/enums/category';
 import { CategoryRuleOutputDto } from '../../core/models/outputs/category-rule-output-dto';
@@ -27,7 +29,7 @@ describe('RuleListComponent', () => {
   async function load(list: CategoryRuleOutputDto[] = rules): Promise<void> {
     TestBed.tick();
     http.expectOne({ method: 'GET', url: '/api/CategoryRules' }).flush(list);
-    // The flow rules below have their own tests.
+    // The flow rules tab has its own tests.
     http.match({ method: 'GET', url: '/api/FlowRules' }).forEach((r) => r.flush([]));
     // Let the load settle: reload() is ignored while a load is still in progress.
     await fixture.whenStable();
@@ -46,6 +48,9 @@ describe('RuleListComponent', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
+        // Tabs are kept in the URL; a mock location keeps each test's URL to itself.
+        provideLocationMocks(),
       ],
     });
     fixture = TestBed.createComponent(RuleListComponent);
@@ -91,7 +96,6 @@ describe('RuleListComponent', () => {
   it('offers a retry when loading fails', async () => {
     TestBed.tick();
     http.expectOne('/api/CategoryRules').flush(null, { status: 500, statusText: 'Error' });
-    http.expectOne('/api/FlowRules').flush([]);
     await fixture.whenStable();
 
     expect(root().querySelector('[role=alert]')!.textContent).toContain(
@@ -166,12 +170,62 @@ describe('RuleListComponent', () => {
     expect(messages()).toEqual(['Deleted “UBER”']);
   });
 
-  it('shows the flow rules below the category rules', async () => {
-    await load();
+  describe('tabs', () => {
+    const tab = (id: string) => root().querySelector<HTMLButtonElement>(`#rules-tab-${id}`)!;
+    const selectedTab = () =>
+      root().querySelector('[role="tab"][aria-selected="true"]')!.textContent!.trim();
+    /** Lets the tab change reach the URL and the page, answering the flow rules request if it opens them. */
+    async function settle(): Promise<void> {
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.tick();
+      http.match({ method: 'GET', url: '/api/FlowRules' }).forEach((r) => r.flush([]));
+      await fixture.whenStable();
+    }
 
-    expect(root().querySelector('app-flow-rule-list h2')!.textContent).toContain(
-      'Money in and transfers',
-    );
+    it('opens on the category rules, without loading the flow rules', async () => {
+      await load();
+
+      expect(selectedTab()).toBe('Categories');
+      expect(keywords()).toEqual(['METRO', 'PIZZA', 'UBER']);
+      expect(root().querySelector('app-flow-rule-list')).toBeNull();
+      http.expectNone('/api/FlowRules');
+    });
+
+    it('switches to the flow rules and keeps the choice in the URL', async () => {
+      await load();
+
+      tab('flows').click();
+      await settle();
+
+      expect(TestBed.inject(Router).url).toBe('/?tab=flows');
+      expect(selectedTab()).toBe('Money in and transfers');
+      expect(root().querySelector('app-flow-rule-list')).not.toBeNull();
+      expect(root().querySelector('#rules-panel-categories')).toBeNull();
+    });
+
+    it('opens the tab named in the URL', async () => {
+      await load();
+
+      await TestBed.inject(Router).navigateByUrl('/?tab=flows');
+      await settle();
+
+      expect(selectedTab()).toBe('Money in and transfers');
+    });
+
+    it('moves between the tabs with the arrow keys, keeping one tab stop', async () => {
+      await load();
+
+      tab('categories').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+      await settle();
+
+      expect(selectedTab()).toBe('Money in and transfers');
+      expect([tab('categories').tabIndex, tab('flows').tabIndex]).toEqual([-1, 0]);
+      expect(document.activeElement).toBe(tab('flows'));
+
+      tab('flows').dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
+      await settle();
+      expect(selectedTab()).toBe('Categories');
+    });
   });
 
   it('applies the category and flow rules to transactions after confirming', async () => {

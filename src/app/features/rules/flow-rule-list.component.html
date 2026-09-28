@@ -1,90 +1,85 @@
-<section aria-labelledby="flow-rules-heading">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <div>
-      <h2 id="flow-rules-heading" class="h5 mb-1">Money in and transfers</h2>
-      <p class="text-body-secondary mb-0">
-        What a transaction counts as in the reports when its description contains a keyword
-      </p>
-    </div>
-    <button
-      type="button"
-      class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-      (click)="editing.set(null)"
-    >
-      <app-icon name="plus" [size]="16" /> New flow rule
-    </button>
-  </div>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <p class="text-body-secondary mb-0">
+    What a transaction counts as in the reports when its description contains a keyword
+  </p>
+  <button
+    type="button"
+    class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+    (click)="editing.set(null)"
+  >
+    <app-icon name="plus" [size]="16" /> New flow rule
+  </button>
+</div>
 
-  <div class="small text-body-secondary mb-3">
-    <p class="mb-1">
-      Without a matching rule, money out is spending, money in is income on a chequing account and a
-      refund on a credit card, and everything on a savings account is a transfer.
-    </p>
-    <p class="mb-0">
-      When several keywords match, the longest wins. Income and refund rules only apply to money in;
-      transfer and ignored rules apply both ways.
-    </p>
-  </div>
+<div class="small text-body-secondary mb-3">
+  <p class="mb-1">
+    Without a matching rule, money out is spending, money in is income on a chequing account and a
+    refund on a credit card, and everything on a savings account is a transfer.
+  </p>
+  <p class="mb-0">
+    When several keywords match, the longest wins. Income and refund rules only apply to money in;
+    transfer and ignored rules apply both ways.
+  </p>
+</div>
 
-  @if (rules.error()) {
-    <app-error-state message="Could not load the flow rules." (retry)="rules.reload()" />
-  } @else if (rules.isLoading() && !rules.hasValue()) {
-    <div class="card">
-      <div class="card-body"><app-skeleton [lines]="4" height="1.75rem" /></div>
+@if (rules.error()) {
+  <app-error-state message="Could not load the flow rules." (retry)="rules.reload()" />
+} @else if (rules.isLoading() && !rules.hasValue()) {
+  <div class="card">
+    <div class="card-body"><app-skeleton [lines]="4" height="1.75rem" /></div>
+  </div>
+} @else if (rules.value()?.length === 0) {
+  <div class="card">
+    <div class="card-body text-center text-body-secondary py-5">
+      <p class="mb-2">No flow rules yet, so every transaction follows its account's defaults.</p>
+      <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
+        New flow rule
+      </button>
     </div>
-  } @else if (rules.value()?.length === 0) {
-    <div class="card">
-      <div class="card-body text-center text-body-secondary py-5">
-        <p class="mb-2">No flow rules yet, so every transaction follows its account's defaults.</p>
-        <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
-          New flow rule
-        </button>
-      </div>
-    </div>
-  } @else {
-    <div class="card">
-      <ul class="rule-list" aria-label="Flow rules" [class.is-reloading]="rules.isLoading()">
-        @for (rule of rules.value(); track rule.id) {
-          <li class="rule-row d-flex align-items-center gap-2 gap-sm-3">
-            <div class="flex-grow-1 min-w-0 d-flex flex-column flex-sm-row gap-sm-3">
-              <span class="rule-keyword fw-medium text-truncate" [title]="rule.keyword">{{
-                rule.keyword
-              }}</span>
-              <span class="small text-nowrap">
-                <span class="visually-hidden">counts as </span
-                ><span
-                  class="badge rounded-pill fw-medium flow-badge"
-                  [class]="'flow-' + rule.flow.toLowerCase()"
-                  >{{ flowLabels[rule.flow] }}</span
-                >
-              </span>
-            </div>
-            <div class="d-flex flex-shrink-0">
-              <button
-                type="button"
-                class="btn btn-icon"
-                [attr.aria-label]="'Edit ' + rule.keyword"
-                title="Edit"
-                (click)="editing.set(rule)"
+  </div>
+} @else {
+  <div class="card">
+    <ul class="rule-list" aria-label="Flow rules" [class.is-reloading]="rules.isLoading()">
+      @for (rule of rules.value(); track rule.id) {
+        <li class="rule-row d-flex align-items-center gap-2 gap-sm-3">
+          <div class="flex-grow-1 min-w-0 d-flex flex-column flex-sm-row gap-sm-3">
+            <span class="rule-keyword fw-medium text-truncate" [title]="rule.keyword">{{
+              rule.keyword
+            }}</span>
+            <span class="small text-nowrap">
+              <span class="visually-hidden">counts as </span
+              ><span
+                class="badge rounded-pill fw-medium flow-badge"
+                [class]="'flow-' + rule.flow.toLowerCase()"
+                >{{ flowLabels[rule.flow] }}</span
               >
-                <app-icon name="pencil" [size]="16" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-icon btn-icon-danger"
-                [attr.aria-label]="'Delete ' + rule.keyword"
-                title="Delete"
-                (click)="deleting.set(rule)"
-              >
-                <app-icon name="trash" [size]="16" />
-              </button>
-            </div>
-          </li>
-        }
-      </ul>
-    </div>
-  }
-</section>
+            </span>
+          </div>
+          <div class="d-flex flex-shrink-0">
+            <button
+              type="button"
+              class="btn btn-icon"
+              [attr.aria-label]="'Edit ' + rule.keyword"
+              title="Edit"
+              (click)="editing.set(rule)"
+            >
+              <app-icon name="pencil" [size]="16" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-icon btn-icon-danger"
+              [attr.aria-label]="'Delete ' + rule.keyword"
+              title="Delete"
+              (click)="deleting.set(rule)"
+            >
+              <app-icon name="trash" [size]="16" />
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+}
 
 @if (editing() !== undefined) {
   <app-side-panel

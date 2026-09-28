@@ -14,7 +14,7 @@ or rows already stored on another account), the import asks before going ahead (
 Every transaction also has a **flow**, what it counts as in the reports: spending, refund, income,
 transfer (between your own accounts, like a card payment) or ignored. Without a matching flow rule,
 money out is spending, money in is income on chequing and a refund on a credit card, and everything on
-a savings account is a transfer. Flow rules (on the Rules page, under the category rules) override
+a savings account is a transfer. Flow rules (the Rules page's "Money in and transfers" tab) override
 that by keyword; the longest matching keyword wins. A flow or category picked by hand on a transaction
 is kept when the rules are re-applied ("Apply rules").
 
