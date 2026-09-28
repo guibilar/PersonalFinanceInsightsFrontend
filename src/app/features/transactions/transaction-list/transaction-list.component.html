@@ -277,13 +277,13 @@
 </ng-template>
 
 @if (showImport()) {
-  <app-side-panel title="Import statement" (closed)="showImport.set(false)">
+  <app-modal title="Import statement" (closed)="showImport.set(false)">
     <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
-  </app-side-panel>
+  </app-modal>
 }
 
 @if (editingTransaction(); as transaction) {
-  <app-side-panel title="Edit transaction" (closed)="editingTransaction.set(null)">
+  <app-modal title="Edit transaction" (closed)="editingTransaction.set(null)">
     <app-transaction-edit-form
       [transaction]="transaction"
       [saving]="savingEdit()"
@@ -291,7 +291,7 @@
       (cancelled)="editingTransaction.set(null)"
       (deleteRequested)="deletingTransaction.set(transaction)"
     />
-  </app-side-panel>
+  </app-modal>
 }
 
 @if (deletingTransaction(); as transaction) {
@@ -316,7 +316,7 @@
 }
 
 @if (linkingTransaction(); as transaction) {
-  <app-side-panel title="Link to a budget" (closed)="linkingTransaction.set(null)">
+  <app-modal title="Link to a budget" (closed)="linkingTransaction.set(null)">
     <app-transaction-link-form
       [transaction]="transaction"
       [budgets]="activeBudgets()"
@@ -324,5 +324,5 @@
       (submitTransaction)="onLinkSubmit($event)"
       (cancelled)="linkingTransaction.set(null)"
     />
-  </app-side-panel>
+  </app-modal>
 }

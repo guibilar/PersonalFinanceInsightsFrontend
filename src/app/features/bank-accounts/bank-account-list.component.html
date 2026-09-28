@@ -82,7 +82,7 @@
 }
 
 @if (editing() !== undefined) {
-  <app-side-panel
+  <app-modal
     [title]="editing() ? 'Rename account' : 'New account'"
     (closed)="editing.set(undefined)"
   >
@@ -92,7 +92,7 @@
       (submitAccount)="onFormSubmit($event)"
       (cancelled)="editing.set(undefined)"
     />
-  </app-side-panel>
+  </app-modal>
 }
 
 @if (deleting(); as account) {

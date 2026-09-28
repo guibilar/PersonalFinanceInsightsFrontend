@@ -82,7 +82,7 @@
 }
 
 @if (editing() !== undefined) {
-  <app-side-panel
+  <app-modal
     [title]="editing() ? 'Edit flow rule' : 'New flow rule'"
     (closed)="editing.set(undefined)"
   >
@@ -92,7 +92,7 @@
       (submitRule)="onFormSubmit($event)"
       (cancelled)="editing.set(undefined)"
     />
-  </app-side-panel>
+  </app-modal>
 }
 
 @if (deleting(); as rule) {

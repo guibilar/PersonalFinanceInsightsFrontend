@@ -1,0 +1,74 @@
+// The backdrop is also the scroll container: a form taller than the window scrolls as a whole.
+.modal-backdrop-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem;
+  overflow-y: auto;
+  background: rgb(0 0 0 / 0.45);
+  animation: fade-in 0.15s ease-out;
+}
+
+.modal-dialog-box {
+  width: min(32rem, 100%);
+  margin: auto 0;
+  background: var(--bs-body-bg);
+  border: var(--bs-border-width) solid var(--bs-border-color-translucent);
+  border-radius: var(--bs-border-radius-lg);
+  box-shadow: var(--bs-box-shadow-lg);
+  outline: none;
+  animation: pop-in 0.18s ease-out;
+}
+
+.modal-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.btn-close-modal {
+  display: inline-flex;
+  padding: 0.375rem;
+  color: var(--bs-secondary-color);
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    background: var(--bs-secondary-bg);
+  }
+}
+
+.modal-body-area {
+  padding: 1.25rem;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .modal-backdrop-layer {
+    padding: 1rem 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop-layer,
+  .modal-dialog-box {
+    animation: none;
+  }
+}

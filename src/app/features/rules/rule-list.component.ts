@@ -16,7 +16,7 @@ import { conflictDetail } from '../../shared/utils/problem-detail';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { SidePanelComponent } from '../../shared/ui/side-panel/side-panel.component';
+import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RuleFormComponent } from './rule-form.component';
@@ -37,7 +37,7 @@ type RulesTab = 'categories' | 'flows';
     ConfirmDialogComponent,
     ErrorStateComponent,
     IconComponent,
-    SidePanelComponent,
+    ModalComponent,
     SkeletonComponent,
   ],
   templateUrl: './rule-list.component.html',

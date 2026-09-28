@@ -12,7 +12,7 @@ import { BudgetCriteria, BudgetToolbarComponent } from './budget-toolbar.compone
 import { PaginatedContentComponent } from '../../shared/ui/paginated-content/paginated-content.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { SidePanelComponent } from '../../shared/ui/side-panel/side-panel.component';
+import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
@@ -39,7 +39,7 @@ const PAGE_SIZE = 12;
     PaginatedContentComponent,
     ErrorStateComponent,
     IconComponent,
-    SidePanelComponent,
+    ModalComponent,
     ConfirmDialogComponent,
     SkeletonComponent,
   ],

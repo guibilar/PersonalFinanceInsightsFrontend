@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { ThemeService } from '../../theme/theme.service';
 import { IconComponent, IconName } from '../../../shared/ui/icon/icon.component';
-import { SidePanelComponent } from '../../../shared/ui/side-panel/side-panel.component';
+import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { AuthService } from '../../auth/auth.service';
 import { ChangePasswordFormComponent } from '../../../features/account/change-password-form.component';
@@ -27,7 +27,7 @@ interface NavLink {
     RouterLink,
     RouterLinkActive,
     IconComponent,
-    SidePanelComponent,
+    ModalComponent,
     ChangePasswordFormComponent,
     ConfirmDialogComponent,
   ],

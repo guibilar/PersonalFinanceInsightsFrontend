@@ -156,17 +156,14 @@
 </ng-template>
 
 @if (editing() !== undefined) {
-  <app-side-panel
-    [title]="editing() ? 'Edit budget' : 'New budget'"
-    (closed)="editing.set(undefined)"
-  >
+  <app-modal [title]="editing() ? 'Edit budget' : 'New budget'" (closed)="editing.set(undefined)">
     <app-budget-form
       [budget]="editing() ?? null"
       [saving]="saving()"
       (submitBudget)="onFormSubmit($event)"
       (cancelled)="editing.set(undefined)"
     />
-  </app-side-panel>
+  </app-modal>
 }
 
 @if (deleting(); as budget) {
