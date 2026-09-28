@@ -183,14 +183,14 @@
 }
 
 @if (editing() !== undefined) {
-  <app-side-panel [title]="editing() ? 'Edit rule' : 'New rule'" (closed)="editing.set(undefined)">
+  <app-modal [title]="editing() ? 'Edit rule' : 'New rule'" (closed)="editing.set(undefined)">
     <app-rule-form
       [rule]="editing() ?? null"
       [saving]="saving()"
       (submitRule)="onFormSubmit($event)"
       (cancelled)="editing.set(undefined)"
     />
-  </app-side-panel>
+  </app-modal>
 }
 
 @if (deleting(); as rule) {
