@@ -16,149 +16,171 @@
   </button>
 </div>
 
-<section aria-labelledby="category-rules-heading">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <div>
-      <h2 id="category-rules-heading" class="h5 mb-1">Categories</h2>
+<ul class="nav nav-tabs mb-4" role="tablist" aria-label="Kinds of rules">
+  @for (tab of tabs; track tab.id) {
+    <li class="nav-item" role="presentation">
+      <button
+        type="button"
+        role="tab"
+        class="nav-link"
+        [id]="'rules-tab-' + tab.id"
+        [class.active]="activeTab() === tab.id"
+        [attr.aria-selected]="activeTab() === tab.id"
+        [attr.aria-controls]="'rules-panel-' + tab.id"
+        [tabIndex]="activeTab() === tab.id ? 0 : -1"
+        (click)="selectTab(tab.id)"
+        (keydown)="onTabKeydown($event)"
+      >
+        {{ tab.label }}
+      </button>
+    </li>
+  }
+</ul>
+
+@if (activeTab() === 'flows') {
+  <div id="rules-panel-flows" role="tabpanel" aria-labelledby="rules-tab-flows">
+    <app-flow-rule-list />
+  </div>
+} @else {
+  <div id="rules-panel-categories" role="tabpanel" aria-labelledby="rules-tab-categories">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
       <p class="text-body-secondary mb-0">
         The first rule whose keyword is in a description sets the transaction's category
       </p>
+      <button
+        type="button"
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        (click)="editing.set(null)"
+      >
+        <app-icon name="plus" [size]="16" /> New rule
+      </button>
     </div>
-    <button
-      type="button"
-      class="btn btn-primary d-inline-flex align-items-center gap-2"
-      (click)="editing.set(null)"
-    >
-      <app-icon name="plus" [size]="16" /> New rule
-    </button>
-  </div>
 
-  <div class="card mb-3">
-    <div class="card-body d-flex flex-wrap align-items-center gap-2 py-3">
-      <div class="flex-grow-1 search">
-        <label for="rule-search" class="visually-hidden">Search rules</label>
-        <div class="input-group">
-          <span class="input-group-text bg-transparent text-body-secondary"
-            ><app-icon name="search" [size]="16"
-          /></span>
-          <input
-            type="search"
-            id="rule-search"
-            class="form-control border-start-0"
-            placeholder="Search by keyword or category"
-            autocomplete="off"
-            [formControl]="search"
-          />
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap align-items-center gap-2 py-3">
+        <div class="flex-grow-1 search">
+          <label for="rule-search" class="visually-hidden">Search rules</label>
+          <div class="input-group">
+            <span class="input-group-text bg-transparent text-body-secondary"
+              ><app-icon name="search" [size]="16"
+            /></span>
+            <input
+              type="search"
+              id="rule-search"
+              class="form-control border-start-0"
+              placeholder="Search by keyword or category"
+              autocomplete="off"
+              [formControl]="search"
+            />
+          </div>
+        </div>
+        @if (rules.hasValue()) {
+          <span class="small text-body-secondary text-nowrap" aria-live="polite">
+            @if (query()) {
+              {{ visibleRules().length }} of {{ total() }} rules
+            } @else {
+              {{ total() }} {{ total() === 1 ? 'rule' : 'rules' }}
+            }
+          </span>
+        }
+      </div>
+    </div>
+
+    @if (rules.error()) {
+      <app-error-state message="Could not load the category rules." (retry)="rules.reload()" />
+    } @else if (rules.isLoading() && !rules.hasValue()) {
+      <div class="card">
+        <div class="card-body"><app-skeleton [lines]="8" height="1.75rem" /></div>
+      </div>
+    } @else if (total() === 0) {
+      <div class="card">
+        <div class="card-body text-center text-body-secondary py-5">
+          <p class="mb-2">No rules yet, so every imported transaction lands in Other.</p>
+          <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
+            New rule
+          </button>
         </div>
       </div>
-      @if (rules.hasValue()) {
-        <span class="small text-body-secondary text-nowrap" aria-live="polite">
-          @if (query()) {
-            {{ visibleRules().length }} of {{ total() }} rules
-          } @else {
-            {{ total() }} {{ total() === 1 ? 'rule' : 'rules' }}
-          }
-        </span>
-      }
-    </div>
-  </div>
-
-  @if (rules.error()) {
-    <app-error-state message="Could not load the category rules." (retry)="rules.reload()" />
-  } @else if (rules.isLoading() && !rules.hasValue()) {
-    <div class="card">
-      <div class="card-body"><app-skeleton [lines]="8" height="1.75rem" /></div>
-    </div>
-  } @else if (total() === 0) {
-    <div class="card">
-      <div class="card-body text-center text-body-secondary py-5">
-        <p class="mb-2">No rules yet, so every imported transaction lands in Other.</p>
-        <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
-          New rule
-        </button>
+    } @else if (visibleRules().length === 0) {
+      <div class="card">
+        <div class="card-body text-center text-body-secondary py-5">
+          <p class="mb-2">No rules match “{{ search.value }}”.</p>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="clearSearch()">
+            Clear search
+          </button>
+        </div>
       </div>
-    </div>
-  } @else if (visibleRules().length === 0) {
-    <div class="card">
-      <div class="card-body text-center text-body-secondary py-5">
-        <p class="mb-2">No rules match “{{ search.value }}”.</p>
-        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="clearSearch()">
-          Clear search
-        </button>
-      </div>
-    </div>
-  } @else {
-    <div class="card">
-      <ul
-        class="rule-list"
-        aria-label="Category rules, in the order they are checked"
-        [class.is-reloading]="rules.isLoading() || moving()"
-      >
-        @for (rule of visibleRules(); track rule.id) {
-          <li class="rule-row d-flex align-items-center gap-2 gap-sm-3">
-            <span class="rule-position small text-body-secondary">
-              <span class="visually-hidden">Rule </span>{{ rule.position + 1 }}
-            </span>
-            <div class="flex-grow-1 min-w-0 d-flex flex-column flex-sm-row gap-sm-3">
-              <span class="rule-keyword fw-medium text-truncate" [title]="rule.keyword">{{
-                rule.keyword
-              }}</span>
-              <span class="rule-category small text-nowrap">
-                <span
-                  class="category-dot"
-                  [style.background-color]="categoryColor(rule.category)"
-                ></span
-                ><span class="visually-hidden">sets </span>{{ rule.category }}
+    } @else {
+      <div class="card">
+        <ul
+          class="rule-list"
+          aria-label="Category rules, in the order they are checked"
+          [class.is-reloading]="rules.isLoading() || moving()"
+        >
+          @for (rule of visibleRules(); track rule.id) {
+            <li class="rule-row d-flex align-items-center gap-2 gap-sm-3">
+              <span class="rule-position small text-body-secondary">
+                <span class="visually-hidden">Rule </span>{{ rule.position + 1 }}
               </span>
-            </div>
-            <div class="d-flex flex-shrink-0">
-              <button
-                type="button"
-                class="btn btn-icon"
-                [attr.aria-label]="'Move ' + rule.keyword + ' up'"
-                title="Move up"
-                [disabled]="moving() || rule.position === 0"
-                (click)="move(rule, -1)"
-              >
-                <app-icon name="arrow-up" [size]="16" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-icon"
-                [attr.aria-label]="'Move ' + rule.keyword + ' down'"
-                title="Move down"
-                [disabled]="moving() || rule.position === total() - 1"
-                (click)="move(rule, 1)"
-              >
-                <app-icon name="arrow-down" [size]="16" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-icon"
-                [attr.aria-label]="'Edit ' + rule.keyword"
-                title="Edit"
-                (click)="editing.set(rule)"
-              >
-                <app-icon name="pencil" [size]="16" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-icon btn-icon-danger"
-                [attr.aria-label]="'Delete ' + rule.keyword"
-                title="Delete"
-                (click)="deleting.set(rule)"
-              >
-                <app-icon name="trash" [size]="16" />
-              </button>
-            </div>
-          </li>
-        }
-      </ul>
-    </div>
-  }
-</section>
-
-<app-flow-rule-list class="d-block mt-5" />
+              <div class="flex-grow-1 min-w-0 d-flex flex-column flex-sm-row gap-sm-3">
+                <span class="rule-keyword fw-medium text-truncate" [title]="rule.keyword">{{
+                  rule.keyword
+                }}</span>
+                <span class="rule-category small text-nowrap">
+                  <span
+                    class="category-dot"
+                    [style.background-color]="categoryColor(rule.category)"
+                  ></span
+                  ><span class="visually-hidden">sets </span>{{ rule.category }}
+                </span>
+              </div>
+              <div class="d-flex flex-shrink-0">
+                <button
+                  type="button"
+                  class="btn btn-icon"
+                  [attr.aria-label]="'Move ' + rule.keyword + ' up'"
+                  title="Move up"
+                  [disabled]="moving() || rule.position === 0"
+                  (click)="move(rule, -1)"
+                >
+                  <app-icon name="arrow-up" [size]="16" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon"
+                  [attr.aria-label]="'Move ' + rule.keyword + ' down'"
+                  title="Move down"
+                  [disabled]="moving() || rule.position === total() - 1"
+                  (click)="move(rule, 1)"
+                >
+                  <app-icon name="arrow-down" [size]="16" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon"
+                  [attr.aria-label]="'Edit ' + rule.keyword"
+                  title="Edit"
+                  (click)="editing.set(rule)"
+                >
+                  <app-icon name="pencil" [size]="16" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-icon-danger"
+                  [attr.aria-label]="'Delete ' + rule.keyword"
+                  title="Delete"
+                  (click)="deleting.set(rule)"
+                >
+                  <app-icon name="trash" [size]="16" />
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+}
 
 @if (editing() !== undefined) {
   <app-side-panel [title]="editing() ? 'Edit rule' : 'New rule'" (closed)="editing.set(undefined)">
