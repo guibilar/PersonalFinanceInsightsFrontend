@@ -82,12 +82,21 @@ export class ModalComponent implements OnDestroy {
   constructor() {
     this.document.body.style.overflow = 'hidden';
     afterNextRender(() => {
-      // Focus the first field if there is one, else the dialog itself.
-      const field = this.dialog().nativeElement.querySelector<HTMLElement>(
-        '.modal-body-area select, .modal-body-area input, .modal-body-area textarea',
-      );
-      (field ?? this.dialog().nativeElement).focus();
+      const dialog = this.dialog().nativeElement;
+      // With a mouse, focus goes straight to the first field. On a touch screen the dialog itself takes it: a
+      // field focused from script pops the keyboard up over the form, and Firefox for Android then won't open
+      // a dropdown that was focused that way when it is tapped.
+      const field = this.touchScreen()
+        ? null
+        : dialog.querySelector<HTMLElement>(
+            '.modal-body-area select, .modal-body-area input, .modal-body-area textarea',
+          );
+      (field ?? dialog).focus();
     });
+  }
+
+  private touchScreen(): boolean {
+    return this.document.defaultView?.matchMedia('(pointer: coarse)').matches ?? false;
   }
 
   protected onBackdropClick(event: MouseEvent): void {
