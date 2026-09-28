@@ -5,6 +5,7 @@ import { switchMap, tap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { BudgetRepository } from '../../../core/api/budget-repository';
+import { AccountRepository } from '../../../core/api/account-repository';
 import {
   SortDirection,
   TransactionFilterInputDto,
@@ -16,6 +17,8 @@ import { TransactionOutputDto } from '../../../core/models/outputs/transaction-o
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
+import { Flow } from '../../../core/models/enums/flow';
+import { FLOW_LABELS } from '../../../shared/utils/flow-helper';
 import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
 import { PAGE_SIZE_OPTIONS } from '../../../shared/utils/page-size-options';
 import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
@@ -78,6 +81,7 @@ export class TransactionListComponent {
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly categoryRuleRepository = inject(CategoryRuleRepository);
+  private readonly accountRepository = inject(AccountRepository);
   private readonly toasts = inject(ToastService);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
@@ -113,8 +117,8 @@ export class TransactionListComponent {
   });
 
   readonly hasCriteria = computed(() => {
-    const { description, category, startDate, endDate } = this.filter();
-    return !!(description || category || startDate || endDate);
+    const { description, category, accountId, flow, startDate, endDate } = this.filter();
+    return !!(description || category || accountId || flow || startDate || endDate);
   });
 
   // Link dropdown needs every active budget, not just the first page.
@@ -123,7 +127,14 @@ export class TransactionListComponent {
   });
   readonly activeBudgets = computed(() => this.activeBudgetsResource.value()?.items ?? []);
 
+  // For the account filter.
+  private readonly accountsResource = rxResource({
+    stream: () => this.accountRepository.getAll(),
+  });
+  readonly accounts = computed(() => this.accountsResource.value() ?? []);
+
   protected readonly TransactionType = TransactionType;
+  protected readonly Flow = Flow;
   protected readonly applyRulesConfirmation = APPLY_RULES_CONFIRMATION;
 
   onCriteriaChange(criteria: TransactionCriteria): void {
@@ -188,6 +199,10 @@ export class TransactionListComponent {
     this.onCriteriaChange({});
   }
 
+  flowLabel(flow: Flow): string {
+    return FLOW_LABELS[flow];
+  }
+
   getCategoryColor(category: string): string {
     return CategoryColorHelper.getColor(category);
   }
@@ -247,14 +262,14 @@ export class TransactionListComponent {
       .create(rule)
       .pipe(
         tap(() => (added = true)),
-        switchMap(() => this.transactionRepository.applyCategoryRules()),
+        switchMap(() => this.transactionRepository.applyRules()),
       )
       .subscribe({
         next: ({ updated }) => {
           this.finishEdit();
           const others = `${updated} other ${updated === 1 ? 'transaction' : 'transactions'}`;
           this.toasts.success(
-            `Transaction updated. Rule “${rule.keyword}” added and ${others} recategorised`,
+            `Transaction updated. Rule “${rule.keyword}” added and ${others} updated`,
           );
         },
         error: (error: unknown) => {
@@ -275,10 +290,10 @@ export class TransactionListComponent {
     this.transactions.reload();
   }
 
-  applyCategoryRules(): void {
+  applyRules(): void {
     this.confirmingRules.set(false);
     this.applyingRules.set(true);
-    this.transactionRepository.applyCategoryRules().subscribe({
+    this.transactionRepository.applyRules().subscribe({
       next: (result) => {
         this.applyingRules.set(false);
         this.transactions.reload();
@@ -286,7 +301,7 @@ export class TransactionListComponent {
       },
       error: () => {
         this.applyingRules.set(false);
-        this.toasts.error('Could not apply the category rules.');
+        this.toasts.error('Could not apply the rules.');
       },
     });
   }

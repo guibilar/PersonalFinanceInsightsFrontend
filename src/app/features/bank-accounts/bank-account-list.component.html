@@ -1,0 +1,107 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Accounts</h1>
+    <p class="text-body-secondary mb-0">The bank accounts and cards your statements come from</p>
+  </div>
+  <button
+    type="button"
+    class="btn btn-primary d-inline-flex align-items-center gap-2"
+    (click)="editing.set(null)"
+  >
+    <app-icon name="plus" [size]="16" /> New account
+  </button>
+</div>
+
+@if (accounts.error()) {
+  <app-error-state message="Could not load the accounts." (retry)="accounts.reload()" />
+} @else if (accounts.isLoading() && !accounts.hasValue()) {
+  <div class="card">
+    <div class="card-body"><app-skeleton [lines]="3" height="1.75rem" /></div>
+  </div>
+} @else if (accounts.value()?.length === 0) {
+  <div class="card">
+    <div class="card-body text-center text-body-secondary py-5">
+      <p class="mb-2">No accounts yet. Add one to import its statements.</p>
+      <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
+        New account
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <ul class="account-list" aria-label="Accounts" [class.is-reloading]="accounts.isLoading()">
+      @for (account of accounts.value(); track account.id) {
+        <li class="account-row d-flex align-items-center gap-2 gap-sm-3">
+          <div class="flex-grow-1 min-w-0">
+            <div class="account-name fw-medium text-truncate" [title]="account.name">
+              {{ account.name }}
+            </div>
+            <div class="small text-body-secondary">
+              {{ typeLabels[account.type] }} ·
+              {{ account.transactionCount }}
+              {{ account.transactionCount === 1 ? 'transaction' : 'transactions' }}
+            </div>
+          </div>
+          <div class="d-flex flex-shrink-0">
+            <button
+              type="button"
+              class="btn btn-icon"
+              [attr.aria-label]="'Rename ' + account.name"
+              title="Rename"
+              (click)="editing.set(account)"
+            >
+              <app-icon name="pencil" [size]="16" />
+            </button>
+            <!-- Wrapped so the reason shows on hover even though the button is disabled. -->
+            <span
+              [title]="
+                account.transactionCount > 0
+                  ? 'Only an account without transactions can be deleted'
+                  : 'Delete'
+              "
+            >
+              <button
+                type="button"
+                class="btn btn-icon btn-icon-danger"
+                [attr.aria-label]="'Delete ' + account.name"
+                [disabled]="account.transactionCount > 0"
+                (click)="deleting.set(account)"
+              >
+                <app-icon name="trash" [size]="16" />
+              </button>
+            </span>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+  <p class="small text-body-secondary mt-2 mb-0">
+    Only an account that has never had transactions can be deleted, since deleted transactions are
+    kept so re-importing a statement doesn't add them back.
+  </p>
+}
+
+@if (editing() !== undefined) {
+  <app-side-panel
+    [title]="editing() ? 'Rename account' : 'New account'"
+    (closed)="editing.set(undefined)"
+  >
+    <app-bank-account-form
+      [account]="editing() ?? null"
+      [saving]="saving()"
+      (submitAccount)="onFormSubmit($event)"
+      (cancelled)="editing.set(undefined)"
+    />
+  </app-side-panel>
+}
+
+@if (deleting(); as account) {
+  <app-confirm-dialog
+    [title]="'Delete “' + account.name + '”?'"
+    message="It has no transactions, so nothing else changes."
+    confirmLabel="Delete"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="deleting.set(null)"
+  />
+}

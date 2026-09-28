@@ -7,9 +7,8 @@ import { TransactionOutputDto } from '../models/outputs/transaction-output-dto';
 import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
 import { TransactionLinkingInputDto } from '../models/inputs/transaction-linking-input-dto';
 import { ImportResultOutputDto } from '../models/outputs/import-result-output-dto';
-import { AccountType } from '../models/enums/account-type';
 import { TransactionUpdateInputDto } from '../models/inputs/transaction-update-input-dto';
-import { CategoryRulesResultOutputDto } from '../models/outputs/category-rules-result-output-dto';
+import { ApplyRulesResultOutputDto } from '../models/outputs/apply-rules-result-output-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -24,22 +23,34 @@ export class TransactionRepository {
   unlinkTransaction(id: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/UnlinkTransaction/${id}`, null);
   }
-  /** Uploads a bank statement CSV; rows already imported are skipped by the API. */
-  importStatement(file: File, account: AccountType): Observable<ImportResultOutputDto> {
+  /**
+   * Uploads a bank statement CSV into an account; rows already imported are skipped by the API. When the file
+   * doesn't look like it belongs to that account, the API answers 409 (code "account-mismatch") unless
+   * `confirmed` is true.
+   */
+  importStatement(
+    file: File,
+    accountId: string,
+    confirmed = false,
+  ): Observable<ImportResultOutputDto> {
     const form = new FormData();
     form.append('file', file, file.name);
-    form.append('account', account);
+    form.append('accountId', accountId);
+    if (confirmed) form.append('confirmed', 'true');
     return this.http.post<ImportResultOutputDto>(`${this.baseUrl}/Import`, form);
   }
 
-  /** Corrects description and category; the category is then kept when rules are re-applied. */
+  /** Corrects description, category and flow; a changed category or flow is then kept when rules are re-applied. */
   update(id: string, update: TransactionUpdateInputDto): Observable<TransactionOutputDto> {
     return this.http.put<TransactionOutputDto>(`${this.baseUrl}/${id}`, update);
   }
 
-  /** Re-runs the current category rules over every transaction whose category wasn't picked by hand. */
-  applyCategoryRules(): Observable<CategoryRulesResultOutputDto> {
-    return this.http.post<CategoryRulesResultOutputDto>(`${this.baseUrl}/ApplyCategoryRules`, null);
+  /**
+   * Re-runs the current category and flow rules over the stored transactions. Categories and flows picked by
+   * hand, and the categories of savings transactions, are left alone.
+   */
+  applyRules(): Observable<ApplyRulesResultOutputDto> {
+    return this.http.post<ApplyRulesResultOutputDto>(`${this.baseUrl}/ApplyRules`, null);
   }
 
   /**

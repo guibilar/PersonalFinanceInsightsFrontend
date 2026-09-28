@@ -73,6 +73,39 @@ describe('ChartHelper', () => {
   });
 });
 
+describe('cash-flow chart', () => {
+  const cashFlow = {
+    months: [
+      { month: 'Aug 2026', income: 5000, spending: 3200, net: 1800, saved: 1000 },
+      { month: 'Sep 2026', income: 2500, spending: 300, net: 2200, saved: -200 },
+    ],
+    averageMonthlyIncome: 5000,
+    averageMonthlySpending: 3200,
+    averageMonthlySaved: 1000,
+  };
+
+  it('puts income, spending and saved side by side per month', () => {
+    const { chartData, chartOptions } = ChartHelper.generateCashFlowChartConfiguration(cashFlow);
+
+    expect(chartData.labels).toEqual(['Aug 2026', 'Sep 2026']);
+    expect(chartData.datasets.map((d) => [d.label, d.data])).toEqual([
+      ['Income', [5000, 2500]],
+      ['Spending', [3200, 300]],
+      ['Saved', [1000, -200]],
+    ]);
+    expect(chartOptions?.scales?.['x']?.stacked).toBeUndefined();
+  });
+
+  it('adds the month’s net to the tooltip', () => {
+    const { chartOptions } = ChartHelper.generateCashFlowChartConfiguration(cashFlow);
+    const footer = chartOptions!.plugins!.tooltip!.callbacks!.footer as unknown as (
+      items: { dataIndex: number }[],
+    ) => string;
+
+    expect(footer([{ dataIndex: 1 }])).toBe('Net: $2,200.00');
+  });
+});
+
 describe('visibleMonthlyAverage', () => {
   it('averages only visible datasets over the given months', () => {
     const chart = fakeChart(

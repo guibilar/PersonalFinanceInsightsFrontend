@@ -5,6 +5,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TransactionListComponent } from './transaction-list.component';
 import { Category } from '../../../core/models/enums/category';
 import { AccountType } from '../../../core/models/enums/account-type';
+import { Flow } from '../../../core/models/enums/flow';
+import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
@@ -39,6 +41,12 @@ describe('TransactionListComponent', () => {
     TestBed.tick();
     // The link dropdown's budgets are not part of these tests.
     http.match('/api/Budget/Filter').forEach((r) => r.flush(emptyPage));
+    // Nor are the account filter's accounts, apart from their names.
+    http
+      .match('/api/Accounts')
+      .forEach((r) =>
+        r.flush([{ id: 'a2', name: 'Visa', type: AccountType.CreditCard, transactionCount: 1 }]),
+      );
   });
 
   afterEach(() => http.verify());
@@ -92,7 +100,57 @@ describe('TransactionListComponent', () => {
     expect(component.hasCriteria()).toBe(true);
   });
 
-  describe('editing and category rules', () => {
+  it('filters by account and flow like the other criteria', () => {
+    component.onCriteriaChange({ accountId: 'a2', flow: Flow.Income });
+
+    expect(lastFilterRequest()).toEqual(
+      expect.objectContaining({ accountId: 'a2', flow: Flow.Income, page: 1 }),
+    );
+    expect(component.hasCriteria()).toBe(true);
+    expect(component.accounts().map((a) => a.name)).toEqual(['Visa']);
+  });
+
+  it('shows the account name and marks flows other than spending', async () => {
+    TestBed.tick();
+    const base = {
+      date: '2026-09-10',
+      amount: 5,
+      category: Category.Other,
+      categoryLocked: false,
+      accountId: 'a2',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flowLocked: false,
+      budgetId: '',
+    };
+    http.expectOne('/api/Transaction/Filter').flush({
+      ...emptyPage,
+      items: [
+        { ...base, id: 't1', description: 'COFFEE', flow: Flow.Spending },
+        {
+          ...base,
+          id: 't2',
+          description: 'PAYMENT THANK YOU',
+          flow: Flow.Transfer,
+          flowLocked: true,
+          transactionType: TransactionType.Credit,
+        },
+      ],
+      totalCount: 2,
+      totalPages: 1,
+    });
+    await fixture.whenStable();
+    const rows = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'));
+
+    expect(rows[0].textContent).toContain('Visa');
+    expect(rows[0].querySelector('.flow-badge')).toBeNull();
+    const badge = rows[1].querySelector('.flow-badge')!;
+    expect(badge.textContent).toContain('Transfer');
+    expect(badge.classList).toContain('flow-transfer');
+    expect(badge.getAttribute('title')).toBe('Picked by hand: kept when rules are re-applied');
+  });
+
+  describe('editing and rules', () => {
     const coffee: TransactionOutputDto = {
       id: 't1',
       date: '2026-09-10',
@@ -100,7 +158,11 @@ describe('TransactionListComponent', () => {
       description: 'COFFEE',
       category: Category.Other,
       categoryLocked: false,
-      account: AccountType.CreditCard,
+      accountId: 'a2',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flow: Flow.Spending,
+      flowLocked: false,
       budgetId: '',
     };
 
@@ -150,7 +212,7 @@ describe('TransactionListComponent', () => {
       expect(component.editingTransaction()).toEqual(coffee);
       create.flush({ id: 'r1', ...rule });
       http
-        .expectOne({ method: 'POST', url: '/api/Transaction/ApplyCategoryRules' })
+        .expectOne({ method: 'POST', url: '/api/Transaction/ApplyRules' })
         .flush({ checked: 40, updated: 2 });
 
       expect(component.editingTransaction()).toBeNull();
@@ -160,9 +222,7 @@ describe('TransactionListComponent', () => {
         TestBed.inject(ToastService)
           .toasts()
           .map((t) => t.message),
-      ).toEqual([
-        'Transaction updated. Rule “COFFEE” added and 2 other transactions recategorised',
-      ]);
+      ).toEqual(['Transaction updated. Rule “COFFEE” added and 2 other transactions updated']);
     });
 
     it('says why the rule was not added, and still closes the saved edit', () => {
@@ -181,7 +241,7 @@ describe('TransactionListComponent', () => {
           { status: 409, statusText: 'Conflict' },
         );
 
-      http.expectNone('/api/Transaction/ApplyCategoryRules');
+      http.expectNone('/api/Transaction/ApplyRules');
       expect(component.editingTransaction()).toBeNull();
       lastFilterRequest();
       expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
@@ -267,14 +327,14 @@ describe('TransactionListComponent', () => {
       expect(component.showDeleted()).toBe(false);
     });
 
-    it('applies the category rules after confirming and reports what changed', () => {
+    it('applies the rules after confirming and reports what changed', () => {
       component.confirmingRules.set(true);
 
-      component.applyCategoryRules();
+      component.applyRules();
       expect(component.confirmingRules()).toBe(false);
       expect(component.applyingRules()).toBe(true);
       http
-        .expectOne({ method: 'POST', url: '/api/Transaction/ApplyCategoryRules' })
+        .expectOne({ method: 'POST', url: '/api/Transaction/ApplyRules' })
         .flush({ checked: 40, updated: 3 });
 
       expect(component.applyingRules()).toBe(false);
@@ -283,7 +343,7 @@ describe('TransactionListComponent', () => {
         TestBed.inject(ToastService)
           .toasts()
           .map((t) => t.message),
-      ).toEqual(['Recategorised 3 of 40 transactions']);
+      ).toEqual(['Updated 3 of 40 transactions']);
     });
   });
 });

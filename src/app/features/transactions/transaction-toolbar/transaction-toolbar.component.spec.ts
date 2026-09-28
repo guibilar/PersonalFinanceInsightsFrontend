@@ -6,6 +6,8 @@ import {
   TransactionToolbarComponent,
 } from './transaction-toolbar.component';
 import { Category } from '../../../core/models/enums/category';
+import { Flow } from '../../../core/models/enums/flow';
+import { AccountType } from '../../../core/models/enums/account-type';
 import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
 
 describe('TransactionToolbarComponent', () => {
@@ -130,10 +132,36 @@ describe('TransactionToolbarComponent', () => {
     expect(component.form.getRawValue()).toEqual({
       description: 'rent',
       category: null,
+      accountId: null,
+      flow: null,
       startDate: '2026-01-01',
       endDate: '',
     });
     expect(emitted).toEqual([]);
+  });
+
+  it('filters by account and flow, with the account name on its chip', () => {
+    create({ page: 1, pageSize: 10, accountId: 'a2', flow: Flow.Income });
+    fixture.componentRef.setInput('accounts', [
+      { id: 'a1', name: 'Chequing', type: AccountType.Chequing, transactionCount: 3 },
+      { id: 'a2', name: 'Visa', type: AccountType.CreditCard, transactionCount: 2 },
+    ]);
+    fixture.detectChanges();
+
+    expect(component.chips()).toEqual([
+      { key: 'accountId', label: 'Visa' },
+      { key: 'flow', label: 'Income' },
+    ]);
+    const options = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('#tx-account option'),
+    ).map((o) => o.textContent?.trim());
+    expect(options).toEqual(['All accounts', 'Chequing', 'Visa']);
+
+    component.form.controls.accountId.setValue('a1');
+    expect(emitted.at(-1)).toEqual({ accountId: 'a1', flow: Flow.Income });
+
+    component.remove('flow');
+    expect(emitted.at(-1)).toEqual({ accountId: 'a1', flow: undefined });
   });
 
   it('clears everything', () => {

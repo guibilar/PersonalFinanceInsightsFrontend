@@ -9,6 +9,25 @@ import {
 } from './transaction-edit-form';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { Category } from '../../../core/models/enums/category';
+import { Flow } from '../../../core/models/enums/flow';
+import { TransactionType } from '../../../core/models/enums/transaction-type';
+import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+
+const cornerStore: TransactionOutputDto = {
+  id: 't1',
+  date: '2026-09-10',
+  amount: 12,
+  description: 'SQ *CORNER STORE #12 TORONTO',
+  category: Category.Other,
+  categoryLocked: false,
+  transactionType: TransactionType.Debit,
+  accountId: 'a2',
+  accountName: 'Visa',
+  accountType: AccountType.CreditCard,
+  flow: Flow.Spending,
+  flowLocked: false,
+  budgetId: '',
+};
 
 describe('TransactionEditForm', () => {
   let fixture: ComponentFixture<TransactionEditForm>;
@@ -16,7 +35,7 @@ describe('TransactionEditForm', () => {
   let submitted: TransactionEditSubmission[];
   let http: HttpTestingController;
 
-  beforeEach(() => {
+  function create(transaction: TransactionOutputDto = cornerStore): void {
     TestBed.configureTestingModule({
       imports: [TransactionEditForm],
       providers: [
@@ -27,21 +46,14 @@ describe('TransactionEditForm', () => {
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(TransactionEditForm);
-    fixture.componentRef.setInput('transaction', {
-      id: 't1',
-      date: '2026-09-10',
-      amount: 12,
-      description: 'SQ *CORNER STORE #12 TORONTO',
-      category: Category.Other,
-      categoryLocked: false,
-      account: AccountType.CreditCard,
-      budgetId: '',
-    });
+    fixture.componentRef.setInput('transaction', transaction);
     component = fixture.componentInstance;
     submitted = [];
     component.submitUpdate.subscribe((value) => submitted.push(value));
     fixture.detectChanges();
-  });
+  }
+
+  beforeEach(() => create());
 
   afterEach(() => http.verify());
 
@@ -50,9 +62,48 @@ describe('TransactionEditForm', () => {
       expect.objectContaining({
         description: 'SQ *CORNER STORE #12 TORONTO',
         category: Category.Other,
+        flow: Flow.Spending,
         alsoSimilar: false,
       }),
     );
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Visa');
+  });
+
+  const flowOptions = () =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('#edit-flow option')).map(
+      (o) => o.textContent?.trim(),
+    );
+
+  it('offers only the flows that fit money out', () => {
+    expect(flowOptions()).toEqual(['Spending', 'Transfer', 'Ignored']);
+  });
+
+  it('offers only the flows that fit money in', () => {
+    TestBed.resetTestingModule();
+    create({ ...cornerStore, transactionType: TransactionType.Credit, flow: Flow.Refund });
+
+    expect(flowOptions()).toEqual(['Refund', 'Income', 'Transfer', 'Ignored']);
+  });
+
+  it('says a changed flow is kept when rules are re-applied', () => {
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('#edit-flow-hint')!.textContent,
+    ).toContain('If you change it, your choice is kept when rules are re-applied.');
+  });
+
+  it('sends the flow only when it changed', () => {
+    component.onSubmit();
+    component.form.controls.flow.setValue(Flow.Transfer);
+    component.onSubmit();
+
+    expect(submitted.map((s) => s.update)).toEqual([
+      { description: 'SQ *CORNER STORE #12 TORONTO', category: Category.Other },
+      {
+        description: 'SQ *CORNER STORE #12 TORONTO',
+        category: Category.Other,
+        flow: Flow.Transfer,
+      },
+    ]);
   });
 
   it('emits the trimmed description and chosen category', () => {

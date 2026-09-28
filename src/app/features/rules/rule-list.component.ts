@@ -18,13 +18,18 @@ import { SidePanelComponent } from '../../shared/ui/side-panel/side-panel.compon
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RuleFormComponent } from './rule-form.component';
+import { FlowRuleListComponent } from './flow-rule-list.component';
 
-/** The category rules, in the order they are checked: add, edit, reorder, delete, and apply them. */
+/**
+ * The rules page: the category rules, in the order they are checked (add, edit, reorder, delete), the flow
+ * rules below them, and applying both to the stored transactions.
+ */
 @Component({
   selector: 'app-rule-list',
   imports: [
     ReactiveFormsModule,
     RuleFormComponent,
+    FlowRuleListComponent,
     ConfirmDialogComponent,
     ErrorStateComponent,
     IconComponent,
@@ -134,14 +139,14 @@ export class RuleListComponent {
   applyRules(): void {
     this.confirmingApply.set(false);
     this.applying.set(true);
-    this.transactionRepository.applyCategoryRules().subscribe({
+    this.transactionRepository.applyRules().subscribe({
       next: (result) => {
         this.applying.set(false);
         this.toasts.success(describeRulesResult(result));
       },
       error: () => {
         this.applying.set(false);
-        this.toasts.error('Could not apply the category rules.');
+        this.toasts.error('Could not apply the rules.');
       },
     });
   }

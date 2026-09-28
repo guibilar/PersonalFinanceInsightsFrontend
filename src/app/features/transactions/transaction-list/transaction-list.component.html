@@ -26,7 +26,7 @@
       (click)="confirmingRules.set(true)"
     >
       <app-icon name="refresh" [size]="16" />
-      {{ applyingRules() ? 'Applying…' : 'Apply category rules' }}
+      {{ applyingRules() ? 'Applying…' : 'Apply rules' }}
     </button>
     <button
       type="button"
@@ -38,7 +38,11 @@
   </div>
 </div>
 
-<app-transaction-toolbar [filter]="filter()" (criteriaChange)="onCriteriaChange($event)" />
+<app-transaction-toolbar
+  [filter]="filter()"
+  [accounts]="accounts()"
+  (criteriaChange)="onCriteriaChange($event)"
+/>
 
 <div class="card">
   @if (transactions.error()) {
@@ -148,6 +152,23 @@
               <td class="description-cell">
                 <div class="d-flex align-items-center gap-1">
                   <span class="fw-medium text-truncate">{{ transaction.description }}</span>
+                  <!-- Spending is the usual case; only the others are marked. -->
+                  @if (transaction.flow !== Flow.Spending) {
+                    <span
+                      class="badge rounded-pill fw-medium flex-shrink-0 flow-badge"
+                      [class]="'flow-' + transaction.flow.toLowerCase()"
+                      [attr.title]="
+                        transaction.flowLocked
+                          ? 'Picked by hand: kept when rules are re-applied'
+                          : null
+                      "
+                      >{{ flowLabel(transaction.flow) }}
+                      @if (transaction.flowLocked) {
+                        <app-icon name="lock" [size]="10" />
+                        <span class="visually-hidden">(picked by hand)</span>
+                      }
+                    </span>
+                  }
                   <!-- Phones: no room for an actions column, so edit sits next to the name. -->
                   <button
                     type="button"
@@ -176,14 +197,14 @@
                 ></span
                 >{{ transaction.category }}
                 @if (transaction.categoryLocked) {
-                  <span title="Picked by hand: kept when category rules are re-applied">
+                  <span title="Picked by hand: kept when rules are re-applied">
                     <app-icon name="lock" [size]="12" class="lock-icon" />
                     <span class="visually-hidden">(picked by hand)</span>
                   </span>
                 }
               </td>
               <td class="d-none d-lg-table-cell text-body-secondary small">
-                {{ transaction.account }}
+                {{ transaction.accountName }}
               </td>
               <td>
                 @if (showDeleted()) {
@@ -286,10 +307,10 @@
 
 @if (confirmingRules()) {
   <app-confirm-dialog
-    title="Apply category rules?"
+    title="Apply rules?"
     [message]="applyRulesConfirmation"
     confirmLabel="Apply rules"
-    (confirmed)="applyCategoryRules()"
+    (confirmed)="applyRules()"
     (cancelled)="confirmingRules.set(false)"
   />
 }

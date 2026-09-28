@@ -1,7 +1,7 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <div class="rounded bg-body-tertiary p-3 mb-3 small text-body-secondary">
     {{ transaction().date | date: 'mediumDate' : 'UTC' }} · {{ transaction().amount | currency }} ·
-    {{ transaction().account }}
+    {{ transaction().accountName }}
   </div>
 
   <div class="mb-3">
@@ -32,6 +32,26 @@
     </select>
     <div class="form-text">
       If you change the category, your choice is kept when category rules are re-applied.
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="edit-flow" class="form-label">Counts as *</label>
+    <select
+      id="edit-flow"
+      class="form-select"
+      formControlName="flow"
+      aria-describedby="edit-flow-hint"
+    >
+      @for (flow of flows(); track flow) {
+        <option [ngValue]="flow">{{ flowLabels[flow] }}</option>
+      }
+    </select>
+    <div id="edit-flow-hint" class="form-text">
+      @if (selectedFlow(); as flow) {
+        {{ flowDescriptions[flow] }}
+      }
+      If you change it, your choice is kept when rules are re-applied.
     </div>
   </div>
 

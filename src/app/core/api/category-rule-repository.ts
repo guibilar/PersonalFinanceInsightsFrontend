@@ -9,7 +9,7 @@ import { CategoryRulePreviewOutputDto } from '../models/outputs/category-rule-pr
 
 /**
  * The rules that categorise transactions: the first rule (by position) whose keyword is in the
- * description decides. Changes apply to later imports; TransactionRepository.applyCategoryRules
+ * description decides. Changes apply to later imports; TransactionRepository.applyRules
  * applies them to stored transactions.
  */
 @Injectable({

@@ -1,7 +1,22 @@
 # Personal Finances Frontend
 
-Angular 22 frontend for the Personal Finance Insights API: a spending dashboard,
-transaction list with budget linking, and budget management.
+Angular 22 frontend for the Personal Finance Insights API: a spending and income dashboard,
+transaction list with budget linking, budget management, category and flow rules, and the bank
+accounts statements are imported into.
+
+## Accounts and flows
+
+Statements are imported into an **account** (`/accounts`): a name and a type (chequing, savings or
+credit card) that can't change. Only an account that never had transactions can be deleted. When a
+file doesn't look like it belongs to the chosen account (a credit card export into a chequing account,
+or rows already stored on another account), the import asks before going ahead ("Import anyway").
+
+Every transaction also has a **flow**, what it counts as in the reports: spending, refund, income,
+transfer (between your own accounts, like a card payment) or ignored. Without a matching flow rule,
+money out is spending, money in is income on chequing and a refund on a credit card, and everything on
+a savings account is a transfer. Flow rules (on the Rules page, under the category rules) override
+that by keyword; the longest matching keyword wins. A flow or category picked by hand on a transaction
+is kept when the rules are re-applied ("Apply rules").
 
 ## Getting started
 
@@ -49,7 +64,8 @@ that `npm test` opens).
 src/app/
   core/       api/ (repositories, API base URL), models/, layout/navigation
   shared/     ui/ (card, filter panel, form card, loader, error state, paginator), utils/
-  features/   dashboard/, transactions/, budgets/, rules/   (lazy-loaded routes)
+  features/   dashboard/, transactions/, budgets/, rules/, bank-accounts/   (lazy-loaded routes)
+              account/ is the signed-in user's own account (change password), not a bank account
 ```
 
 Components are standalone, OnPush and signal-based; the app runs zoneless.

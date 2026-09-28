@@ -1,0 +1,54 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div class="mb-3">
+    <label for="flow-rule-keyword" class="form-label">Description contains *</label>
+    <input
+      type="text"
+      id="flow-rule-keyword"
+      class="form-control text-uppercase"
+      formControlName="keyword"
+      placeholder="PAYROLL"
+      autocomplete="off"
+      aria-describedby="flow-rule-keyword-hint"
+      [maxlength]="maxKeyword"
+      [class.is-invalid]="form.controls.keyword.invalid && form.controls.keyword.touched"
+    />
+    <div class="invalid-feedback">
+      @if (form.controls.keyword.hasError('maxlength')) {
+        At most {{ maxKeyword }} characters.
+      } @else {
+        A keyword is required.
+      }
+    </div>
+    <div id="flow-rule-keyword-hint" class="form-text">
+      Matched anywhere in a transaction's description, ignoring case. When several rules match, the
+      longest keyword wins.
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="flow-rule-flow" class="form-label">Counts as *</label>
+    <select
+      id="flow-rule-flow"
+      class="form-select"
+      formControlName="flow"
+      aria-describedby="flow-rule-flow-hint"
+    >
+      @for (flow of flows; track flow) {
+        <option [ngValue]="flow">{{ flowLabels[flow] }}</option>
+      }
+    </select>
+    <div id="flow-rule-flow-hint" class="form-text">{{ flowHint() }}</div>
+  </div>
+
+  <p class="small text-body-secondary">
+    Rules apply to statements imported from now on. Use “Apply to transactions” to update the ones
+    already imported.
+  </p>
+
+  <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Saving…' : isEditing() ? 'Update' : 'Add rule' }}
+    </button>
+  </div>
+</form>
