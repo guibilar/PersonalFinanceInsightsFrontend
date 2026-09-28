@@ -47,10 +47,11 @@
   padding: 1.25rem;
 }
 
+// Opacity only: a transform on the dialog, even mid-animation, can throw off where mobile browsers think a
+// tapped field or dropdown is.
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: translateY(0.75rem) scale(0.98);
   }
 }
 

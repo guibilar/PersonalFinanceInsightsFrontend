@@ -51,6 +51,20 @@ describe('ModalComponent', () => {
     fixture.nativeElement.remove();
   });
 
+  it('on a touch screen, focuses the dialog rather than a field', async () => {
+    const matchMedia = vi
+      .spyOn(window, 'matchMedia')
+      .mockImplementation(
+        (query) => ({ matches: query === '(pointer: coarse)', media: query }) as MediaQueryList,
+      );
+    const { fixture, el } = setup();
+    await openModal(fixture, el);
+
+    expect(document.activeElement).toBe(el.querySelector('[role=dialog]'));
+    matchMedia.mockRestore();
+    fixture.nativeElement.remove();
+  });
+
   it('closes on Escape and gives focus back', async () => {
     const { fixture, host, el } = setup();
     await openModal(fixture, el);
