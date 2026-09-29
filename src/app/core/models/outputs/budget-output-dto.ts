@@ -8,7 +8,13 @@ export interface BudgetOutputDto {
   description: string;
   status: Status;
   period: BudgetPeriod;
-  /** Counted by themselves (monthly budgets only): this month's spending in them, with no linking. */
+  /** Custom periods only: the first day that counts, `yyyy-MM-dd…`. */
+  startDate?: string | null;
+  /** Custom periods only: the last day that counts, `yyyy-MM-dd…`. */
+  endDate?: string | null;
+  /** Counted by itself (any period but Total): spending whose description contains it, ignoring case. */
+  merchant?: string | null;
+  /** Counted by themselves (any period but Total): the period's spending in them, with no linking. */
   categories: CategoryReference[];
   totalAmount: number;
   totalSpent: number;

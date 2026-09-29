@@ -179,4 +179,43 @@ describe('BudgetListComponent', () => {
     });
     requests.filter((r) => !r.cancelled).forEach((r) => r.flush(page));
   });
+
+  it('names the period and the merchant on a budget’s card', async () => {
+    const yearly: BudgetOutputDto = {
+      ...food,
+      id: 'b2',
+      name: 'Gym',
+      period: BudgetPeriod.Yearly,
+      merchant: 'gym',
+      totalAmount: 1000,
+      totalSpent: 120,
+    };
+    const holiday: BudgetOutputDto = {
+      ...food,
+      id: 'b3',
+      name: 'Holiday food',
+      period: BudgetPeriod.Custom,
+      startDate: '2026-07-01T00:00:00Z',
+      endDate: '2026-08-15T00:00:00Z',
+    };
+
+    component.onCriteriaChange({ status: Status.Active });
+    TestBed.tick();
+    http
+      .match('/api/Budget/Filter')
+      .filter((r) => !r.cancelled)
+      .forEach((r) => r.flush({ ...page, items: [food, yearly, holiday], totalCount: 3 }));
+    await fixture.whenStable();
+
+    const card = (name: string) =>
+      (fixture.nativeElement as HTMLElement)
+        .querySelector<HTMLElement>(`article[aria-label="${name}"]`)!
+        .innerText.replace(/\s+/g, ' ');
+    expect(card('Food')).not.toContain('Yearly');
+    expect(card('Gym')).toContain('Yearly');
+    expect(card('Gym')).toContain('of $1,000.00 this year');
+    expect(card('Gym')).toContain('Spending at “gym”');
+    expect(card('Holiday food')).toContain('Custom');
+    expect(card('Holiday food')).toContain('of $100.00 · Jul 1 – Aug 15, 2026');
+  });
 });

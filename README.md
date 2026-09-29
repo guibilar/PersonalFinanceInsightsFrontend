@@ -11,6 +11,11 @@ as the dashboard's category names and chart segments do. Dates are picked from p
 last 3, 6 or 12 whole months, this year, last year) or typed in as a custom range; a link's dates that match a preset
 show as that preset.
 
+A budget's period is Total (everything linked), Monthly, Yearly or Custom (two dates). Any period but Total can also
+count spending by itself, by categories or by a merchant (part of the description, ignoring case, so "no frills" takes
+in every store of the chain); a budget counts one or the other, so the form locks the categories once a merchant is
+typed and the merchant once a category is ticked.
+
 Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
 transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
 

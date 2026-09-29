@@ -7,7 +7,6 @@ import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { BudgetFilterInputDto } from '../../core/models/inputs/budget-filter-input-dto';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
-import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { BudgetFormComponent } from './budget-form.component';
 import { BudgetCriteria, BudgetToolbarComponent } from './budget-toolbar.component';
 import { PaginatedContentComponent } from '../../shared/ui/paginated-content/paginated-content.component';
@@ -17,6 +16,7 @@ import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { conflictDetail } from '../../shared/utils/problem-detail';
+import { periodName, periodSuffix } from '../../shared/utils/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
 export type BudgetHealth = 'ok' | 'warning' | 'over';
@@ -78,8 +78,9 @@ export class BudgetListComponent {
   });
 
   protected readonly Status = Status;
-  protected readonly BudgetPeriod = BudgetPeriod;
   protected readonly health = budgetHealth;
+  protected readonly periodName = periodName;
+  protected readonly periodSuffix = periodSuffix;
   protected readonly min = Math.min;
   protected readonly abs = Math.abs;
 

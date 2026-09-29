@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto';
+import { periodSuffix } from '../../../shared/utils/budget-period';
 
 /** Active budgets, most used first, with their progress. */
 @Component({
@@ -15,8 +16,7 @@ import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto'
             <span [class.text-danger]="budget.percentageUsed >= 100" class="fw-semibold">
               {{ budget.totalSpent | currency }}
               <span class="text-body-secondary fw-normal"
-                >/ {{ budget.totalAmount | currency
-                }}{{ budget.period === 'Monthly' ? ' this month' : '' }}</span
+                >/ {{ budget.totalAmount | currency }}{{ suffix(budget) }}</span
               >
             </span>
           </div>
@@ -58,4 +58,5 @@ export class BudgetOverviewComponent {
   );
 
   protected readonly min = Math.min;
+  protected readonly suffix = periodSuffix;
 }
