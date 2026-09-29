@@ -8,9 +8,9 @@ import {
   output,
 } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Category } from '../../core/models/enums/category';
 import { CategoryRuleInputDto } from '../../core/models/inputs/category-rule-input-dto';
 import { CategoryRuleOutputDto } from '../../core/models/outputs/category-rule-output-dto';
+import { CategoryReference } from '../../core/models/outputs/category-output-dto';
 import { TEXT_LIMITS } from '../../core/models/text-limits';
 
 const NOT_BLANK = Validators.pattern(/\S/);
@@ -33,19 +33,28 @@ export class RuleFormComponent implements OnInit {
   readonly cancelled = output<void>();
 
   readonly isEditing = computed(() => this.rule() !== null);
-  readonly categories = Object.values(Category);
+  /** To pick from; the page loads them. */
+  readonly categories = input<CategoryReference[]>([]);
+  /** The list, and an edited rule's own category while the list is loading. */
+  readonly categoryOptions = computed(() => {
+    const current = this.rule()?.category;
+    const categories = this.categories();
+    return !current || categories.some((c) => c.id === current.id)
+      ? categories
+      : [current, ...categories];
+  });
   readonly maxKeyword = TEXT_LIMITS.categoryRuleKeyword;
 
   readonly form = this.fb.group({
     keyword: ['', [Validators.required, NOT_BLANK, Validators.maxLength(this.maxKeyword)]],
-    category: [Category.Groceries, Validators.required],
+    categoryId: ['', Validators.required],
     placement: ['first' as Placement],
   });
 
   ngOnInit(): void {
     const rule = this.rule();
     if (rule) {
-      this.form.patchValue({ keyword: rule.keyword, category: rule.category });
+      this.form.patchValue({ keyword: rule.keyword, categoryId: rule.category.id });
     }
   }
 
@@ -55,10 +64,10 @@ export class RuleFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const { keyword, category, placement } = this.form.getRawValue();
+    const { keyword, categoryId, placement } = this.form.getRawValue();
     this.submitRule.emit({
       keyword: keyword.trim(),
-      category,
+      categoryId,
       // Omitted: appended at the end by the API.
       ...(!this.isEditing() && placement === 'first' ? { position: 0 } : {}),
     });

@@ -1,7 +1,6 @@
 import { Chart, ChartConfiguration, ChartData } from 'chart.js';
 // The plugin's typings add `plugins.annotation` to the chart options (registered in the dashboard).
 import type {} from 'chartjs-plugin-annotation';
-import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { finishedMonths } from './dashboard-stats';
@@ -74,9 +73,9 @@ export class ChartHelper {
     const chartData: ChartData<'bar'> = {
       labels: report.monthlyData.map((monthData) => monthData.month),
       datasets: report.categories.map((category) => ({
-        label: category,
-        data: report.monthlyData.map((monthData) => monthData.categoryValues[category] || 0),
-        backgroundColor: CategoryColorHelper.getColor(category),
+        label: category.name,
+        data: report.monthlyData.map((monthData) => monthData.categoryValues[category.name] || 0),
+        backgroundColor: category.color,
       })),
     };
 
@@ -91,7 +90,7 @@ export class ChartHelper {
         sum +
         report.categories.reduce(
           (monthSum, category) =>
-            monthSum + (report.monthlyData[month].categoryValues[category] || 0),
+            monthSum + (report.monthlyData[month].categoryValues[category.name] || 0),
           0,
         ),
       0,
@@ -167,11 +166,11 @@ export class ChartHelper {
     const currentMonth = report.monthlyData[0]?.categoryValues ?? {};
 
     const chartData: ChartData<'doughnut'> = {
-      labels: categories,
+      labels: categories.map((category) => category.name),
       datasets: [
         {
-          data: categories.map((category) => currentMonth[category] || 0),
-          backgroundColor: categories.map((category) => CategoryColorHelper.getColor(category)),
+          data: categories.map((category) => currentMonth[category.name] || 0),
+          backgroundColor: categories.map((category) => category.color),
           borderColor: theme.surface,
         },
       ],

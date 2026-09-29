@@ -42,6 +42,14 @@ export const routes: Routes = [
           import('./features/rules/rule-list.component').then((m) => m.RuleListComponent),
       },
       {
+        path: 'categories',
+        title: 'Categories · Personal Finances',
+        loadComponent: () =>
+          import('./features/categories/category-list.component').then(
+            (m) => m.CategoryListComponent,
+          ),
+      },
+      {
         // The bank accounts statements are imported into; features/account is the user's own account.
         path: 'accounts',
         title: 'Accounts · Personal Finances',

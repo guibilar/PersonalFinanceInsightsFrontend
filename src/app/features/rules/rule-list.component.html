@@ -127,11 +127,8 @@
                   rule.keyword
                 }}</span>
                 <span class="rule-category small text-nowrap">
-                  <span
-                    class="category-dot"
-                    [style.background-color]="categoryColor(rule.category)"
-                  ></span
-                  ><span class="visually-hidden">sets </span>{{ rule.category }}
+                  <span class="category-dot" [style.background-color]="rule.category.color"></span
+                  ><span class="visually-hidden">sets </span>{{ rule.category.name }}
                 </span>
               </div>
               <div class="d-flex flex-shrink-0">
@@ -186,6 +183,7 @@
   <app-modal [title]="editing() ? 'Edit rule' : 'New rule'" (closed)="editing.set(undefined)">
     <app-rule-form
       [rule]="editing() ?? null"
+      [categories]="categories()"
       [saving]="saving()"
       (submitRule)="onFormSubmit($event)"
       (cancelled)="editing.set(undefined)"
@@ -200,7 +198,7 @@
       'Transactions containing “' +
       rule.keyword +
       '” will no longer be categorised as ' +
-      rule.category +
+      rule.category.name +
       ' by this rule. Transactions already imported keep their category until the rules are applied again.'
     "
     confirmLabel="Delete"

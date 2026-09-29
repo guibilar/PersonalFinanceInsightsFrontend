@@ -2,7 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TransactionAddForm } from './transaction-add-form';
 import { AccountType } from '../../../core/models/enums/account-type';
-import { Category } from '../../../core/models/enums/category';
+import { TEST_CATEGORIES } from '../../../testing/test-categories';
 import { Flow } from '../../../core/models/enums/flow';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
@@ -86,14 +86,14 @@ describe('TransactionAddForm', () => {
       transactionType: TransactionType.Credit,
     });
     expect(component.flows()).toEqual([Flow.Refund, Flow.Income, Flow.Transfer, Flow.Ignored]);
-    component.form.patchValue({ category: Category.Dining, flow: Flow.Refund });
+    component.form.patchValue({ categoryId: TEST_CATEGORIES.dining.id, flow: Flow.Refund });
 
     component.onSubmit();
 
     expect(submitted[0]).toEqual(
       expect.objectContaining({
         transactionType: TransactionType.Credit,
-        category: Category.Dining,
+        categoryId: TEST_CATEGORIES.dining.id,
         flow: Flow.Refund,
       }),
     );

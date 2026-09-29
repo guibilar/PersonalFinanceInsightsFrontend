@@ -5,7 +5,7 @@ import {
   TransactionCriteria,
   TransactionToolbarComponent,
 } from './transaction-toolbar.component';
-import { Category } from '../../../core/models/enums/category';
+import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { Flow } from '../../../core/models/enums/flow';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
@@ -23,6 +23,7 @@ describe('TransactionToolbarComponent', () => {
     });
     fixture = TestBed.createComponent(TransactionToolbarComponent);
     fixture.componentRef.setInput('filter', filter);
+    fixture.componentRef.setInput('categories', TEST_CATEGORY_LIST);
     component = fixture.componentInstance;
     emitted = [];
     component.criteriaChange.subscribe((criteria) => emitted.push(criteria));
@@ -43,7 +44,7 @@ describe('TransactionToolbarComponent', () => {
 
       vi.advanceTimersByTime(1);
       expect(emitted).toEqual([
-        { description: 'coffee', category: undefined, startDate: undefined, endDate: undefined },
+        { description: 'coffee', categoryId: undefined, startDate: undefined, endDate: undefined },
       ]);
     } finally {
       vi.useRealTimers();
@@ -92,12 +93,12 @@ describe('TransactionToolbarComponent', () => {
   it('applies category and dates immediately', () => {
     create();
 
-    component.form.controls.category.setValue(Category.Dining);
+    component.form.controls.categoryId.setValue(TEST_CATEGORIES.dining.id);
     component.form.controls.startDate.setValue('2026-09-01');
 
     expect(emitted.at(-1)).toEqual({
       description: undefined,
-      category: Category.Dining,
+      categoryId: TEST_CATEGORIES.dining.id,
       startDate: '2026-09-01',
       endDate: undefined,
     });
@@ -108,20 +109,22 @@ describe('TransactionToolbarComponent', () => {
       page: 1,
       pageSize: 10,
       description: 'rent',
-      category: Category.Rent,
+      categoryId: TEST_CATEGORIES.rent.id,
       endDate: '2026-09-30',
     });
 
     expect(component.chips().map((chip) => chip.key)).toEqual([
       'description',
-      'category',
+      'categoryId',
       'endDate',
     ]);
+    // The category by its name.
+    expect(component.chips()[1].label).toBe('Rent');
 
-    component.remove('category');
+    component.remove('categoryId');
     expect(emitted.at(-1)).toEqual({
       description: 'rent',
-      category: undefined,
+      categoryId: undefined,
       startDate: undefined,
       endDate: '2026-09-30',
     });
@@ -132,7 +135,7 @@ describe('TransactionToolbarComponent', () => {
 
     expect(component.form.getRawValue()).toEqual({
       description: 'rent',
-      category: null,
+      categoryId: null,
       accountId: null,
       flow: null,
       startDate: '2026-01-01',

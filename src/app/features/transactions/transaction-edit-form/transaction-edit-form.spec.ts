@@ -8,7 +8,7 @@ import {
   TransactionEditSubmission,
 } from './transaction-edit-form';
 import { AccountType } from '../../../core/models/enums/account-type';
-import { Category } from '../../../core/models/enums/category';
+import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { Flow } from '../../../core/models/enums/flow';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
@@ -18,7 +18,7 @@ const cornerStore: TransactionOutputDto = {
   date: '2026-09-10',
   amount: 12,
   description: 'SQ *CORNER STORE #12 TORONTO',
-  category: Category.Other,
+  category: TEST_CATEGORIES.other,
   categoryLocked: false,
   transactionType: TransactionType.Debit,
   accountId: 'a2',
@@ -47,6 +47,7 @@ describe('TransactionEditForm', () => {
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(TransactionEditForm);
     fixture.componentRef.setInput('transaction', transaction);
+    fixture.componentRef.setInput('categories', TEST_CATEGORY_LIST);
     component = fixture.componentInstance;
     submitted = [];
     component.submitUpdate.subscribe((value) => submitted.push(value));
@@ -61,7 +62,7 @@ describe('TransactionEditForm', () => {
     expect(component.form.getRawValue()).toEqual(
       expect.objectContaining({
         description: 'SQ *CORNER STORE #12 TORONTO',
-        category: Category.Other,
+        categoryId: TEST_CATEGORIES.other.id,
         flow: Flow.Spending,
         alsoSimilar: false,
       }),
@@ -97,22 +98,25 @@ describe('TransactionEditForm', () => {
     component.onSubmit();
 
     expect(submitted.map((s) => s.update)).toEqual([
-      { description: 'SQ *CORNER STORE #12 TORONTO', category: Category.Other },
+      { description: 'SQ *CORNER STORE #12 TORONTO', categoryId: TEST_CATEGORIES.other.id },
       {
         description: 'SQ *CORNER STORE #12 TORONTO',
-        category: Category.Other,
+        categoryId: TEST_CATEGORIES.other.id,
         flow: Flow.Transfer,
       },
     ]);
   });
 
   it('emits the trimmed description and chosen category', () => {
-    component.form.patchValue({ description: '  Corner store  ', category: Category.Groceries });
+    component.form.patchValue({
+      description: '  Corner store  ',
+      categoryId: TEST_CATEGORIES.groceries.id,
+    });
 
     component.onSubmit();
 
     expect(submitted).toEqual([
-      { update: { description: 'Corner store', category: Category.Groceries } },
+      { update: { description: 'Corner store', categoryId: TEST_CATEGORIES.groceries.id } },
     ]);
   });
 
@@ -165,7 +169,7 @@ describe('TransactionEditForm', () => {
     const wait = () => new Promise((resolve) => setTimeout(resolve, RULE_PREVIEW_DEBOUNCE_MS + 50));
 
     async function changeCategoryAndOptIn(): Promise<void> {
-      component.form.controls.category.setValue(Category.Groceries);
+      component.form.controls.categoryId.setValue(TEST_CATEGORIES.groceries.id);
       component.form.controls.alsoSimilar.setValue(true);
       await fixture.whenStable();
     }
@@ -173,7 +177,7 @@ describe('TransactionEditForm', () => {
     it('is offered only once the category changes', async () => {
       expect(root().querySelector('#edit-also-similar')).toBeNull();
 
-      component.form.controls.category.setValue(Category.Groceries);
+      component.form.controls.categoryId.setValue(TEST_CATEGORIES.groceries.id);
       await fixture.whenStable();
 
       const checkbox = root().querySelector<HTMLInputElement>('#edit-also-similar')!;
@@ -195,7 +199,7 @@ describe('TransactionEditForm', () => {
       const request = http.expectOne({ method: 'POST', url: '/api/CategoryRules/Preview' });
       expect(request.request.body).toEqual({
         keyword: 'CORNER STORE',
-        category: Category.Groceries,
+        categoryId: TEST_CATEGORIES.groceries.id,
         excludeTransactionId: 't1',
       });
       request.flush({ count: 3, examples: ['SQ *CORNER STORE #3', 'CORNER STORE WEST'] });
@@ -231,8 +235,11 @@ describe('TransactionEditForm', () => {
 
       expect(submitted).toEqual([
         {
-          update: { description: 'SQ *CORNER STORE #12 TORONTO', category: Category.Groceries },
-          rule: { keyword: 'CORNER STORE', category: Category.Groceries, position: 0 },
+          update: {
+            description: 'SQ *CORNER STORE #12 TORONTO',
+            categoryId: TEST_CATEGORIES.groceries.id,
+          },
+          rule: { keyword: 'CORNER STORE', categoryId: TEST_CATEGORIES.groceries.id, position: 0 },
         },
       ]);
       http.match('/api/CategoryRules/Preview').forEach((r) => r.flush({ count: 0, examples: [] }));
@@ -249,14 +256,19 @@ describe('TransactionEditForm', () => {
 
     it('turns the option off when the original category is picked again', async () => {
       await changeCategoryAndOptIn();
-      component.form.controls.category.setValue(Category.Other);
+      component.form.controls.categoryId.setValue(TEST_CATEGORIES.other.id);
       await fixture.whenStable();
 
       component.onSubmit();
 
       expect(component.form.controls.alsoSimilar.value).toBe(false);
       expect(submitted).toEqual([
-        { update: { description: 'SQ *CORNER STORE #12 TORONTO', category: Category.Other } },
+        {
+          update: {
+            description: 'SQ *CORNER STORE #12 TORONTO',
+            categoryId: TEST_CATEGORIES.other.id,
+          },
+        },
       ]);
     });
   });

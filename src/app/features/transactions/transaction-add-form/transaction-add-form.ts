@@ -10,12 +10,12 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Category } from '../../../core/models/enums/category';
 import { Flow } from '../../../core/models/enums/flow';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionInputDto } from '../../../core/models/inputs/transaction-input-dto';
 import { AccountOutputDto } from '../../../core/models/outputs/account-output-dto';
+import { CategoryReference } from '../../../core/models/outputs/category-output-dto';
 import { TEXT_LIMITS } from '../../../core/models/text-limits';
 import { accountLabel } from '../../../shared/utils/account-labels';
 import { FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
@@ -44,6 +44,7 @@ export class TransactionAddForm implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly accounts = input.required<AccountOutputDto[]>();
+  readonly categories = input<CategoryReference[]>([]);
   readonly saving = input(false);
   /**
    * The date and account of the transaction added just before, which the form starts on: entering a statement's
@@ -57,7 +58,6 @@ export class TransactionAddForm implements OnInit {
 
   protected readonly accountLabel = accountLabel;
   protected readonly TransactionType = TransactionType;
-  readonly categories = Object.values(Category);
   readonly flowLabels = FLOW_LABELS;
   readonly maxDescription = TEXT_LIMITS.transactionDescription;
 
@@ -71,7 +71,7 @@ export class TransactionAddForm implements OnInit {
     amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
     transactionType: [TransactionType.Debit],
     // null: let the rules decide.
-    category: this.fb.control<Category | null>(null),
+    categoryId: this.fb.control<string | null>(null),
     flow: this.fb.control<Flow | null>(null),
   });
 
@@ -118,7 +118,7 @@ export class TransactionAddForm implements OnInit {
       amount,
       transactionType: value.transactionType,
       accountId,
-      ...(value.category ? { category: value.category } : {}),
+      ...(value.categoryId ? { categoryId: value.categoryId } : {}),
       ...(value.flow ? { flow: value.flow } : {}),
       ...(allowDuplicate ? { allowDuplicate } : {}),
     });

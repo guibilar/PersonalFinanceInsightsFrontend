@@ -1,10 +1,11 @@
 import { Chart } from 'chart.js';
 import { ChartHelper, formatCurrency, visibleMonthlyAverage } from './chart-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+import { categoryRefs } from '../../testing/test-categories';
 
 const report: CategorizedReportOutputDto = {
   averageMonthlyTotal: 1200,
-  categories: ['Dining', 'Rent'],
+  categories: categoryRefs('Dining', 'Rent'),
   monthlyData: [
     { month: 'Aug 2026', total: 1200, categoryValues: { Dining: 200, Rent: 1000 } },
     { month: 'Sep 2026', total: 1100, categoryValues: { Rent: 1000, Dining: 100 } },
@@ -27,11 +28,17 @@ describe('ChartHelper', () => {
   it('builds one stacked dataset per category, filling missing months with 0', () => {
     const { chartData } = ChartHelper.generateMonthlySpendingChartConfiguration({
       ...report,
-      categories: ['Dining', 'Rent', 'Pet'],
+      categories: categoryRefs('Dining', 'Rent', 'Pet'),
     });
 
     expect(chartData.labels).toEqual(['Aug 2026', 'Sep 2026']);
     expect(chartData.datasets.map((d) => d.label)).toEqual(['Dining', 'Rent', 'Pet']);
+    // Each category's own colour, from the report.
+    expect(chartData.datasets.map((d) => d.backgroundColor)).toEqual([
+      '#1F76B5',
+      '#E277C3',
+      '#8C564B',
+    ]);
     expect(chartData.datasets[0].data).toEqual([200, 100]);
     expect(chartData.datasets[2].data).toEqual([0, 0]);
   });
@@ -64,7 +71,7 @@ describe('ChartHelper', () => {
 
   it('handles a report with no months', () => {
     const { chartData } = ChartHelper.generateDoughnutChartConfiguration({
-      categories: ['Rent'],
+      categories: categoryRefs('Rent'),
       monthlyData: [],
       averageMonthlyTotal: 0,
     });

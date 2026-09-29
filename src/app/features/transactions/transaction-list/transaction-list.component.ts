@@ -6,6 +6,7 @@ import { TransactionRepository } from '../../../core/api/transaction-repository'
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { BudgetRepository } from '../../../core/api/budget-repository';
 import { AccountRepository } from '../../../core/api/account-repository';
+import { CategoryRepository } from '../../../core/api/category-repository';
 import {
   SortDirection,
   TransactionFilterInputDto,
@@ -20,7 +21,6 @@ import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { Flow } from '../../../core/models/enums/flow';
 import { FLOW_LABELS } from '../../../shared/utils/flow-helper';
-import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
 import { PAGE_SIZE_OPTIONS } from '../../../shared/utils/page-size-options';
 import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
@@ -85,6 +85,7 @@ export class TransactionListComponent {
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly categoryRuleRepository = inject(CategoryRuleRepository);
   private readonly accountRepository = inject(AccountRepository);
+  private readonly categoryRepository = inject(CategoryRepository);
   private readonly toasts = inject(ToastService);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
@@ -126,8 +127,8 @@ export class TransactionListComponent {
   });
 
   readonly hasCriteria = computed(() => {
-    const { description, category, accountId, flow, startDate, endDate } = this.filter();
-    return !!(description || category || accountId || flow || startDate || endDate);
+    const { description, categoryId, accountId, flow, startDate, endDate } = this.filter();
+    return !!(description || categoryId || accountId || flow || startDate || endDate);
   });
 
   // Link dropdown needs every active budget, not just the first page.
@@ -141,6 +142,12 @@ export class TransactionListComponent {
     stream: () => this.accountRepository.getAll(),
   });
   readonly accounts = computed(() => this.accountsResource.value() ?? []);
+
+  // For the category filter and the add and edit forms.
+  private readonly categoriesResource = rxResource({
+    stream: () => this.categoryRepository.getAll(),
+  });
+  readonly categories = computed(() => this.categoriesResource.value() ?? []);
 
   protected readonly TransactionType = TransactionType;
   protected readonly Flow = Flow;
@@ -210,10 +217,6 @@ export class TransactionListComponent {
 
   flowLabel(flow: Flow): string {
     return FLOW_LABELS[flow];
-  }
-
-  getCategoryColor(category: string): string {
-    return CategoryColorHelper.getColor(category);
   }
 
   onImported(result: ImportResultOutputDto): void {

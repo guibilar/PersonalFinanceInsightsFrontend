@@ -90,10 +90,10 @@
   <div class="row g-3 mb-3">
     <div class="col-sm-6">
       <label for="add-category" class="form-label">Category</label>
-      <select id="add-category" class="form-select" formControlName="category">
+      <select id="add-category" class="form-select" formControlName="categoryId">
         <option [ngValue]="null">Let the rules decide</option>
-        @for (category of categories; track category) {
-          <option [ngValue]="category">{{ category }}</option>
+        @for (category of categories(); track category.id) {
+          <option [ngValue]="category.id">{{ category.name }}</option>
         }
       </select>
     </div>

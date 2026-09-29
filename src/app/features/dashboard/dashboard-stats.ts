@@ -8,6 +8,15 @@ export interface CategoryShare {
   percent: number;
 }
 
+/** Neutral grey, for a category the report doesn't list (none should be missing). */
+export const FALLBACK_CATEGORY_COLOR = '#9CA3AF';
+
+/** Each category's colour in the report, by name, as its values are keyed. */
+export function categoryColors(report: CategorizedReportOutputDto): (name: string) => string {
+  const colors = new Map(report.categories.map((category) => [category.name, category.color]));
+  return (name) => colors.get(name) ?? FALLBACK_CATEGORY_COLOR;
+}
+
 export function spentThisMonth(currentMonth: CategorizedReportOutputDto): number {
   return currentMonth.monthlyData[0]?.total ?? 0;
 }

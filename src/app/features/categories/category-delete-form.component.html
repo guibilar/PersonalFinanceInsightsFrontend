@@ -1,0 +1,24 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  @if (inUse()) {
+    <div class="mb-3">
+      <label for="category-move-to" class="form-label">{{ moveLabel() }}</label>
+      <select id="category-move-to" class="form-select" formControlName="moveTo">
+        @for (target of targets(); track target.id) {
+          <option [ngValue]="target.id">{{ target.name }}</option>
+        }
+      </select>
+    </div>
+  } @else {
+    <p>No transactions or rules use it.</p>
+  }
+  <p class="small text-body-secondary">
+    A budget that counts “{{ category().name }}” stops counting it. This can't be undone.
+  </p>
+
+  <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-danger" [disabled]="form.invalid || deleting()">
+      {{ deleting() ? 'Deleting…' : 'Delete' }}
+    </button>
+  </div>
+</form>

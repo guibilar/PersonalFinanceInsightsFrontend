@@ -26,11 +26,18 @@
 
   <div class="mb-3">
     <label for="rule-category" class="form-label">Category *</label>
-    <select id="rule-category" class="form-select" formControlName="category">
-      @for (category of categories; track category) {
-        <option [ngValue]="category">{{ category }}</option>
+    <select
+      id="rule-category"
+      class="form-select"
+      formControlName="categoryId"
+      [class.is-invalid]="form.controls.categoryId.invalid && form.controls.categoryId.touched"
+    >
+      <option value="" disabled>Select a category</option>
+      @for (category of categoryOptions(); track category.id) {
+        <option [ngValue]="category.id">{{ category.name }}</option>
       }
     </select>
+    <div class="invalid-feedback">Choose the category it sets.</div>
   </div>
 
   @if (!isEditing()) {

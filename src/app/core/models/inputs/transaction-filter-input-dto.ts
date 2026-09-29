@@ -1,6 +1,5 @@
 import { TransactionType } from '../enums/transaction-type';
 import { AccountType } from '../enums/account-type';
-import { Category } from '../enums/category';
 import { Flow } from '../enums/flow';
 
 export type TransactionSortField = 'Date' | 'Description' | 'Amount' | 'Category';
@@ -16,7 +15,7 @@ export interface TransactionFilterInputDto {
   startDate?: string;
   endDate?: string;
   description?: string;
-  category?: Category;
+  categoryId?: string;
   budgetId?: string;
   /** True: only deleted (hidden) transactions, to restore one. Otherwise only visible ones. */
   hidden?: boolean;

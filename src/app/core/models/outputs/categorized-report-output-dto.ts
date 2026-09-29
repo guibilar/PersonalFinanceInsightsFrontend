@@ -1,11 +1,15 @@
+import { CategoryReference } from './category-output-dto';
+
 export interface MonthlyCategoryValuesDto {
   month: string;
   total: number;
+  /** Spending per category, by category name. */
   categoryValues: Record<string, number>;
 }
 
 export interface CategorizedReportOutputDto {
-  categories: string[];
+  /** The categories with spending in the report, by name, with their colours. */
+  categories: CategoryReference[];
   monthlyData: MonthlyCategoryValuesDto[];
   averageMonthlyTotal: number;
   /**

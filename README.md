@@ -1,8 +1,11 @@
 # Personal Finances Frontend
 
 Angular 22 frontend for the Personal Finance Insights API: a spending and income dashboard,
-transaction list with budget linking, budget management, category and flow rules, and the bank
-accounts statements are imported into.
+transaction list with budget linking, budget management, categories with their colours, category and
+flow rules, and the bank accounts statements are imported into.
+
+Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
+transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
 
 ## Accounts and flows
 

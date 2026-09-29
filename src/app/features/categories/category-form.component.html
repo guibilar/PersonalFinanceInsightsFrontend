@@ -1,0 +1,57 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div class="mb-3">
+    <label for="category-name" class="form-label">Name *</label>
+    <input
+      type="text"
+      id="category-name"
+      class="form-control"
+      formControlName="name"
+      placeholder="Coffee"
+      autocomplete="off"
+      [maxlength]="maxName"
+      [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
+    />
+    <div class="invalid-feedback">
+      @if (form.controls.name.hasError('maxlength')) {
+        At most {{ maxName }} characters.
+      } @else {
+        A name is required.
+      }
+    </div>
+  </div>
+
+  <fieldset class="mb-3">
+    <legend class="form-label fs-6 mb-2">Colour *</legend>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      @for (color of palette; track color) {
+        <button
+          type="button"
+          class="swatch btn"
+          [style.background-color]="color"
+          [attr.aria-label]="'Colour ' + color"
+          [attr.aria-pressed]="isPicked(color)"
+          (click)="pick(color)"
+        ></button>
+      }
+      <label for="category-color" class="visually-hidden">Another colour</label>
+      <input
+        type="color"
+        id="category-color"
+        class="form-control form-control-color"
+        formControlName="color"
+        title="Another colour"
+      />
+    </div>
+    <div class="form-text">
+      It shows as <span class="category-dot" [style.background-color]="preview().color"></span
+      >{{ preview().name }} in lists and charts.
+    </div>
+  </fieldset>
+
+  <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Saving…' : isEditing() ? 'Save' : 'Add category' }}
+    </button>
+  </div>
+</form>

@@ -1,4 +1,4 @@
-import { Category } from '../enums/category';
+import { CategoryReference } from './category-output-dto';
 import { TransactionType } from '../enums/transaction-type';
 import { AccountType } from '../enums/account-type';
 import { Flow } from '../enums/flow';
@@ -9,7 +9,7 @@ export interface TransactionOutputDto {
   date: string;
   amount: number;
   description: string;
-  category: Category;
+  category: CategoryReference;
   /** Picked by hand: re-applying the category rules leaves it alone. */
   categoryLocked: boolean;
   /** Deleted: kept only so re-importing its statement doesn't add it back. */

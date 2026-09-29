@@ -4,7 +4,7 @@ import { BudgetFormComponent } from './budget-form.component';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
-import { Category } from '../../core/models/enums/category';
+import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../testing/test-categories';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
 
 describe('BudgetFormComponent', () => {
@@ -19,6 +19,7 @@ describe('BudgetFormComponent', () => {
     });
     fixture = TestBed.createComponent(BudgetFormComponent);
     fixture.componentRef.setInput('budget', budget);
+    fixture.componentRef.setInput('categories', TEST_CATEGORY_LIST);
     component = fixture.componentInstance;
     submitted = [];
     component.submitBudget.subscribe((value) => submitted.push(value));
@@ -64,7 +65,7 @@ describe('BudgetFormComponent', () => {
       amount: 0,
       status: Status.Active,
       period: BudgetPeriod.Total,
-      categories: [],
+      categoryIds: [],
     });
 
     expect(component.form.controls.name.invalid).toBe(true);
@@ -80,7 +81,7 @@ describe('BudgetFormComponent', () => {
       amount: 300,
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
-      categories: [Category.Dining],
+      categoryIds: [TEST_CATEGORIES.dining.id],
     });
     component.onSubmit();
 
@@ -92,7 +93,7 @@ describe('BudgetFormComponent', () => {
         amount: 300,
         status: Status.Inactive,
         period: BudgetPeriod.Monthly,
-        categories: [Category.Dining],
+        categoryIds: [TEST_CATEGORIES.dining.id],
       },
     ]);
   });
@@ -104,7 +105,7 @@ describe('BudgetFormComponent', () => {
       description: 'Groceries',
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
-      categories: [Category.Groceries],
+      categories: [TEST_CATEGORIES.groceries],
       totalAmount: 500,
       totalSpent: 0,
       totalRemaining: 500,
@@ -118,7 +119,7 @@ describe('BudgetFormComponent', () => {
       amount: 500,
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
-      categories: [Category.Groceries],
+      categoryIds: [TEST_CATEGORIES.groceries.id],
     });
 
     component.onSubmit();
@@ -147,15 +148,38 @@ describe('BudgetFormComponent', () => {
 
     component.form.controls.period.setValue(BudgetPeriod.Monthly);
     fixture.detectChanges();
-    expect(boxes().length).toBe(Object.values(Category).length);
-    component.toggleCategory(Category.Dining, true);
-    component.toggleCategory(Category.Groceries, true);
-    component.toggleCategory(Category.Dining, false);
-    expect(component.form.controls.categories.value).toEqual([Category.Groceries]);
+    expect(boxes().length).toBe(TEST_CATEGORY_LIST.length);
+    component.toggleCategory(TEST_CATEGORIES.dining.id, true);
+    component.toggleCategory(TEST_CATEGORIES.groceries.id, true);
+    component.toggleCategory(TEST_CATEGORIES.dining.id, false);
+    expect(component.form.controls.categoryIds.value).toEqual([TEST_CATEGORIES.groceries.id]);
 
     component.form.controls.period.setValue(BudgetPeriod.Total);
     fixture.detectChanges();
-    expect(component.form.controls.categories.value).toEqual([]);
+    expect(component.form.controls.categoryIds.value).toEqual([]);
     expect(boxes().length).toBe(0);
+  });
+
+  it("keeps an edited budget's own categories on offer while the list is loading", () => {
+    create({
+      id: 'b1',
+      name: 'Food',
+      description: 'Groceries',
+      status: Status.Active,
+      period: BudgetPeriod.Monthly,
+      categories: [TEST_CATEGORIES.groceries],
+      totalAmount: 500,
+      totalSpent: 0,
+      totalRemaining: 500,
+      percentageUsed: 0,
+    });
+    fixture.componentRef.setInput('categories', []);
+    fixture.detectChanges();
+
+    const labels = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('label[for^=budget-category-]'),
+    ).map((l) => l.textContent!.trim());
+    expect(labels).toEqual(['Groceries']);
+    expect(component.isCategoryChosen(TEST_CATEGORIES.groceries.id)).toBe(true);
   });
 });

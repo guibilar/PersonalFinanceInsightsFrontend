@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
-import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
 
 @Component({
   selector: 'app-recent-transactions',
@@ -22,9 +21,9 @@ import { CategoryColorHelper } from '../../../shared/utils/category-color-helper
             <div class="small text-body-secondary">
               <span
                 class="category-dot"
-                [style.background-color]="color(transaction.category)"
+                [style.background-color]="transaction.category.color"
               ></span
-              >{{ transaction.category }}
+              >{{ transaction.category.name }}
             </div>
           </div>
           <div
@@ -56,8 +55,4 @@ export class RecentTransactionsComponent {
   readonly transactions = input.required<TransactionOutputDto[]>();
 
   protected readonly TransactionType = TransactionType;
-
-  color(category: string): string {
-    return CategoryColorHelper.getColor(category);
-  }
 }

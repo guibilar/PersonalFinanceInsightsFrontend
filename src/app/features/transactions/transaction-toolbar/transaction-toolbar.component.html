@@ -23,10 +23,10 @@
 
     <div class="flex-grow-1 flex-md-grow-0">
       <label for="tx-category" class="visually-hidden">Category</label>
-      <select id="tx-category" class="form-select" formControlName="category">
+      <select id="tx-category" class="form-select" formControlName="categoryId">
         <option [ngValue]="null">All categories</option>
-        @for (category of categories; track category) {
-          <option [ngValue]="category">{{ category }}</option>
+        @for (category of categories(); track category.id) {
+          <option [ngValue]="category.id">{{ category.name }}</option>
         }
       </select>
     </div>
