@@ -1,4 +1,4 @@
-import { Chart, ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
+import { Chart, ChartConfiguration, ChartData, ChartOptions, Plugin } from 'chart.js';
 // The plugin's typings add `plugins.annotation` to the chart options (registered in the dashboard).
 import type {} from 'chartjs-plugin-annotation';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
@@ -6,16 +6,12 @@ import { CategoryReference } from '../../core/models/outputs/category-output-dto
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { finishedMonths } from './dashboard-stats';
 
-const AVERAGE_COLOR = 'red';
-
-/** The theme's success, danger and primary colours (styles.scss), so the bars match the rest of the app. */
-export const CASH_FLOW_COLORS = {
-  income: '#16a34a',
-  spending: '#dc2626',
-  net: '#4f46e5',
-  savings: '#0ea5e9',
-} as const;
 const AVERAGE_ANNOTATION_ID = 'avgLine';
+
+// The app's own typeface, so the charts don't fall back to the browser's.
+const FONT_FAMILY = "'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+Chart.defaults.font.family = FONT_FAMILY;
+Chart.defaults.font.size = 12;
 
 /** Whether the savings accounts changed in any month: nothing recorded on one is not the same as nothing saved. */
 export function hasSavingsChange(report: CashFlowReportOutputDto): boolean {
@@ -23,9 +19,20 @@ export function hasSavingsChange(report: CashFlowReportOutputDto): boolean {
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
+const compactFormatter = new Intl.NumberFormat('en-CA', {
+  style: 'currency',
+  currency: 'CAD',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
 
 export function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
+}
+
+/** "$5K", "$1.2K": for axis ticks, which carry the values that aren't labelled. */
+export function formatCompactCurrency(value: number): string {
+  return compactFormatter.format(value);
 }
 
 /** Average monthly spend over the given months (positions), across the categories visible in the chart. */
@@ -57,16 +64,139 @@ function moveAverageLine(chart: Chart, average: number): void {
 
 /** Colours that depend on light/dark mode. */
 export interface ChartTheme {
+  /** Axis text and legend labels. */
   text: string;
+  /** Tick labels and captions: the quietest ink. */
+  muted: string;
+  /** Titles and the figure in a doughnut. */
+  strong: string;
+  /** Hairline gridlines. */
   grid: string;
-  /** Surface behind the chart, used to separate doughnut slices. */
+  /** The zero line. */
+  axis: string;
+  /** Surface behind the chart: it separates touching marks (a stack's gaps, a doughnut's slices). */
   surface: string;
+  /** The tooltip card. */
+  tooltip: string;
+  /**
+   * The colours the charts pick themselves (the user's categories bring their own): the first slots of the
+   * categorical palette, stepped for each mode and checked against its surface.
+   */
+  series: { blue: string; orange: string; aqua: string; magenta: string };
 }
 
 export const CHART_THEMES: Record<'light' | 'dark', ChartTheme> = {
-  light: { text: '#4b5563', grid: '#e4e7ee', surface: '#ffffff' },
-  dark: { text: '#cbd5e1', grid: '#2a3140', surface: '#171b24' },
+  light: {
+    text: '#4b5563',
+    muted: '#6b7280',
+    strong: '#111827',
+    grid: '#e9ecf2',
+    axis: '#c9cfdb',
+    surface: '#ffffff',
+    tooltip: '#ffffff',
+    series: { blue: '#2a78d6', orange: '#eb6834', aqua: '#1baf7a', magenta: '#e87ba4' },
+  },
+  dark: {
+    text: '#cbd5e1',
+    muted: '#94a3b8',
+    strong: '#f1f5f9',
+    grid: '#262d3b',
+    axis: '#3b4558',
+    surface: '#171b24',
+    tooltip: '#212836',
+    series: { blue: '#3987e5', orange: '#d95926', aqua: '#199e70', magenta: '#d55181' },
+  },
 };
+
+/** The bars of the income and spending chart: each figure keeps its colour whatever else is shown. */
+export function cashFlowColors(theme: ChartTheme) {
+  return {
+    income: theme.series.aqua,
+    spending: theme.series.orange,
+    net: theme.series.blue,
+    savings: theme.series.magenta,
+  };
+}
+
+/** The value axis: a hairline grid and nothing else, compact ticks, a stronger line at zero. */
+export function valueAxis(theme: ChartTheme, options: { stacked?: boolean; width?: number } = {}) {
+  return {
+    stacked: options.stacked,
+    border: { display: false },
+    grid: {
+      color: (context: { tick?: { value: number } }) =>
+        context.tick?.value === 0 ? theme.axis : theme.grid,
+      lineWidth: 1,
+      drawTicks: false,
+    },
+    ticks: {
+      color: theme.muted,
+      padding: 10,
+      maxTicksLimit: 6,
+      callback: (value: string | number) => formatCompactCurrency(Number(value)),
+    },
+    // Charts that sit above each other get the same width, so their plots line up.
+    afterFit: options.width
+      ? (axis: { width: number }) => {
+          axis.width = options.width!;
+        }
+      : undefined,
+  };
+}
+
+/** The category axis: labels only, no rules. */
+export function categoryAxis(theme: ChartTheme, options: { stacked?: boolean } = {}) {
+  return {
+    stacked: options.stacked,
+    border: { display: false },
+    grid: { display: false },
+    ticks: { color: theme.muted, padding: 6, maxRotation: 0, autoSkip: true },
+  };
+}
+
+/** Round swatches, quiet text. */
+export function legendStyle(theme: ChartTheme) {
+  return {
+    position: 'bottom' as const,
+    align: 'start' as const,
+    labels: {
+      color: theme.text,
+      usePointStyle: true,
+      pointStyle: 'circle' as const,
+      boxWidth: 8,
+      boxHeight: 8,
+      padding: 16,
+    },
+  };
+}
+
+/** A card in the chart's surface with a hairline, and a round swatch for each series. */
+export function tooltipStyle(theme: ChartTheme) {
+  return {
+    backgroundColor: theme.tooltip,
+    borderColor: theme.grid,
+    borderWidth: 1,
+    titleColor: theme.strong,
+    bodyColor: theme.text,
+    footerColor: theme.muted,
+    titleFont: { weight: 600 },
+    footerFont: { weight: 'normal' as const },
+    cornerRadius: 10,
+    padding: 12,
+    boxPadding: 6,
+    caretSize: 0,
+    usePointStyle: true,
+  };
+}
+
+/** Bars are thin and rounded at the end that shows the value, square where they stand on the baseline. */
+export const BAR_MARKS = {
+  borderRadius: 4,
+  borderSkipped: 'start',
+  maxBarThickness: 24,
+} as const;
+
+const ANIMATION = { duration: 700, easing: 'easeOutQuart' } as const;
 
 /** Click and hover handlers that hand the clicked element on, with a pointer over anything clickable. */
 function pickable(
@@ -81,6 +211,29 @@ function pickable(
     onHover: (event, elements) => {
       const target = event.native?.target as HTMLElement | undefined;
       if (target) target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
+  };
+}
+
+/** The total and a caption in the middle of a doughnut, so the ring doesn't have to be read for its sum. */
+function centerLabel(theme: ChartTheme, total: number, caption: string): Plugin<'doughnut'> {
+  return {
+    id: 'centerLabel',
+    afterDatasetsDraw: (chart) => {
+      const { ctx, chartArea } = chart;
+      const x = (chartArea.left + chartArea.right) / 2;
+      const y = (chartArea.top + chartArea.bottom) / 2;
+      const size = Math.max(14, Math.min(26, (chartArea.right - chartArea.left) / 9));
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = theme.strong;
+      ctx.font = `600 ${size}px ${FONT_FAMILY}`;
+      ctx.fillText(formatCurrency(total), x, y - size * 0.35);
+      ctx.fillStyle = theme.muted;
+      ctx.font = `500 ${Math.max(11, size * 0.5)}px ${FONT_FAMILY}`;
+      ctx.fillText(caption, x, y + size * 0.65);
+      ctx.restore();
     },
   };
 }
@@ -102,6 +255,13 @@ export class ChartHelper {
         label: category.name,
         data: report.monthlyData.map((monthData) => monthData.categoryValues[category.name] || 0),
         backgroundColor: category.color,
+        ...BAR_MARKS,
+        // Every segment rounded, and a gap of the surface's colour between neighbours.
+        borderSkipped: false,
+        borderWidth: 2,
+        borderColor: theme.surface,
+        categoryPercentage: 0.8,
+        barPercentage: 0.75,
       })),
     };
 
@@ -126,29 +286,33 @@ export class ChartHelper {
     const chartOptions: ChartConfiguration<'bar'>['options'] = {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMATION,
+      layout: { padding: { top: 8, right: 4 } },
+      // A click lands on the segment under the pointer; the tooltip below is for the whole month.
+      interaction: { mode: 'nearest', intersect: true },
       ...pickable((element) => {
         const category = report.categories[element.datasetIndex];
         const month = report.monthlyData[element.index]?.month;
         if (category && month && onPick) onPick(category, month);
       }, !!onPick),
       scales: {
-        x: { stacked: true, ticks: { color: theme.text }, grid: { color: theme.grid } },
-        y: { stacked: true, ticks: { color: theme.text }, grid: { color: theme.grid } },
+        x: categoryAxis(theme, { stacked: true }),
+        y: valueAxis(theme, { stacked: true }),
       },
       plugins: {
         legend: {
-          position: 'bottom',
-          align: 'start',
+          ...legendStyle(theme),
           labels: {
-            color: theme.text,
+            ...legendStyle(theme).labels,
             // Category entries plus an extra, non-toggleable "Avg" entry for the average line.
             generateLabels: (chart) => [
               ...Chart.defaults.plugins.legend.labels.generateLabels(chart),
               {
                 text: `Avg: ${formatCurrency(visibleMonthlyAverage(chart, averaged))}`,
-                fillStyle: AVERAGE_COLOR,
-                strokeStyle: AVERAGE_COLOR,
+                fillStyle: theme.text,
+                strokeStyle: theme.text,
                 lineWidth: 2,
+                pointStyle: 'line',
               },
             ],
           },
@@ -164,19 +328,30 @@ export class ChartHelper {
           },
         },
         tooltip: {
+          ...tooltipStyle(theme),
+          // The month at a glance: what was spent in each category, largest first, and the total.
+          mode: 'index',
+          intersect: false,
+          itemSort: (a, b) => (b.raw as number) - (a.raw as number),
+          filter: (item) => (item.raw as number) !== 0,
           callbacks: {
-            label: (context) => formatCurrency(context.raw as number),
+            label: (context) =>
+              `${context.dataset.label}: ${formatCurrency(context.raw as number)}`,
+            footer: (items) =>
+              items.length > 1
+                ? `Total: ${formatCurrency(items.reduce((sum, item) => sum + (item.raw as number), 0))}`
+                : '',
           },
         },
         annotation: {
           annotations: {
             [AVERAGE_ANNOTATION_ID]: {
               type: 'line',
-              borderDash: [6, 3],
+              borderDash: [5, 4],
               yMin: initialAverage,
               yMax: initialAverage,
-              borderColor: AVERAGE_COLOR,
-              borderWidth: 2,
+              borderColor: theme.text,
+              borderWidth: 1.5,
             },
           },
         },
@@ -194,17 +369,23 @@ export class ChartHelper {
   ): {
     chartData: ChartData<'doughnut'>;
     chartOptions: ChartConfiguration<'doughnut'>['options'];
+    chartPlugins: Plugin<'doughnut'>[];
   } {
     const categories = report.categories ?? [];
     const currentMonth = report.monthlyData[0]?.categoryValues ?? {};
+    const amounts = categories.map((category) => currentMonth[category.name] || 0);
 
     const chartData: ChartData<'doughnut'> = {
       labels: categories.map((category) => category.name),
       datasets: [
         {
-          data: categories.map((category) => currentMonth[category.name] || 0),
+          data: amounts,
           backgroundColor: categories.map((category) => category.color),
+          // Slices are parted by the surface, and rounded a little.
           borderColor: theme.surface,
+          borderWidth: 3,
+          borderRadius: 6,
+          hoverOffset: 6,
         },
       ],
     };
@@ -212,6 +393,9 @@ export class ChartHelper {
     const chartOptions: ChartConfiguration<'doughnut'>['options'] = {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '74%',
+      animation: { ...ANIMATION, duration: 900 },
+      layout: { padding: 8 },
       ...pickable((element) => {
         const category = categories[element.index];
         if (category && onPick) onPick(category);
@@ -220,6 +404,7 @@ export class ChartHelper {
         // The dashboard lists categories with amounts right below the doughnut.
         legend: { display: false },
         tooltip: {
+          ...tooltipStyle(theme),
           callbacks: {
             label: (context) => formatCurrency(context.raw as number),
           },
@@ -227,7 +412,14 @@ export class ChartHelper {
       },
     };
 
-    return { chartData, chartOptions };
+    const chartPlugins = [
+      centerLabel(
+        theme,
+        amounts.reduce((sum, amount) => sum + amount, 0),
+        'this month',
+      ),
+    ];
+    return { chartData, chartOptions, chartPlugins };
   }
 
   /**
@@ -242,23 +434,28 @@ export class ChartHelper {
     chartOptions: ChartConfiguration<'bar'>['options'];
   } {
     const months = report.months;
+    const colors = cashFlowColors(theme);
+    const marks = { ...BAR_MARKS, categoryPercentage: 0.75, barPercentage: 0.9 };
     const chartData: ChartData<'bar'> = {
       labels: months.map((month) => month.month),
       datasets: [
         {
           label: 'Income',
           data: months.map((month) => month.income),
-          backgroundColor: CASH_FLOW_COLORS.income,
+          backgroundColor: colors.income,
+          ...marks,
         },
         {
           label: 'Spending',
           data: months.map((month) => month.spending),
-          backgroundColor: CASH_FLOW_COLORS.spending,
+          backgroundColor: colors.spending,
+          ...marks,
         },
         {
           label: 'Left over',
           data: months.map((month) => month.net),
-          backgroundColor: CASH_FLOW_COLORS.net,
+          backgroundColor: colors.net,
+          ...marks,
         },
       ],
     };
@@ -266,20 +463,25 @@ export class ChartHelper {
       chartData.datasets.push({
         label: 'Savings change',
         data: months.map((month) => month.savingsChange),
-        backgroundColor: CASH_FLOW_COLORS.savings,
+        backgroundColor: colors.savings,
+        ...marks,
       });
     }
 
     const chartOptions: ChartConfiguration<'bar'>['options'] = {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMATION,
+      layout: { padding: { top: 8, right: 4 } },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { ticks: { color: theme.text }, grid: { color: theme.grid } },
-        y: { ticks: { color: theme.text }, grid: { color: theme.grid } },
+        x: categoryAxis(theme),
+        y: valueAxis(theme),
       },
       plugins: {
-        legend: { position: 'bottom', align: 'start', labels: { color: theme.text } },
+        legend: legendStyle(theme),
         tooltip: {
+          ...tooltipStyle(theme),
           callbacks: {
             label: (context) =>
               `${context.dataset.label}: ${formatCurrency(context.raw as number)}`,

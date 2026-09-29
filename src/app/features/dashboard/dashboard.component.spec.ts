@@ -151,6 +151,45 @@ describe('DashboardComponent', () => {
     expect(card.textContent).toContain('Savings change is what went into your savings accounts');
   });
 
+  it('has every figure of the chart in a table too, and back', async () => {
+    const { root } = await load(currentMonth(300), {
+      months: [
+        { month: 'Aug 2026', income: 5000, spending: 3200, net: 1800, savingsChange: 0 },
+        { month: 'Sep 2026', income: 1000, spending: 1500, net: -500, savingsChange: 0 },
+      ],
+      averageMonthlyIncome: 5000,
+      averageMonthlySpending: 3200,
+      averageMonthlyNet: 1800,
+      averageMonthlySavingsChange: 0,
+      averagedMonths: 1,
+      averagesIncludeCurrentMonth: false,
+    });
+    const card = root.querySelector('app-cash-flow')!;
+    const show = (label: string) =>
+      Array.from(card.querySelectorAll<HTMLButtonElement>('[aria-label="Show as"] button'))
+        .find((button) => button.textContent!.trim() === label)!
+        .click();
+
+    show('Table');
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+
+    expect(card.querySelector('canvas')).toBeNull();
+    const rows = Array.from(card.querySelectorAll('tbody tr')).map((row) =>
+      Array.from(row.querySelectorAll('th, td')).map((cell) => cell.textContent!.trim()),
+    );
+    expect(rows).toEqual([
+      ['Aug 2026', '$5,000.00', '$3,200.00', '$1,800.00'],
+      ['Sep 2026', '$1,000.00', '$1,500.00', '-$500.00'],
+    ]);
+    expect(card.querySelector('td.text-danger')!.textContent).toContain('-$500.00');
+
+    show('Chart');
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+    expect(card.querySelector('canvas')).not.toBeNull();
+  });
+
   it('says when nothing is recorded this year', async () => {
     const { root } = await load(currentMonth(300));
 

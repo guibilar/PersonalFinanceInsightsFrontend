@@ -17,6 +17,7 @@ import {
   BarElement,
   CategoryScale,
   Chart,
+  Filler,
   Legend,
   LineController,
   LineElement,
@@ -46,6 +47,7 @@ Chart.register(
   PointElement,
   CategoryScale,
   LinearScale,
+  Filler,
   Tooltip,
   Legend,
 );
@@ -76,7 +78,12 @@ const UNITS: Record<BreakdownInterval, [string, string]> = {
     .chart-container {
       position: relative;
       width: 100%;
-      height: 16rem;
+    }
+    .chart-periods {
+      height: 14rem;
+    }
+    .chart-running {
+      height: 7.5rem;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

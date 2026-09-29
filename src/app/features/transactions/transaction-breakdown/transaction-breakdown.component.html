@@ -77,12 +77,29 @@
           No transactions match these filters.
         </p>
       } @else if (chart(); as chart) {
-        <div class="chart-container">
-          <canvas baseChart [data]="chart.data" [options]="chart.options" type="bar"></canvas>
+        <p class="small fw-medium text-body-secondary mb-1">
+          {{ measure() === 'income' ? 'Received' : 'Spent' }} per {{ unit()[0] }}
+        </p>
+        <div class="chart-container chart-periods">
+          <canvas
+            baseChart
+            [data]="chart.periods.data"
+            [options]="chart.periods.options"
+            type="bar"
+          ></canvas>
         </div>
-        <p class="small text-body-secondary mt-2 mb-0">
+        <p class="small text-body-secondary mt-1 mb-2">
           Click a bar to list that {{ unit()[0] }}'s transactions.
         </p>
+        <p class="small fw-medium text-body-secondary mb-1">Running total</p>
+        <div class="chart-container chart-running">
+          <canvas
+            baseChart
+            [data]="chart.running.data"
+            [options]="chart.running.options"
+            type="line"
+          ></canvas>
+        </div>
       }
 
       @if (merchants().length > 0) {

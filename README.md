@@ -18,7 +18,14 @@ typed and the merchant once a category is ticked.
 
 The dashboard's "Income and spending" chart shows, per month of the year, income, spending and what was left over
 (income minus spending, red when negative), with the averages above it; how the savings accounts changed is added
-only when any of them has activity. Which months the averages cover comes from the API.
+only when any of them has activity. Which months the averages cover comes from the API. Every figure of the chart
+is also in a table (the "Table" button).
+
+The charts share one look (`features/dashboard/chart-helper.ts`): thin bars rounded at the end that shows the value,
+a gap of the surface's colour between stacked segments, hairline grid lines with compact axis ticks, and light and
+dark themes. The income and spending series take the first slots of a colour-blind-checked categorical palette (each
+mode stepped for its surface); categories keep the colour they were given. The transactions breakdown draws the
+running total in a chart of its own below the bars, not on a second axis.
 
 Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
 transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
