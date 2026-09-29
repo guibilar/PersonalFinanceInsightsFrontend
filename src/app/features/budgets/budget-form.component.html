@@ -73,12 +73,54 @@
     }
   </fieldset>
 
-  @if (period() === BudgetPeriod.Monthly) {
-    <fieldset class="mb-3" aria-describedby="budget-categories-hint">
+  @if (period() === BudgetPeriod.Custom) {
+    <div class="row g-2 mb-3">
+      <div class="col-sm-6">
+        <label for="budget-start" class="form-label">From *</label>
+        <input
+          type="date"
+          id="budget-start"
+          class="form-control"
+          formControlName="startDate"
+          [class.is-invalid]="daysInvalid()"
+        />
+      </div>
+      <div class="col-sm-6">
+        <label for="budget-end" class="form-label">To *</label>
+        <input
+          type="date"
+          id="budget-end"
+          class="form-control"
+          formControlName="endDate"
+          [class.is-invalid]="daysInvalid()"
+        />
+      </div>
+      @if (daysInvalid()) {
+        <div class="text-danger small" role="alert">
+          @if (form.hasError('daysOrder')) {
+            The last day can’t be before the first.
+          } @else {
+            Choose the first and the last day.
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (period() !== BudgetPeriod.Total) {
+    <fieldset
+      class="mb-3"
+      aria-describedby="budget-categories-hint"
+      [disabled]="categoriesLocked()"
+    >
       <legend class="form-label fs-6 mb-1">Categories</legend>
       <div id="budget-categories-hint" class="form-text mt-0 mb-2">
-        This month’s spending in the categories you tick counts towards the budget by itself, with
-        no linking. A category can belong to one budget only.
+        @if (categoriesLocked()) {
+          Clear the merchant to count categories instead.
+        } @else {
+          The period’s spending in the categories you tick counts towards the budget by itself, with
+          no linking. A category can belong to one budget only.
+        }
       </div>
       <div class="row row-cols-2 row-cols-sm-3 g-1">
         @for (category of categoryOptions(); track category.id) {
@@ -99,6 +141,30 @@
         }
       </div>
     </fieldset>
+
+    <div class="mb-3">
+      <label for="budget-merchant" class="form-label">Merchant</label>
+      <input
+        type="text"
+        id="budget-merchant"
+        class="form-control"
+        formControlName="merchant"
+        placeholder="e.g. No Frills"
+        autocomplete="off"
+        aria-describedby="budget-merchant-hint"
+        [maxlength]="limits.budgetMerchant"
+        [attr.disabled]="merchantLocked() ? '' : null"
+        [class.is-invalid]="isInvalid('merchant')"
+      />
+      <div id="budget-merchant-hint" class="form-text">
+        @if (merchantLocked()) {
+          Untick the categories to count a merchant instead.
+        } @else {
+          Spending whose description contains this counts towards the budget by itself, whatever its
+          category: “no frills” takes in every store of the chain.
+        }
+      </div>
+    </div>
   }
 
   <div class="mb-3">

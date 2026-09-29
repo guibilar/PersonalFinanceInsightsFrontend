@@ -65,7 +65,10 @@ describe('BudgetFormComponent', () => {
       amount: 0,
       status: Status.Active,
       period: BudgetPeriod.Total,
+      startDate: '',
+      endDate: '',
       categoryIds: [],
+      merchant: '',
     });
 
     expect(component.form.controls.name.invalid).toBe(true);
@@ -81,7 +84,10 @@ describe('BudgetFormComponent', () => {
       amount: 300,
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
+      startDate: '',
+      endDate: '',
       categoryIds: [TEST_CATEGORIES.dining.id],
+      merchant: '',
     });
     component.onSubmit();
 
@@ -119,7 +125,10 @@ describe('BudgetFormComponent', () => {
       amount: 500,
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
+      startDate: '',
+      endDate: '',
       categoryIds: [TEST_CATEGORIES.groceries.id],
+      merchant: '',
     });
 
     component.onSubmit();
@@ -134,7 +143,7 @@ describe('BudgetFormComponent', () => {
     );
 
     expect(component.form.controls.period.value).toBe(BudgetPeriod.Total);
-    expect(radios.length).toBe(2);
+    expect(radios.length).toBe(4);
     (radios[1] as HTMLInputElement).click();
     expect(component.form.controls.period.value).toBe(BudgetPeriod.Monthly);
   });
@@ -181,5 +190,138 @@ describe('BudgetFormComponent', () => {
     ).map((l) => l.textContent!.trim());
     expect(labels).toEqual(['Groceries']);
     expect(component.isCategoryChosen(TEST_CATEGORIES.groceries.id)).toBe(true);
+  });
+
+  describe('yearly, custom and merchant budgets', () => {
+    const root = () => fixture.nativeElement as HTMLElement;
+    const field = (id: string) => root().querySelector<HTMLInputElement>(`#${id}`)!;
+    const fill = (value: Partial<ReturnType<typeof component.form.getRawValue>>) => {
+      component.form.patchValue({ name: 'Food', description: 'd', amount: 100, ...value });
+      fixture.detectChanges();
+    };
+
+    it('counts categories or a merchant in any period but total', () => {
+      create();
+      expect(field('budget-merchant')).toBeNull();
+
+      component.form.controls.period.setValue(BudgetPeriod.Yearly);
+      fixture.detectChanges();
+      expect(field('budget-merchant')).not.toBeNull();
+      expect(root().querySelectorAll('input[id^=budget-category-]').length).toBe(
+        TEST_CATEGORY_LIST.length,
+      );
+
+      component.form.controls.period.setValue(BudgetPeriod.Total);
+      component.form.controls.merchant.setValue('no frills');
+      fixture.detectChanges();
+      component.form.controls.period.setValue(BudgetPeriod.Monthly);
+      fixture.detectChanges();
+      expect(component.form.controls.merchant.value).toBe('no frills');
+
+      component.form.controls.period.setValue(BudgetPeriod.Total);
+      expect(component.form.controls.merchant.value).toBe('');
+    });
+
+    it('lets a merchant lock the categories, and categories lock the merchant', () => {
+      create();
+      component.form.controls.period.setValue(BudgetPeriod.Monthly);
+      fixture.detectChanges();
+
+      component.form.controls.merchant.setValue(' no frills ');
+      fixture.detectChanges();
+      expect(
+        root()
+          .querySelector('fieldset[aria-describedby=budget-categories-hint]')!
+          .hasAttribute('disabled'),
+      ).toBe(true);
+      expect(root().textContent).toContain('Clear the merchant to count categories instead.');
+
+      component.form.controls.merchant.setValue('');
+      component.toggleCategory(TEST_CATEGORIES.dining.id, true);
+      fixture.detectChanges();
+      expect(field('budget-merchant').disabled).toBe(true);
+      expect(root().textContent).toContain('Untick the categories to count a merchant instead.');
+    });
+
+    it('asks for both days of a custom period, the last not before the first', () => {
+      // Typed into the fields, as a person would: that is what redraws the messages.
+      const type = (id: string, value: string) => {
+        field(id).value = value;
+        field(id).dispatchEvent(new Event('input'));
+        field(id).dispatchEvent(new Event('blur'));
+        fixture.detectChanges();
+      };
+      const message = () => root().querySelector('[role=alert]')?.textContent ?? '';
+      create();
+      fill({ period: BudgetPeriod.Custom });
+      expect(field('budget-start')).not.toBeNull();
+      expect(component.form.hasError('daysMissing')).toBe(true);
+      expect(message()).toBe('');
+
+      type('budget-start', '2026-07-01');
+      expect(component.form.invalid).toBe(true);
+      expect(message()).toContain('Choose the first');
+
+      type('budget-end', '2026-06-30');
+      expect(component.form.hasError('daysOrder')).toBe(true);
+      expect(message()).toContain('can’t be before');
+
+      type('budget-end', '2026-07-01');
+      expect(component.form.valid).toBe(true);
+      expect(message()).toBe('');
+    });
+
+    it('sends the days of a custom period and a trimmed merchant, and only those', () => {
+      create();
+      fill({
+        period: BudgetPeriod.Custom,
+        startDate: '2026-07-01',
+        endDate: '2026-08-15',
+        merchant: ' restaurant ',
+      });
+      component.onSubmit();
+
+      fill({ period: BudgetPeriod.Yearly });
+      component.onSubmit();
+
+      expect(submitted).toEqual([
+        expect.objectContaining({
+          period: BudgetPeriod.Custom,
+          startDate: '2026-07-01',
+          endDate: '2026-08-15',
+          merchant: 'restaurant',
+        }),
+        expect.objectContaining({ period: BudgetPeriod.Yearly, merchant: 'restaurant' }),
+      ]);
+      expect(submitted[1].startDate).toBeUndefined();
+      expect(submitted[1].endDate).toBeUndefined();
+    });
+
+    it('prefills the days and merchant of an edited budget', () => {
+      create({
+        id: 'b1',
+        name: 'Holiday food',
+        description: 'd',
+        status: Status.Active,
+        period: BudgetPeriod.Custom,
+        startDate: '2026-07-01T00:00:00Z',
+        endDate: '2026-08-15T00:00:00Z',
+        merchant: 'restaurant',
+        categories: [],
+        totalAmount: 300,
+        totalSpent: 0,
+        totalRemaining: 300,
+        percentageUsed: 0,
+      });
+
+      expect(component.form.getRawValue()).toEqual(
+        expect.objectContaining({
+          startDate: '2026-07-01',
+          endDate: '2026-08-15',
+          merchant: 'restaurant',
+        }),
+      );
+      expect(field('budget-start').value).toBe('2026-07-01');
+    });
   });
 });

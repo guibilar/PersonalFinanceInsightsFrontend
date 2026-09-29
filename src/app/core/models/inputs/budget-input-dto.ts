@@ -8,6 +8,12 @@ export interface BudgetInputDto {
   amount: number;
   status: Status;
   period: BudgetPeriod;
-  /** Monthly budgets only: this month's spending in these categories counts without linking. */
+  /** Custom periods only (and required for them), `yyyy-MM-dd`: the first day that counts. */
+  startDate?: string;
+  /** Custom periods only (and required for them), `yyyy-MM-dd`: the last day that counts. */
+  endDate?: string;
+  /** Any period but Total: the period's spending in these categories counts without linking. */
   categoryIds: string[];
+  /** Any period but Total, and not with categories: spending whose description contains this counts without linking. */
+  merchant?: string;
 }
