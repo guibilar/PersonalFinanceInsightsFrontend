@@ -114,6 +114,30 @@
   </div>
 </div>
 
+<!-- Typical month, by category -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <app-card-wrapper
+      headerTitle="Average by category"
+      subtitle="A typical month, against this one"
+    >
+      @if (yearReport.error()) {
+        <app-error-state message="Could not load the averages." (retry)="yearReport.reload()" />
+      } @else if (yearReport.value(); as report) {
+        @if (report.monthlyData.length > 0) {
+          <app-category-averages [report]="report" [today]="today" />
+        } @else {
+          <p class="text-body-secondary text-center py-5 mb-0">
+            No spending recorded this year yet.
+          </p>
+        }
+      } @else {
+        <app-skeleton [lines]="6" />
+      }
+    </app-card-wrapper>
+  </div>
+</div>
+
 <!-- Money in and out -->
 <div class="row g-3 mb-3">
   <div class="col-12">

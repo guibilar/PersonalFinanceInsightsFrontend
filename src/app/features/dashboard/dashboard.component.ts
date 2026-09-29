@@ -27,6 +27,7 @@ import { MonthlyCategorizedChartComponent } from './monthly-categorized-chart/mo
 import { CategoryBreakdownComponent } from './category-breakdown/category-breakdown.component';
 import { BudgetOverviewComponent } from './budget-overview/budget-overview.component';
 import { RecentTransactionsComponent } from './recent-transactions/recent-transactions.component';
+import { CategoryAveragesComponent } from './category-averages/category-averages.component';
 import { CashFlowComponent } from './cash-flow/cash-flow.component';
 import {
   averageCaption,
@@ -63,6 +64,7 @@ const RECENT_TRANSACTIONS = 6;
     StatCardComponent,
     MonthlyCategorizedChartComponent,
     CategoryBreakdownComponent,
+    CategoryAveragesComponent,
     BudgetOverviewComponent,
     RecentTransactionsComponent,
     CashFlowComponent,

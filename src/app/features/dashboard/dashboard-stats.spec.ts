@@ -1,6 +1,7 @@
 import {
   averageCaption,
   budgetsOverLimit,
+  categoryAverages,
   categoryShares,
   finishedMonths,
   monthIndex,
@@ -86,6 +87,42 @@ describe('dashboard stats', () => {
       ['Rent', 75],
       ['Dining', 25],
     ]);
+  });
+
+  it('averages each category over the finished months, next to this month so far', () => {
+    const year: CategorizedReportOutputDto = {
+      categories: ['Dining', 'Groceries', 'Pet'],
+      averageMonthlyTotal: 0,
+      monthlyData: [
+        { month: 'Jul 2026', total: 0, categoryValues: { Dining: 100, Groceries: 300 } },
+        { month: 'Aug 2026', total: 0, categoryValues: { Dining: 200, Groceries: 300, Pet: 40 } },
+        { month: 'Sep 2026', total: 0, categoryValues: { Dining: 375, Pet: 20 } },
+      ],
+    };
+
+    expect(categoryAverages(year, new Date(2026, 8, 5))).toEqual([
+      { category: 'Groceries', average: 300, thisMonth: 0, change: -100 },
+      { category: 'Dining', average: 150, thisMonth: 375, change: 150 },
+      { category: 'Pet', average: 20, thisMonth: 20, change: 0 },
+    ]);
+  });
+
+  it('has a category that only shows up this month, with nothing to compare against', () => {
+    const year: CategorizedReportOutputDto = {
+      categories: ['Dining', 'Pet'],
+      averageMonthlyTotal: 0,
+      monthlyData: [
+        { month: 'Aug 2026', total: 0, categoryValues: { Dining: 100 } },
+        { month: 'Sep 2026', total: 0, categoryValues: { Dining: 100, Pet: 30 } },
+      ],
+    };
+
+    expect(categoryAverages(year, new Date(2026, 8, 5)).find((r) => r.category === 'Pet')).toEqual({
+      category: 'Pet',
+      average: 0,
+      thisMonth: 30,
+      change: null,
+    });
   });
 
   it('counts budgets at or over their limit', () => {
