@@ -294,6 +294,7 @@
     <app-transaction-add-form
       [accounts]="accounts()"
       [saving]="savingAdd()"
+      [previous]="lastAdded()"
       [duplicate]="addDuplicate()"
       (submitAdd)="onAddSubmit($event)"
       (cancelled)="showAdd.set(false)"
