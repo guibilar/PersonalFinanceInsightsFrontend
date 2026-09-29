@@ -136,4 +136,29 @@ describe('formatCurrency', () => {
   it('formats as Canadian dollars', () => {
     expect(formatCurrency(1234.5)).toBe('$1,234.50');
   });
+
+  it('hands a clicked bar segment on as its category and month, and a slice as its category', () => {
+    const picked: string[] = [];
+    const monthly = ChartHelper.generateMonthlySpendingChartConfiguration(
+      report,
+      undefined,
+      midSeptember,
+      (category, month) => picked.push(`${category.name} ${month}`),
+    );
+    const doughnut = ChartHelper.generateDoughnutChartConfiguration(report, undefined, (category) =>
+      picked.push(category.name),
+    );
+    type Click = (event: unknown, elements: { datasetIndex: number; index: number }[]) => void;
+
+    (monthly.chartOptions!.onClick as Click)({}, [{ datasetIndex: 1, index: 0 }]);
+    (doughnut.chartOptions!.onClick as Click)({}, [{ datasetIndex: 0, index: 0 }]);
+
+    expect(picked).toEqual(['Rent Aug 2026', 'Dining']);
+  });
+
+  it('is not clickable without somewhere to go', () => {
+    expect(
+      ChartHelper.generateDoughnutChartConfiguration(report).chartOptions!.onClick,
+    ).toBeUndefined();
+  });
 });

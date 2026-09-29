@@ -4,6 +4,11 @@ Angular 22 frontend for the Personal Finance Insights API: a spending and income
 transaction list with budget linking, budget management, categories with their colours, category and
 flow rules, and the bank accounts statements are imported into.
 
+The Transactions page totals whatever its filters pick (a merchant by search, a category, dates...) and, under
+"Over time", spreads it over weeks, months, quarters or years with a running total and the top merchants; clicking a
+bar lists that period. Links can open it filtered: `/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`,
+as the dashboard's category names and chart segments do.
+
 Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
 transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
 

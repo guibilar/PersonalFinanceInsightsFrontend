@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { switchMap, tap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
@@ -7,6 +8,7 @@ import { CategoryRuleRepository } from '../../../core/api/category-rule-reposito
 import { BudgetRepository } from '../../../core/api/budget-repository';
 import { AccountRepository } from '../../../core/api/account-repository';
 import { CategoryRepository } from '../../../core/api/category-repository';
+import { ReportsRepository } from '../../../core/api/reports-repository';
 import {
   SortDirection,
   TransactionFilterInputDto,
@@ -16,6 +18,10 @@ import { TransactionInputDto } from '../../../core/models/inputs/transaction-inp
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import {
+  BreakdownInterval,
+  BreakdownPeriodDto,
+} from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
@@ -45,6 +51,30 @@ import {
 } from '../transaction-edit-form/transaction-edit-form';
 import { TransactionAddForm } from '../transaction-add-form/transaction-add-form';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
+import { TransactionBreakdownComponent } from '../transaction-breakdown/transaction-breakdown.component';
+
+/** The next interval down, for looking inside a period. */
+const CLOSER: Record<BreakdownInterval, BreakdownInterval> = {
+  Year: 'Month',
+  Quarter: 'Month',
+  Month: 'Week',
+  Week: 'Week',
+};
+
+/** The criteria a link can open the list with: ?categoryId=…&description=…&startDate=…&endDate=…&accountId=… */
+function criteriaFromQuery(query: ParamMap): TransactionCriteria {
+  const criteria: TransactionCriteria = {};
+  for (const key of ['description', 'categoryId', 'accountId', 'startDate', 'endDate'] as const) {
+    const value = query.get(key);
+    if (value) criteria[key] = value;
+  }
+  return criteria;
+}
+
+function intervalFromQuery(query: ParamMap): BreakdownInterval | null {
+  const value = query.get('interval');
+  return value && value in CLOSER ? (value as BreakdownInterval) : null;
+}
 
 interface SortableColumn {
   field: TransactionSortField;
@@ -72,6 +102,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
     TransactionEditForm,
     TransactionAddForm,
     StatementImportComponent,
+    TransactionBreakdownComponent,
     ConfirmDialogComponent,
     ModalComponent,
     SkeletonComponent,
@@ -86,6 +117,8 @@ export class TransactionListComponent {
   private readonly categoryRuleRepository = inject(CategoryRuleRepository);
   private readonly accountRepository = inject(AccountRepository);
   private readonly categoryRepository = inject(CategoryRepository);
+  private readonly reportsRepository = inject(ReportsRepository);
+  private readonly route = inject(ActivatedRoute);
   private readonly toasts = inject(ToastService);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
@@ -101,6 +134,8 @@ export class TransactionListComponent {
     pageSize: 25,
     sortBy: 'Date',
     sortDirection: 'Descending',
+    // Links from elsewhere (the dashboard's categories) open the list already filtered.
+    ...criteriaFromQuery(this.route.snapshot.queryParamMap),
   });
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
   readonly savingLink = signal(false);
@@ -124,6 +159,39 @@ export class TransactionListComponent {
   readonly transactions = rxResource({
     params: () => this.filter(),
     stream: ({ params }) => this.transactionRepository.filter(params),
+  });
+
+  /** The totals strip is always there; the chart below it opens on demand (or from a link with ?overTime=1). */
+  readonly breakdownOpen = signal(this.route.snapshot.queryParamMap.get('overTime') === '1');
+  readonly breakdownInterval = signal<BreakdownInterval>(
+    intervalFromQuery(this.route.snapshot.queryParamMap) ?? 'Month',
+  );
+  // Only the criteria and the interval: paging and sorting the list doesn't change the totals.
+  private readonly breakdownParams = computed(
+    () => {
+      const { description, categoryId, accountId, flow, startDate, endDate, hidden } =
+        this.filter();
+      if (hidden) return undefined;
+      return {
+        description,
+        categoryId,
+        accountId,
+        flow,
+        startDate,
+        endDate,
+        interval: this.breakdownInterval(),
+      };
+    },
+    { equal: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
+  );
+  readonly breakdown = rxResource({
+    params: () => this.breakdownParams(),
+    stream: ({ params }) => this.reportsRepository.getBreakdown(params),
+  });
+  /** The filtered category's colour, for the chart's bars. */
+  readonly breakdownColor = computed(() => {
+    const categoryId = this.filter().categoryId;
+    return this.categories().find((c) => c.id === categoryId)?.color ?? null;
   });
 
   readonly hasCriteria = computed(() => {
@@ -152,6 +220,23 @@ export class TransactionListComponent {
   protected readonly TransactionType = TransactionType;
   protected readonly Flow = Flow;
   protected readonly applyRulesConfirmation = APPLY_RULES_CONFIRMATION;
+
+  /** After a change to the transactions: the list, and the totals over them. */
+  private reload(): void {
+    this.transactions.reload();
+    this.breakdown.reload();
+  }
+
+  /** A bar of the chart: list that period, and look at it a step closer (a month by week, say). */
+  onPeriodPicked(period: BreakdownPeriodDto): void {
+    this.filter.update((filter) => ({
+      ...filter,
+      startDate: period.start.slice(0, 10),
+      endDate: period.end.slice(0, 10),
+      page: 1,
+    }));
+    this.breakdownInterval.update((interval) => CLOSER[interval]);
+  }
 
   onCriteriaChange(criteria: TransactionCriteria): void {
     this.filter.update(({ pageSize, sortBy, sortDirection, hidden }) => ({
@@ -221,7 +306,7 @@ export class TransactionListComponent {
 
   onImported(result: ImportResultOutputDto): void {
     this.showImport.set(false);
-    this.transactions.reload();
+    this.reload();
     const noun = result.added === 1 ? 'transaction' : 'transactions';
     this.toasts.success(
       `Imported ${result.added} new ${noun}` +
@@ -243,7 +328,7 @@ export class TransactionListComponent {
         this.savingAdd.set(false);
         this.showAdd.set(false);
         this.lastAdded.set({ date: input.date, accountId: input.accountId });
-        this.transactions.reload();
+        this.reload();
         this.toasts.success(`Added “${added.description}” to ${added.accountName}`);
       },
       error: (error: unknown) => {
@@ -266,7 +351,7 @@ export class TransactionListComponent {
         this.savingLink.set(false);
         const budget = this.activeBudgets().find((b) => b.id === linking.budgetId);
         this.linkingTransaction.set(null);
-        this.transactions.reload();
+        this.reload();
         this.toasts.success(budget ? `Linked to “${budget.name}”` : 'Transaction linked');
       },
       error: () => {
@@ -328,7 +413,7 @@ export class TransactionListComponent {
   private finishEdit(): void {
     this.savingEdit.set(false);
     this.editingTransaction.set(null);
-    this.transactions.reload();
+    this.reload();
   }
 
   applyRules(): void {
@@ -337,7 +422,7 @@ export class TransactionListComponent {
     this.transactionRepository.applyRules().subscribe({
       next: (result) => {
         this.applyingRules.set(false);
-        this.transactions.reload();
+        this.reload();
         this.toasts.success(describeRulesResult(result));
       },
       error: () => {
@@ -356,7 +441,7 @@ export class TransactionListComponent {
         this.removing.set(false);
         this.deletingTransaction.set(null);
         this.editingTransaction.set(null);
-        this.transactions.reload();
+        this.reload();
         this.toasts.success(`Deleted “${transaction.description}”`);
       },
       error: () => {
@@ -370,7 +455,7 @@ export class TransactionListComponent {
   restore(transaction: TransactionOutputDto): void {
     this.transactionRepository.restore(transaction.id).subscribe({
       next: () => {
-        this.transactions.reload();
+        this.reload();
         this.toasts.success(`Restored “${transaction.description}”`);
       },
       error: () => this.toasts.error('Could not restore the transaction.'),
@@ -380,7 +465,7 @@ export class TransactionListComponent {
   onUnlink(id: string): void {
     this.transactionRepository.unlinkTransaction(id).subscribe({
       next: () => {
-        this.transactions.reload();
+        this.reload();
         this.toasts.success('Transaction unlinked');
       },
       error: () => this.toasts.error('Could not unlink the transaction.'),

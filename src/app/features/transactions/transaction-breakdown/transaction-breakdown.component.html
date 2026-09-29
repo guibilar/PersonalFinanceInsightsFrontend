@@ -1,0 +1,115 @@
+<section class="card mb-3" aria-label="Totals for these transactions">
+  <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+    <div class="flex-grow-1 small d-flex flex-wrap column-gap-3 row-gap-1" aria-live="polite">
+      @if (breakdown(); as b) {
+        <span
+          ><strong>{{ b.count }}</strong> {{ b.count === 1 ? 'transaction' : 'transactions' }}</span
+        >
+        @if (b.spending !== 0 || b.income === 0) {
+          <span
+            ><strong>{{ b.spending | currency }}</strong> spent</span
+          >
+        }
+        @if (b.refunds > 0) {
+          <span class="text-body-secondary">{{ b.refunds | currency }} refunded</span>
+        }
+        @if (b.income > 0) {
+          <span
+            ><strong class="text-success">{{ b.income | currency }}</strong> received</span
+          >
+        }
+      } @else if (failed()) {
+        <span class="text-body-secondary">
+          Could not total these transactions.
+          <button
+            type="button"
+            class="btn btn-link btn-sm p-0 align-baseline"
+            (click)="retry.emit()"
+          >
+            Retry
+          </button>
+        </span>
+      } @else {
+        <span class="text-body-secondary">Totalling…</span>
+      }
+    </div>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+      aria-controls="breakdown-panel"
+      [attr.aria-expanded]="open()"
+      (click)="openChange.emit(!open())"
+    >
+      <app-icon name="trending-up" [size]="14" /> {{ open() ? 'Hide over time' : 'Over time' }}
+    </button>
+  </div>
+
+  @if (open()) {
+    <div id="breakdown-panel" class="card-body border-top" [class.opacity-50]="loading()">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Per">
+          @for (option of intervals; track option) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [class.active]="option === interval()"
+              [attr.aria-pressed]="option === interval()"
+              (click)="intervalChange.emit(option)"
+            >
+              {{ option }}
+            </button>
+          }
+        </div>
+        @if (average(); as average) {
+          <p class="small text-body-secondary mb-0">
+            Average <strong class="text-body">{{ average.amount | currency }}</strong> per
+            {{ average.per }} · over {{ average.over }}
+            @if (highest(); as highest) {
+              · Highest {{ highest.label }},
+              <strong class="text-body">{{ highest.amount | currency }}</strong>
+            }
+          </p>
+        }
+      </div>
+
+      @if (breakdown()?.periods?.length === 0) {
+        <p class="text-body-secondary text-center py-4 mb-0">
+          No transactions match these filters.
+        </p>
+      } @else if (chart(); as chart) {
+        <div class="chart-container">
+          <canvas baseChart [data]="chart.data" [options]="chart.options" type="bar"></canvas>
+        </div>
+        <p class="small text-body-secondary mt-2 mb-0">
+          Click a bar to list that {{ unit()[0] }}'s transactions.
+        </p>
+      }
+
+      @if (merchants().length > 0) {
+        <h3 class="h6 mt-4 mb-2">Where it went</h3>
+        <ul class="list-unstyled mb-0 row row-cols-1 row-cols-lg-2 gx-5">
+          @for (merchant of merchants(); track merchant.name) {
+            <li class="col mb-2">
+              <div class="d-flex justify-content-between gap-2 small">
+                <span class="text-truncate" [title]="merchant.name">{{ merchant.name }}</span>
+                <span class="text-nowrap">
+                  <strong>{{ merchant.spending | currency }}</strong>
+                  <span class="text-body-secondary">
+                    · {{ merchant.count }} {{ merchant.count === 1 ? 'time' : 'times' }}</span
+                  >
+                </span>
+              </div>
+              <div class="progress merchant-bar mt-1" role="presentation">
+                <div
+                  class="progress-bar"
+                  [style.width.%]="merchant.percent"
+                  [style.background-color]="color() ?? null"
+                ></div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</section>

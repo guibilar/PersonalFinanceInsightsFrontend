@@ -2,6 +2,7 @@ import {
   averageCaption,
   budgetsOverLimit,
   categoryAverages,
+  categoryLink,
   categoryShares,
   finishedMonths,
   monthIndex,
@@ -130,5 +131,16 @@ describe('dashboard stats', () => {
     const budgets = [50, 100, 130].map((percentageUsed) => ({ percentageUsed }) as BudgetOutputDto);
 
     expect(budgetsOverLimit(budgets)).toBe(2);
+  });
+
+  it('links to a category over time, or to one month of it week by week', () => {
+    expect(categoryLink('c-dining')).toEqual({ categoryId: 'c-dining', overTime: '1' });
+    expect(categoryLink('c-dining', 'Feb 2028')).toEqual({
+      categoryId: 'c-dining',
+      overTime: '1',
+      startDate: '2028-02-01',
+      endDate: '2028-02-29',
+      interval: 'Week',
+    });
   });
 });

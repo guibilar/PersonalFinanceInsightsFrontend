@@ -1,7 +1,8 @@
-import { Chart, ChartConfiguration, ChartData } from 'chart.js';
+import { Chart, ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
 // The plugin's typings add `plugins.annotation` to the chart options (registered in the dashboard).
 import type {} from 'chartjs-plugin-annotation';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+import { CategoryReference } from '../../core/models/outputs/category-output-dto';
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { finishedMonths } from './dashboard-stats';
 
@@ -61,11 +62,30 @@ export const CHART_THEMES: Record<'light' | 'dark', ChartTheme> = {
   dark: { text: '#cbd5e1', grid: '#2a3140', surface: '#171b24' },
 };
 
+/** Click and hover handlers that hand the clicked element on, with a pointer over anything clickable. */
+function pickable(
+  pick: (element: { datasetIndex: number; index: number }) => void,
+  enabled: boolean,
+): Pick<ChartOptions, 'onClick' | 'onHover'> {
+  if (!enabled) return {};
+  return {
+    onClick: (_event, elements) => {
+      if (elements[0]) pick(elements[0]);
+    },
+    onHover: (event, elements) => {
+      const target = event.native?.target as HTMLElement | undefined;
+      if (target) target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    },
+  };
+}
+
 export class ChartHelper {
+  /** `onPick`: a bar segment was clicked, with its category and month (as the report has them). */
   static generateMonthlySpendingChartConfiguration(
     report: CategorizedReportOutputDto,
     theme: ChartTheme = CHART_THEMES.light,
     now: Date = new Date(),
+    onPick?: (category: CategoryReference, month: string) => void,
   ): {
     chartData: ChartData<'bar'>;
     chartOptions: ChartConfiguration<'bar'>['options'];
@@ -100,6 +120,11 @@ export class ChartHelper {
     const chartOptions: ChartConfiguration<'bar'>['options'] = {
       responsive: true,
       maintainAspectRatio: false,
+      ...pickable((element) => {
+        const category = report.categories[element.datasetIndex];
+        const month = report.monthlyData[element.index]?.month;
+        if (category && month && onPick) onPick(category, month);
+      }, !!onPick),
       scales: {
         x: { stacked: true, ticks: { color: theme.text }, grid: { color: theme.grid } },
         y: { stacked: true, ticks: { color: theme.text }, grid: { color: theme.grid } },
@@ -155,9 +180,11 @@ export class ChartHelper {
     return { chartData, chartOptions };
   }
 
+  /** `onPick`: a slice was clicked, with its category. */
   static generateDoughnutChartConfiguration(
     report: CategorizedReportOutputDto,
     theme: ChartTheme = CHART_THEMES.light,
+    onPick?: (category: CategoryReference) => void,
   ): {
     chartData: ChartData<'doughnut'>;
     chartOptions: ChartConfiguration<'doughnut'>['options'];
@@ -179,6 +206,10 @@ export class ChartHelper {
     const chartOptions: ChartConfiguration<'doughnut'>['options'] = {
       responsive: true,
       maintainAspectRatio: false,
+      ...pickable((element) => {
+        const category = categories[element.index];
+        if (category && onPick) onPick(category);
+      }, !!onPick),
       plugins: {
         // The dashboard lists categories with amounts right below the doughnut.
         legend: { display: false },

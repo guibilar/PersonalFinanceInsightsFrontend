@@ -52,6 +52,21 @@
   (criteriaChange)="onCriteriaChange($event)"
 />
 
+@if (!showDeleted()) {
+  <app-transaction-breakdown
+    [breakdown]="breakdown.value()"
+    [loading]="breakdown.isLoading()"
+    [failed]="!!breakdown.error()"
+    [open]="breakdownOpen()"
+    [interval]="breakdownInterval()"
+    [color]="breakdownColor()"
+    (openChange)="breakdownOpen.set($event)"
+    (intervalChange)="breakdownInterval.set($event)"
+    (periodPicked)="onPeriodPicked($event)"
+    (retry)="breakdown.reload()"
+  />
+}
+
 <div class="card">
   @if (transactions.error()) {
     <div class="card-body">

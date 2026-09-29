@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
-import { averageCaption, categoryAverages, categoryColors } from '../dashboard-stats';
+import { RouterLink } from '@angular/router';
+import { averageCaption, categoryAverages, categoryColors, categoryLink } from '../dashboard-stats';
 
 /**
  * What each category costs in a typical month: a bar for the average of the finished months, and a thinner one
@@ -9,7 +10,7 @@ import { averageCaption, categoryAverages, categoryColors } from '../dashboard-s
  */
 @Component({
   selector: 'app-category-averages',
-  imports: [CurrencyPipe, DecimalPipe],
+  imports: [CurrencyPipe, DecimalPipe, RouterLink],
   template: `
     <p class="small text-body-secondary mb-3">
       {{ caption() }}. The thin bar is {{ thisMonthLabel }} so far.
@@ -18,9 +19,13 @@ import { averageCaption, categoryAverages, categoryColors } from '../dashboard-s
       @for (row of rows(); track row.category) {
         <li class="col mb-3">
           <div class="d-flex justify-content-between align-items-baseline gap-2 small">
-            <span class="text-truncate"
+            <a
+              class="category-link text-truncate"
+              routerLink="/transactions"
+              [queryParams]="link(row.category)"
+              [title]="'See ' + row.category + ' over time'"
               ><span class="category-dot" [style.background-color]="color(row.category)"></span
-              >{{ row.category }}</span
+              >{{ row.category }}</a
             >
             <span class="text-nowrap">
               <span class="fw-semibold">{{ row.average | currency }}</span>
@@ -89,6 +94,12 @@ export class CategoryAveragesComponent {
   }
 
   private readonly colors = computed(() => categoryColors(this.report()));
+
+  /** All of its history, month by month. */
+  link(category: string): Record<string, string> | null {
+    const id = this.report().categories.find((c) => c.name === category)?.id;
+    return id ? categoryLink(id) : null;
+  }
 
   color(category: string): string {
     return this.colors()(category);
