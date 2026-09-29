@@ -1,31 +1,64 @@
 import { ChartEvent } from 'chart.js';
-import { breakdownChart, breakdownMeasure, BREAKDOWN_COLORS } from './breakdown-chart';
+import { breakdownChart, breakdownMeasure } from './breakdown-chart';
 import { CHART_THEMES } from '../../dashboard/chart-helper';
 import { BreakdownPeriodDto } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { TEST_BREAKDOWN } from '../../../testing/test-breakdown';
 
-describe('breakdownChart', () => {
-  it('draws each period as a bar and the running total as a line on its own scale', () => {
-    const { data } = breakdownChart(TEST_BREAKDOWN, { theme: CHART_THEMES.light });
+const theme = CHART_THEMES.light;
 
-    expect(data.labels).toEqual(['Jul 2026', 'Aug 2026', 'Sep 2026']);
-    const [bars, line] = data.datasets;
-    expect([bars.type, bars.label, bars.data, bars.backgroundColor]).toEqual([
-      'bar',
+describe('breakdownChart', () => {
+  it('draws each period as a bar, and the running total as a line in a chart of its own', () => {
+    const { periods, running } = breakdownChart(TEST_BREAKDOWN, { theme });
+
+    expect(periods.data.labels).toEqual(['Jul 2026', 'Aug 2026', 'Sep 2026']);
+    const [bars] = periods.data.datasets;
+    expect([bars.label, bars.data, bars.backgroundColor]).toEqual([
       'Spent',
       [120, 0, 70],
-      BREAKDOWN_COLORS.bars,
+      theme.series.blue,
     ]);
-    expect([line.type, line.data, line.yAxisID]).toEqual(['line', [120, 120, 190], 'running']);
+    expect(running.data.labels).toEqual(periods.data.labels);
+    const [line] = running.data.datasets;
+    expect([line.label, line.data, line.borderColor]).toEqual([
+      'Running total',
+      [120, 120, 190],
+      theme.series.blue,
+    ]);
   });
 
-  it("uses the filtered category's colour for the bars", () => {
-    const { data } = breakdownChart(TEST_BREAKDOWN, {
-      theme: CHART_THEMES.light,
-      color: '#2CA12D',
-    });
+  it('has no second scale: each chart has one value axis', () => {
+    const { periods, running } = breakdownChart(TEST_BREAKDOWN, { theme });
 
-    expect(data.datasets[0].backgroundColor).toBe('#2CA12D');
+    expect(Object.keys(periods.options!.scales!)).toEqual(['x', 'y']);
+    expect(Object.keys(running.options!.scales!)).toEqual(['x', 'y']);
+    // The same width, so the two plots line up one above the other.
+    const width = (options: typeof periods.options) => {
+      const axis = { width: 0 };
+      (options!.scales!['y'] as { afterFit: (axis: { width: number }) => void }).afterFit(axis);
+      return axis.width;
+    };
+    expect(width(periods.options)).toBe(width(running.options as typeof periods.options));
+  });
+
+  it("uses the filtered category's colour for both, with a wash of it under the line", () => {
+    const { periods, running } = breakdownChart(TEST_BREAKDOWN, { theme, color: '#2CA12D' });
+
+    expect(periods.data.datasets[0].backgroundColor).toBe('#2CA12D');
+    const [line] = running.data.datasets;
+    expect([line.borderColor, line.backgroundColor, line.fill]).toEqual([
+      '#2CA12D',
+      'rgba(44, 161, 45, 0.12)',
+      true,
+    ]);
+  });
+
+  it('marks only the latest point of the running total', () => {
+    const { running } = breakdownChart(TEST_BREAKDOWN, { theme });
+    const radius = running.data.datasets[0].pointRadius as (context: {
+      dataIndex: number;
+    }) => number;
+
+    expect([0, 1, 2].map((dataIndex) => radius({ dataIndex }))).toEqual([0, 0, 4]);
   });
 
   it('shows money received when there is no spending at all, a salary say', () => {
@@ -42,23 +75,38 @@ describe('breakdownChart', () => {
       })),
     };
 
-    const { data } = breakdownChart(salary, { theme: CHART_THEMES.light });
+    const { periods } = breakdownChart(salary, { theme });
 
     expect(breakdownMeasure(salary)).toBe('income');
-    expect([data.datasets[0].label, data.datasets[0].data]).toEqual([
-      'Received',
-      [3000, 3000, 3000],
-    ]);
+    expect([
+      periods.data.datasets[0].label,
+      periods.data.datasets[0].data,
+      periods.data.datasets[0].backgroundColor,
+    ]).toEqual(['Received', [3000, 3000, 3000], theme.series.aqua]);
+  });
+
+  it('names the period and counts its transactions in the tooltip', () => {
+    const { periods } = breakdownChart(TEST_BREAKDOWN, { theme, onPick: () => undefined });
+    const callbacks = periods.options!.plugins!.tooltip!.callbacks as unknown as {
+      title: (items: unknown[]) => string;
+      footer: (items: unknown[]) => string;
+    };
+
+    expect(callbacks.title([{ dataIndex: 2 }])).toBe('Sep 2026');
+    expect(callbacks.footer([{ dataIndex: 2 }])).toMatch(/transactions? · click to list them$/);
   });
 
   it('hands the clicked bar’s period on', () => {
     const picked: BreakdownPeriodDto[] = [];
-    const { options } = breakdownChart(TEST_BREAKDOWN, {
-      theme: CHART_THEMES.light,
+    const { periods } = breakdownChart(TEST_BREAKDOWN, {
+      theme,
       onPick: (period) => picked.push(period),
     });
 
-    const onClick = options!.onClick as (event: ChartEvent, elements: { index: number }[]) => void;
+    const onClick = periods.options!.onClick as (
+      event: ChartEvent,
+      elements: { index: number }[],
+    ) => void;
     onClick({} as ChartEvent, [{ index: 2 }]);
     onClick({} as ChartEvent, []);
 

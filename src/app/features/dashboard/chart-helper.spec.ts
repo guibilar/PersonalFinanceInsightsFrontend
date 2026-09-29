@@ -1,6 +1,15 @@
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { Chart } from 'chart.js';
-import { ChartHelper, formatCurrency, visibleMonthlyAverage } from './chart-helper';
+import {
+  BAR_MARKS,
+  CHART_THEMES,
+  ChartHelper,
+  cashFlowColors,
+  formatCompactCurrency,
+  formatCurrency,
+  valueAxis,
+  visibleMonthlyAverage,
+} from './chart-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { categoryRefs } from '../../testing/test-categories';
 
@@ -144,6 +153,99 @@ describe('visibleMonthlyAverage', () => {
 
   it('returns 0 when there are no months', () => {
     expect(visibleMonthlyAverage(fakeChart([]), [])).toBe(0);
+  });
+});
+
+describe('chart style', () => {
+  const theme = CHART_THEMES.light;
+
+  it('draws thin bars, rounded at the end that shows the value', () => {
+    expect(BAR_MARKS).toEqual({ borderRadius: 4, borderSkipped: 'start', maxBarThickness: 24 });
+    const { chartData } = ChartHelper.generateCashFlowChartConfiguration({
+      months: [{ month: 'Aug 2026', income: 1, spending: 1, net: 0, savingsChange: 0 }],
+      averageMonthlyIncome: 0,
+      averageMonthlySpending: 0,
+      averageMonthlyNet: 0,
+      averageMonthlySavingsChange: 0,
+      averagedMonths: 1,
+      averagesIncludeCurrentMonth: false,
+    });
+
+    expect(chartData.datasets[0]).toEqual(expect.objectContaining(BAR_MARKS));
+  });
+
+  it('separates stacked segments with the surface, and rounds them all', () => {
+    const { chartData } = ChartHelper.generateMonthlySpendingChartConfiguration(report);
+
+    expect(chartData.datasets[0]).toEqual(
+      expect.objectContaining({ borderWidth: 2, borderColor: theme.surface, borderSkipped: false }),
+    );
+  });
+
+  it('keeps the grid to recessive hairlines, with the zero line stronger and compact ticks', () => {
+    const axis = valueAxis(theme);
+    const gridColor = axis.grid.color;
+
+    expect([axis.border.display, axis.grid.lineWidth, axis.grid.drawTicks]).toEqual([
+      false,
+      1,
+      false,
+    ]);
+    expect([gridColor({ tick: { value: 0 } }), gridColor({ tick: { value: 500 } })]).toEqual([
+      theme.axis,
+      theme.grid,
+    ]);
+    expect(axis.ticks.callback(5000)).toBe('$5K');
+    expect(formatCompactCurrency(1250)).toBe('$1.3K');
+  });
+
+  it('lists a month’s categories largest first in one tooltip, with the total', () => {
+    const { chartOptions } = ChartHelper.generateMonthlySpendingChartConfiguration(report);
+    const tooltip = chartOptions!.plugins!.tooltip!;
+    // The callbacks are typed with a `this`: plain functions are enough here.
+    const itemSort = tooltip.itemSort as unknown as (a: unknown, b: unknown) => number;
+    const filter = tooltip.filter as unknown as (item: unknown) => boolean;
+    const footer = tooltip.callbacks!.footer as unknown as (items: unknown[]) => string;
+    const item = (raw: number) => ({ raw, dataset: { label: 'Dining' } });
+
+    expect([tooltip.mode, tooltip.intersect]).toEqual(['index', false]);
+    expect(itemSort(item(10), item(30))).toBeGreaterThan(0);
+    expect(filter(item(0))).toBe(false);
+    expect(filter(item(5))).toBe(true);
+    expect(footer([item(10), item(30)])).toBe('Total: $40.00');
+    // A click still lands on the segment under the pointer, not the whole month.
+    expect(chartOptions!.interaction).toEqual({ mode: 'nearest', intersect: true });
+  });
+
+  it('gives the income and spending bars validated colours for the mode, in a fixed order', () => {
+    expect(cashFlowColors(CHART_THEMES.light)).toEqual({
+      income: '#1baf7a',
+      spending: '#eb6834',
+      net: '#2a78d6',
+      savings: '#e87ba4',
+    });
+    expect(cashFlowColors(CHART_THEMES.dark)).toEqual({
+      income: '#199e70',
+      spending: '#d95926',
+      net: '#3987e5',
+      savings: '#d55181',
+    });
+  });
+
+  it('puts the total in the middle of the doughnut', () => {
+    const { chartOptions, chartPlugins } = ChartHelper.generateDoughnutChartConfiguration(report);
+    const texts: string[] = [];
+    const ctx = {
+      save: () => undefined,
+      restore: () => undefined,
+      fillText: (text: string) => texts.push(text),
+    };
+
+    const draw = chartPlugins[0].afterDatasetsDraw as unknown as (chart: unknown) => void;
+    draw({ ctx, chartArea: { left: 0, right: 180, top: 0, bottom: 180 } });
+
+    expect(chartOptions!.cutout).toBe('74%');
+    expect(texts).toEqual(['$1,200.00', 'this month']);
   });
 });
 
