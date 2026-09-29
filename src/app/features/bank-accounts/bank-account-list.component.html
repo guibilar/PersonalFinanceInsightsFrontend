@@ -37,7 +37,7 @@
               {{ account.name }}
             </div>
             <div class="small text-body-secondary">
-              {{ typeLabels[account.type] }} ·
+              {{ typeLabels[account.type] }} · {{ formatLabels[account.format] }} ·
               {{ account.transactionCount }}
               {{ account.transactionCount === 1 ? 'transaction' : 'transactions' }}
             </div>
@@ -46,8 +46,8 @@
             <button
               type="button"
               class="btn btn-icon"
-              [attr.aria-label]="'Rename ' + account.name"
-              title="Rename"
+              [attr.aria-label]="'Edit ' + account.name"
+              title="Edit"
               (click)="editing.set(account)"
             >
               <app-icon name="pencil" [size]="16" />
@@ -82,10 +82,7 @@
 }
 
 @if (editing() !== undefined) {
-  <app-modal
-    [title]="editing() ? 'Rename account' : 'New account'"
-    (closed)="editing.set(undefined)"
-  >
+  <app-modal [title]="editing() ? 'Edit account' : 'New account'" (closed)="editing.set(undefined)">
     <app-bank-account-form
       [account]="editing() ?? null"
       [saving]="saving()"

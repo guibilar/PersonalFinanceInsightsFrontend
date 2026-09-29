@@ -4,13 +4,32 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BankAccountListComponent } from './bank-account-list.component';
 import { AccountType } from '../../core/models/enums/account-type';
+import { StatementFormat } from '../../core/models/enums/statement-format';
 import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
 const accounts: AccountOutputDto[] = [
-  { id: 'a1', name: 'Chequing', type: AccountType.Chequing, transactionCount: 120 },
-  { id: 'a2', name: 'Visa', type: AccountType.CreditCard, transactionCount: 1 },
-  { id: 'a3', name: 'Mastercard', type: AccountType.CreditCard, transactionCount: 0 },
+  {
+    id: 'a1',
+    name: 'Chequing',
+    type: AccountType.Chequing,
+    format: StatementFormat.Cibc,
+    transactionCount: 120,
+  },
+  {
+    id: 'a2',
+    name: 'Visa',
+    type: AccountType.CreditCard,
+    format: StatementFormat.Cibc,
+    transactionCount: 1,
+  },
+  {
+    id: 'a3',
+    name: 'Mastercard',
+    type: AccountType.CreditCard,
+    format: StatementFormat.Cibc,
+    transactionCount: 0,
+  },
 ];
 
 describe('BankAccountListComponent', () => {
@@ -59,13 +78,13 @@ describe('BankAccountListComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('lists the accounts with their type and transaction count', async () => {
-    await load();
+  it('lists the accounts with their type, statement format and transaction count', async () => {
+    await load([accounts[0], { ...accounts[1], format: StatementFormat.Neo }, accounts[2]]);
 
     expect(rows()).toEqual([
-      'Chequing Chequing · 120 transactions',
-      'Visa Credit card · 1 transaction',
-      'Mastercard Credit card · 0 transactions',
+      'Chequing Chequing · CIBC · 120 transactions',
+      'Visa Credit card · Neo Financial · 1 transaction',
+      'Mastercard Credit card · CIBC · 0 transactions',
     ]);
   });
 
@@ -99,10 +118,24 @@ describe('BankAccountListComponent', () => {
     await load();
     component.editing.set(null);
 
-    component.onFormSubmit({ name: 'Savings', type: AccountType.Savings });
+    component.onFormSubmit({
+      name: 'Savings',
+      type: AccountType.Savings,
+      format: StatementFormat.Neo,
+    });
     const request = http.expectOne({ method: 'POST', url: '/api/Accounts' });
-    expect(request.request.body).toEqual({ name: 'Savings', type: AccountType.Savings });
-    request.flush({ id: 'a4', name: 'Savings', type: AccountType.Savings, transactionCount: 0 });
+    expect(request.request.body).toEqual({
+      name: 'Savings',
+      type: AccountType.Savings,
+      format: StatementFormat.Neo,
+    });
+    request.flush({
+      id: 'a4',
+      name: 'Savings',
+      type: AccountType.Savings,
+      format: StatementFormat.Cibc,
+      transactionCount: 0,
+    });
 
     expect(component.editing()).toBeUndefined();
     await reloaded();
@@ -113,9 +146,14 @@ describe('BankAccountListComponent', () => {
     await load();
     component.editing.set(accounts[1]);
 
-    component.onFormSubmit({ name: 'Chequing', type: AccountType.CreditCard });
+    component.onFormSubmit({
+      name: 'Chequing',
+      type: AccountType.CreditCard,
+      format: StatementFormat.Neo,
+    });
     const request = http.expectOne({ method: 'PUT', url: '/api/Accounts/a2' });
-    expect(request.request.body).toEqual({ name: 'Chequing' });
+    // The type can't change, so it isn't sent.
+    expect(request.request.body).toEqual({ name: 'Chequing', format: StatementFormat.Neo });
     request.flush(
       { status: 409, detail: 'An account named "Chequing" already exists.' },
       { status: 409, statusText: 'Conflict' },

@@ -5,6 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TransactionListComponent } from './transaction-list.component';
 import { Category } from '../../../core/models/enums/category';
 import { AccountType } from '../../../core/models/enums/account-type';
+import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { Flow } from '../../../core/models/enums/flow';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
@@ -42,11 +43,17 @@ describe('TransactionListComponent', () => {
     // The link dropdown's budgets are not part of these tests.
     http.match('/api/Budget/Filter').forEach((r) => r.flush(emptyPage));
     // Nor are the account filter's accounts, apart from their names.
-    http
-      .match('/api/Accounts')
-      .forEach((r) =>
-        r.flush([{ id: 'a2', name: 'Visa', type: AccountType.CreditCard, transactionCount: 1 }]),
-      );
+    http.match('/api/Accounts').forEach((r) =>
+      r.flush([
+        {
+          id: 'a2',
+          name: 'Visa',
+          type: AccountType.CreditCard,
+          format: StatementFormat.Cibc,
+          transactionCount: 1,
+        },
+      ]),
+    );
   });
 
   afterEach(() => http.verify());
