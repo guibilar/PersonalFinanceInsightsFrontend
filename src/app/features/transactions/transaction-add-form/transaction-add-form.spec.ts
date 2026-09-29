@@ -52,6 +52,17 @@ describe('TransactionAddForm', () => {
     expect(component.form.controls.date.value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
+  it('starts on the date and account of the previous transaction', async () => {
+    const again = TestBed.createComponent(TransactionAddForm);
+    again.componentRef.setInput('accounts', accounts);
+    again.componentRef.setInput('previous', { date: '2026-08-14', accountId: 'a1' });
+    again.detectChanges();
+    await again.whenStable();
+
+    expect(again.componentInstance.form.controls.date.value).toBe('2026-08-14');
+    expect(again.componentInstance.form.controls.accountId.value).toBe('a1');
+  });
+
   it('adds money out, leaving the category and flow to the rules', () => {
     component.form.patchValue({ date: '2026-09-10', description: '  Coffee ', amount: 4.5 });
 

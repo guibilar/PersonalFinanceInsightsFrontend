@@ -106,6 +106,8 @@ export class TransactionListComponent {
   readonly showImport = signal(false);
   readonly showAdd = signal(false);
   readonly savingAdd = signal(false);
+  /** What the last transaction added by hand used, so the next one starts on the same day and account. */
+  readonly lastAdded = signal<{ date: string; accountId: string } | null>(null);
   /** The API's reason when the transaction being added already exists; the form then offers to add it anyway. */
   readonly addDuplicate = signal<string | null>(null);
   readonly editingTransaction = signal<TransactionOutputDto | null>(null);
@@ -237,6 +239,7 @@ export class TransactionListComponent {
       next: (added) => {
         this.savingAdd.set(false);
         this.showAdd.set(false);
+        this.lastAdded.set({ date: input.date, accountId: input.accountId });
         this.transactions.reload();
         this.toasts.success(`Added “${added.description}” to ${added.accountName}`);
       },

@@ -5,6 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { BudgetListComponent, budgetHealth } from './budget-list.component';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
+import { Category } from '../../core/models/enums/category';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
@@ -14,6 +15,7 @@ const food: BudgetOutputDto = {
   description: 'd',
   status: Status.Active,
   period: BudgetPeriod.Total,
+  categories: [],
   totalAmount: 100,
   totalSpent: 50,
   totalRemaining: 50,
@@ -97,6 +99,7 @@ describe('BudgetListComponent', () => {
       amount: 120,
       status: Status.Active,
       period: BudgetPeriod.Total,
+      categories: [],
     });
     http
       .expectOne({ method: 'PUT', url: '/api/Budget/b1' })
@@ -108,6 +111,34 @@ describe('BudgetListComponent', () => {
     );
   });
 
+  it('explains a category that another budget already counts', () => {
+    component.editing.set(food);
+
+    component.onFormSubmit({
+      id: 'b1',
+      name: 'Food',
+      description: 'd',
+      amount: 120,
+      status: Status.Active,
+      period: BudgetPeriod.Monthly,
+      categories: [Category.Dining],
+    });
+    http
+      .expectOne({ method: 'PUT', url: '/api/Budget/b1' })
+      .flush(
+        { status: 409, detail: 'Dining is already counted by the budget "Dining out".' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(component.editing()).toBe(food);
+    expect(toasts.toasts()[0]).toEqual(
+      expect.objectContaining({
+        kind: 'error',
+        message: 'Dining is already counted by the budget "Dining out".',
+      }),
+    );
+  });
+
   it('sends one request when the form is submitted twice quickly', () => {
     const budget = {
       id: '',
@@ -116,6 +147,7 @@ describe('BudgetListComponent', () => {
       amount: 120,
       status: Status.Active,
       period: BudgetPeriod.Total,
+      categories: [],
     };
     component.editing.set(null);
 

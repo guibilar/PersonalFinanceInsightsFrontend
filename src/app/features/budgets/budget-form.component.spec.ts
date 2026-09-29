@@ -4,6 +4,7 @@ import { BudgetFormComponent } from './budget-form.component';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
+import { Category } from '../../core/models/enums/category';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
 
 describe('BudgetFormComponent', () => {
@@ -63,6 +64,7 @@ describe('BudgetFormComponent', () => {
       amount: 0,
       status: Status.Active,
       period: BudgetPeriod.Total,
+      categories: [],
     });
 
     expect(component.form.controls.name.invalid).toBe(true);
@@ -78,6 +80,7 @@ describe('BudgetFormComponent', () => {
       amount: 300,
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
+      categories: [Category.Dining],
     });
     component.onSubmit();
 
@@ -89,6 +92,7 @@ describe('BudgetFormComponent', () => {
         amount: 300,
         status: Status.Inactive,
         period: BudgetPeriod.Monthly,
+        categories: [Category.Dining],
       },
     ]);
   });
@@ -100,6 +104,7 @@ describe('BudgetFormComponent', () => {
       description: 'Groceries',
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
+      categories: [Category.Groceries],
       totalAmount: 500,
       totalSpent: 0,
       totalRemaining: 500,
@@ -113,6 +118,7 @@ describe('BudgetFormComponent', () => {
       amount: 500,
       status: Status.Inactive,
       period: BudgetPeriod.Monthly,
+      categories: [Category.Groceries],
     });
 
     component.onSubmit();
@@ -130,5 +136,26 @@ describe('BudgetFormComponent', () => {
     expect(radios.length).toBe(2);
     (radios[1] as HTMLInputElement).click();
     expect(component.form.controls.period.value).toBe(BudgetPeriod.Monthly);
+  });
+
+  it('offers the categories only for a monthly budget, and clears them when it turns total', () => {
+    create();
+    const root = fixture.nativeElement as HTMLElement;
+    const boxes = () => root.querySelectorAll('input[id^=budget-category-]');
+
+    expect(boxes().length).toBe(0);
+
+    component.form.controls.period.setValue(BudgetPeriod.Monthly);
+    fixture.detectChanges();
+    expect(boxes().length).toBe(Object.values(Category).length);
+    component.toggleCategory(Category.Dining, true);
+    component.toggleCategory(Category.Groceries, true);
+    component.toggleCategory(Category.Dining, false);
+    expect(component.form.controls.categories.value).toEqual([Category.Groceries]);
+
+    component.form.controls.period.setValue(BudgetPeriod.Total);
+    fixture.detectChanges();
+    expect(component.form.controls.categories.value).toEqual([]);
+    expect(boxes().length).toBe(0);
   });
 });

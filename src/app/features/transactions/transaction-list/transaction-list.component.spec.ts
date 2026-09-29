@@ -380,6 +380,7 @@ describe('TransactionListComponent', () => {
 
       expect(component.showAdd()).toBe(false);
       expect(component.savingAdd()).toBe(false);
+      expect(component.lastAdded()).toEqual({ date: '2026-09-10', accountId: 'a2' });
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)

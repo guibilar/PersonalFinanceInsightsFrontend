@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   effect,
   inject,
@@ -39,11 +40,16 @@ function today(): string {
   templateUrl: './transaction-add-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TransactionAddForm {
+export class TransactionAddForm implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly accounts = input.required<AccountOutputDto[]>();
   readonly saving = input(false);
+  /**
+   * The date and account of the transaction added just before, which the form starts on: entering a statement's
+   * worth of transactions by hand shouldn't mean picking the same day and account again each time.
+   */
+  readonly previous = input<{ date: string; accountId: string } | null>(null);
   /** The API's reason when an identical transaction exists; the same one can still be added on purpose. */
   readonly duplicate = input<string | null>(null);
   readonly submitAdd = output<TransactionInputDto>();
@@ -74,6 +80,15 @@ export class TransactionAddForm {
   });
   /** Only what fits the direction: money out can't be income, money in can't be spending. */
   readonly flows = computed(() => flowsFor(this.direction()));
+
+  ngOnInit(): void {
+    const previous = this.previous();
+    if (!previous) return;
+    this.form.patchValue({ date: previous.date });
+    if (this.accounts().some((a) => a.id === previous.accountId)) {
+      this.form.patchValue({ accountId: previous.accountId });
+    }
+  }
 
   constructor() {
     // Start on an account that has to be filled by hand, if there is one.
