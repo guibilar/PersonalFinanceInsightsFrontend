@@ -11,6 +11,7 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 export const STATEMENT_FORMAT_LABELS: Record<StatementFormat, string> = {
   [StatementFormat.Cibc]: 'CIBC',
   [StatementFormat.Neo]: 'Neo Financial',
+  [StatementFormat.Manual]: 'No files (add by hand)',
 };
 
 /** "Visa · Credit card": the name, and the kind of account it is. */

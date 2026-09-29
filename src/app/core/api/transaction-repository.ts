@@ -7,6 +7,7 @@ import { TransactionOutputDto } from '../models/outputs/transaction-output-dto';
 import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
 import { TransactionLinkingInputDto } from '../models/inputs/transaction-linking-input-dto';
 import { ImportResultOutputDto } from '../models/outputs/import-result-output-dto';
+import { TransactionInputDto } from '../models/inputs/transaction-input-dto';
 import { TransactionUpdateInputDto } from '../models/inputs/transaction-update-input-dto';
 import { ApplyRulesResultOutputDto } from '../models/outputs/apply-rules-result-output-dto';
 
@@ -38,6 +39,11 @@ export class TransactionRepository {
     form.append('accountId', accountId);
     if (confirmed) form.append('confirmed', 'true');
     return this.http.post<ImportResultOutputDto>(`${this.baseUrl}/Import`, form);
+  }
+
+  /** Adds a transaction by hand. An identical one is a 409, unless `allowDuplicate` is set. */
+  add(transaction: TransactionInputDto): Observable<TransactionOutputDto> {
+    return this.http.post<TransactionOutputDto>(this.baseUrl, transaction);
   }
 
   /** Corrects description, category and flow; a changed category or flow is then kept when rules are re-applied. */

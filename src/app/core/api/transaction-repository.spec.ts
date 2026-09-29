@@ -2,6 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TransactionType } from '../models/enums/transaction-type';
 import { TransactionRepository } from './transaction-repository';
 
 describe('TransactionRepository', () => {
@@ -50,6 +51,21 @@ describe('TransactionRepository', () => {
 
     const body = http.expectOne('/api/Transaction/Import').request.body as FormData;
     expect(body.get('confirmed')).toBe('true');
+  });
+
+  it('adds a transaction by hand', () => {
+    const input = {
+      date: '2026-09-10',
+      description: 'COFFEE',
+      amount: 4.5,
+      transactionType: TransactionType.Debit,
+      accountId: 'a1',
+    };
+    repository.add(input).subscribe();
+
+    const req = http.expectOne({ method: 'POST', url: '/api/Transaction' });
+    expect(req.request.body).toEqual(input);
+    req.flush(null);
   });
 
   it('re-applies the category and flow rules', () => {

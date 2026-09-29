@@ -2,4 +2,6 @@
 export enum StatementFormat {
   Cibc = 'Cibc',
   Neo = 'Neo',
+  /** The bank offers no export: transactions are added by hand. */
+  Manual = 'Manual',
 }

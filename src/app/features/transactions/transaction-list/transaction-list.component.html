@@ -30,6 +30,13 @@
     </button>
     <button
       type="button"
+      class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+      (click)="openAdd()"
+    >
+      <app-icon name="plus" [size]="16" /> Add transaction
+    </button>
+    <button
+      type="button"
       class="btn btn-primary d-inline-flex align-items-center gap-2"
       (click)="showImport.set(true)"
     >
@@ -279,6 +286,18 @@
 @if (showImport()) {
   <app-modal title="Import statement" (closed)="showImport.set(false)">
     <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
+  </app-modal>
+}
+
+@if (showAdd()) {
+  <app-modal title="Add transaction" (closed)="showAdd.set(false)">
+    <app-transaction-add-form
+      [accounts]="accounts()"
+      [saving]="savingAdd()"
+      [duplicate]="addDuplicate()"
+      (submitAdd)="onAddSubmit($event)"
+      (cancelled)="showAdd.set(false)"
+    />
   </app-modal>
 }
 

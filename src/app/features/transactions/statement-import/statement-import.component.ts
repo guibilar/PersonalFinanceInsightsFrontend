@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, inject, output, signal } from '@ang
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { AccountRepository } from '../../../core/api/account-repository';
+import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { accountLabel } from '../../../shared/utils/account-labels';
 
@@ -25,7 +27,13 @@ export class StatementImportComponent {
   readonly imported = output<ImportResultOutputDto>();
   readonly cancelled = output<void>();
 
-  readonly accounts = rxResource({ stream: () => this.accountRepository.getAll() });
+  // Accounts without statement files have nothing to import into.
+  readonly accounts = rxResource({
+    stream: () =>
+      this.accountRepository
+        .getAll()
+        .pipe(map((accounts) => accounts.filter((a) => a.format !== StatementFormat.Manual))),
+  });
   protected readonly accountLabel = accountLabel;
 
   readonly form = this.fb.group({

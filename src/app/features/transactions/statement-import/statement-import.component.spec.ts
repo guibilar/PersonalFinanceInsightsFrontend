@@ -82,6 +82,18 @@ describe('StatementImportComponent', () => {
     expect(options).toEqual(['Select the account', 'Chequing · Chequing', 'Visa · Credit card']);
   });
 
+  it('leaves out accounts without statement files', async () => {
+    await loadAccounts([
+      ...accounts,
+      { ...accounts[0], id: 'a3', name: 'Neo chequing', format: StatementFormat.Manual },
+    ]);
+
+    const options = Array.from(root().querySelectorAll('#import-account option')).map((o) =>
+      o.textContent!.trim(),
+    );
+    expect(options).toEqual(['Select the account', 'Chequing · Chequing', 'Visa · Credit card']);
+  });
+
   it('sends to the accounts page when there are none', async () => {
     await loadAccounts([]);
 

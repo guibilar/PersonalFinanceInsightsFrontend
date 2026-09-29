@@ -353,4 +353,76 @@ describe('TransactionListComponent', () => {
       ).toEqual(['Updated 3 of 40 transactions']);
     });
   });
+
+  describe('adding by hand', () => {
+    const input = {
+      date: '2026-09-10',
+      description: 'COFFEE',
+      amount: 4.5,
+      transactionType: TransactionType.Debit,
+      accountId: 'a2',
+    };
+
+    beforeEach(async () => {
+      lastFilterRequest();
+      await fixture.whenStable();
+    });
+
+    it('adds, closes the form, reloads and confirms', () => {
+      component.openAdd();
+      component.onAddSubmit(input);
+      expect(component.savingAdd()).toBe(true);
+      http.expectOne({ method: 'POST', url: '/api/Transaction' }).flush({
+        id: 't9',
+        description: 'COFFEE',
+        accountName: 'Visa',
+      });
+
+      expect(component.showAdd()).toBe(false);
+      expect(component.savingAdd()).toBe(false);
+      lastFilterRequest();
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(['Added “COFFEE” to Visa']);
+    });
+
+    it('keeps the form open on a duplicate, and adds it anyway when asked', () => {
+      component.openAdd();
+      component.onAddSubmit(input);
+      http
+        .expectOne({ method: 'POST', url: '/api/Transaction' })
+        .flush(
+          { status: 409, detail: 'An identical transaction already exists.' },
+          { status: 409, statusText: 'Conflict' },
+        );
+
+      expect(component.showAdd()).toBe(true);
+      expect(component.addDuplicate()).toBe('An identical transaction already exists.');
+
+      component.onAddSubmit({ ...input, allowDuplicate: true });
+      const again = http.expectOne({ method: 'POST', url: '/api/Transaction' });
+      expect(again.request.body).toEqual({ ...input, allowDuplicate: true });
+      expect(component.addDuplicate()).toBeNull();
+      again.flush({ id: 't10', description: 'COFFEE', accountName: 'Visa' });
+      expect(component.showAdd()).toBe(false);
+    });
+
+    it('keeps the form open and says so when adding fails', () => {
+      component.openAdd();
+      component.onAddSubmit(input);
+      http
+        .expectOne({ method: 'POST', url: '/api/Transaction' })
+        .flush(null, { status: 500, statusText: 'Error' });
+
+      expect(component.showAdd()).toBe(true);
+      expect(component.savingAdd()).toBe(false);
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(['Could not add the transaction.']);
+    });
+  });
 });
