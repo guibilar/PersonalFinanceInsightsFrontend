@@ -7,7 +7,9 @@ flow rules, and the bank accounts statements are imported into.
 The Transactions page totals whatever its filters pick (a merchant by search, a category, dates...) and, under
 "Over time", spreads it over weeks, months, quarters or years with a running total and the top merchants; clicking a
 bar lists that period. Links can open it filtered: `/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`,
-as the dashboard's category names and chart segments do.
+as the dashboard's category names and chart segments do. Dates are picked from presets (this month, last month, the
+last 3, 6 or 12 whole months, this year, last year) or typed in as a custom range; a link's dates that match a preset
+show as that preset.
 
 Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
 transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
