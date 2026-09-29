@@ -109,6 +109,35 @@
             </li>
           }
         </ul>
+        @if (merchantsLeft() || merchants().length > (breakdown()?.topMerchants?.length ?? 0)) {
+          <div class="d-flex flex-wrap align-items-center gap-3 mt-2 small">
+            @if (merchantsLeft(); as left) {
+              <span class="text-body-secondary"
+                >{{ left.shown }} of {{ left.total }} merchants</span
+              >
+              <button
+                type="button"
+                class="btn btn-link btn-sm p-0"
+                [disabled]="loadingMore()"
+                (click)="loadMoreMerchants()"
+              >
+                @if (loadingMore()) {
+                  Loading…
+                } @else {
+                  Show {{ left.next }} more
+                }
+              </button>
+            }
+            @if (merchants().length > (breakdown()?.topMerchants?.length ?? 0)) {
+              <button type="button" class="btn btn-link btn-sm p-0" (click)="showFewerMerchants()">
+                Show fewer
+              </button>
+            }
+            @if (moreFailed()) {
+              <span class="text-danger" role="alert">Could not load more merchants.</span>
+            }
+          </div>
+        }
       }
     </div>
   }

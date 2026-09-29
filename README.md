@@ -5,8 +5,8 @@ transaction list with budget linking, budget management, categories with their c
 flow rules, and the bank accounts statements are imported into.
 
 The Transactions page totals whatever its filters pick (a merchant by search, a category, dates...) and, under
-"Over time", spreads it over weeks, months, quarters or years with a running total and the top merchants; clicking a
-bar lists that period. Links can open it filtered: `/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`,
+"Over time", spreads it over weeks, months, quarters or years with a running total and the top merchants (more load
+8 at a time from `/api/Reports/merchants`); clicking a bar lists that period. Links can open it filtered: `/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`,
 as the dashboard's category names and chart segments do. Dates are picked from presets (this month, last month, the
 last 3, 6 or 12 whole months, this year, last year) or typed in as a custom range; a link's dates that match a preset
 show as that preset.

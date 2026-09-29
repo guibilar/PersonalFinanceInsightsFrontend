@@ -35,4 +35,5 @@ export const TEST_BREAKDOWN: TransactionBreakdownOutputDto = {
     { name: 'NO FRILLS', count: 4, spending: 150 },
     { name: 'SAFEWAY', count: 2, spending: 40 },
   ],
+  merchantCount: 2,
 };
