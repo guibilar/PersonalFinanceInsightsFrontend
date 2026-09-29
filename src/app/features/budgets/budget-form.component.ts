@@ -1,16 +1,19 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
   input,
   output,
 } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { Status } from '../../core/models/enums/status';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
+import { Category } from '../../core/models/enums/category';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { TEXT_LIMITS } from '../../core/models/text-limits';
 
@@ -24,6 +27,7 @@ const NOT_BLANK = Validators.pattern(/\S/);
 })
 export class BudgetFormComponent implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly budget = input<BudgetOutputDto | null>(null);
   /** True while the parent is saving: blocks a second submit (double-click would create two budgets). */
@@ -60,6 +64,13 @@ export class BudgetFormComponent implements OnInit {
     amount: [0, [Validators.required, Validators.min(0.01)]],
     status: [Status.Active, Validators.required],
     period: [BudgetPeriod.Total, Validators.required],
+    categories: this.fb.control<Category[]>([]),
+  });
+
+  protected readonly BudgetPeriod = BudgetPeriod;
+  readonly categoryOptions = Object.values(Category);
+  readonly period = toSignal(this.form.controls.period.valueChanges, {
+    initialValue: this.form.controls.period.value,
   });
 
   ngOnInit(): void {
@@ -71,8 +82,25 @@ export class BudgetFormComponent implements OnInit {
         amount: budget.totalAmount,
         status: budget.status,
         period: budget.period,
+        categories: budget.categories ?? [],
       });
     }
+    // Only a monthly budget can count categories: going back to Total leaves none.
+    this.form.controls.period.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((period) => {
+        if (period !== BudgetPeriod.Monthly) this.form.controls.categories.setValue([]);
+      });
+  }
+
+  isCategoryChosen(category: Category): boolean {
+    return this.form.controls.categories.value.includes(category);
+  }
+
+  toggleCategory(category: Category, chosen: boolean): void {
+    const { categories } = this.form.controls;
+    const others = categories.value.filter((c) => c !== category);
+    categories.setValue(chosen ? [...others, category] : others);
   }
 
   readonly limits = TEXT_LIMITS;
@@ -96,6 +124,7 @@ export class BudgetFormComponent implements OnInit {
       amount: value.amount,
       status: value.status,
       period: value.period,
+      categories: value.categories,
     });
   }
 }

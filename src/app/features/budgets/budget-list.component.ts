@@ -15,6 +15,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
+import { conflictDetail } from '../../shared/utils/problem-detail';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
 export type BudgetHealth = 'ok' | 'warning' | 'over';
@@ -97,9 +98,14 @@ export class BudgetListComponent {
         this.budgets.reload();
         this.toasts.success(editing ? `Saved “${budget.name}”` : `Created “${budget.name}”`);
       },
-      error: () => {
+      error: (error: unknown) => {
         this.saving.set(false);
-        this.toasts.error(editing ? 'Could not save the budget.' : 'Could not create the budget.');
+        this.toasts.error(
+          conflictDetail(
+            error,
+            editing ? 'Could not save the budget.' : 'Could not create the budget.',
+          ),
+        );
       },
     });
   }

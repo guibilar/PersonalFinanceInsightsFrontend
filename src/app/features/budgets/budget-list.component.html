@@ -99,7 +99,28 @@
                   </button>
                 </div>
               </div>
-              <p class="small text-body-secondary mb-3 description">{{ budget.description }}</p>
+              <p
+                class="small text-body-secondary description"
+                [class.mb-3]="!budget.categories?.length"
+                [class.mb-2]="budget.categories?.length"
+              >
+                {{ budget.description }}
+              </p>
+              @if (budget.categories?.length) {
+                <ul
+                  class="list-unstyled d-flex flex-wrap gap-1 mb-3"
+                  aria-label="Categories counted"
+                >
+                  @for (category of budget.categories; track category) {
+                    <li>
+                      <span
+                        class="badge rounded-pill bg-body-secondary text-body border fw-medium"
+                        >{{ category }}</span
+                      >
+                    </li>
+                  }
+                </ul>
+              }
 
               <div class="mt-auto">
                 <div class="d-flex align-items-baseline gap-1 mb-2">
