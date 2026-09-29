@@ -90,6 +90,41 @@ export function categoryShares(currentMonth: CategorizedReportOutputDto): Catego
     .sort((a, b) => b.amount - a.amount);
 }
 
+export interface CategoryAverage {
+  category: string;
+  /** Spending per finished month, in the same terms as {@link finishedMonths} (a month without any counts as 0). */
+  average: number;
+  /** What the running month has added so far; 0 when nothing yet. */
+  thisMonth: number;
+  /** This month against the average, in percent; null when the average is 0. */
+  change: number | null;
+}
+
+/**
+ * Each category's monthly average over the months that are over, with this month's spending next to it, largest
+ * average first. Categories with neither are left out.
+ */
+export function categoryAverages(year: CategorizedReportOutputDto, now: Date): CategoryAverage[] {
+  const months = year.monthlyData;
+  const finished = finishedMonths(
+    months.map((month) => month.month),
+    now,
+  ).map((index) => months[index]);
+  const current = now.getFullYear() * 12 + now.getMonth();
+  const running = months.find((month) => monthIndex(month.month) === current);
+
+  const categories = new Set(months.flatMap((month) => Object.keys(month.categoryValues)));
+  return [...categories]
+    .map((category) => {
+      const total = finished.reduce((sum, month) => sum + (month.categoryValues[category] ?? 0), 0);
+      const average = finished.length > 0 ? total / finished.length : 0;
+      const thisMonth = running?.categoryValues[category] ?? 0;
+      return { category, average, thisMonth, change: percentChange(thisMonth, average) };
+    })
+    .filter((row) => row.average > 0 || row.thisMonth > 0)
+    .sort((a, b) => b.average - a.average || b.thisMonth - a.thisMonth);
+}
+
 export function budgetsOverLimit(budgets: BudgetOutputDto[]): number {
   return budgets.filter((budget) => budget.percentageUsed >= 100).length;
 }
