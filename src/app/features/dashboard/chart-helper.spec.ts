@@ -1,3 +1,4 @@
+import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { Chart } from 'chart.js';
 import { ChartHelper, formatCurrency, visibleMonthlyAverage } from './chart-helper';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
@@ -81,35 +82,49 @@ describe('ChartHelper', () => {
 });
 
 describe('cash-flow chart', () => {
-  const cashFlow = {
+  const cashFlow: CashFlowReportOutputDto = {
     months: [
-      { month: 'Aug 2026', income: 5000, spending: 3200, net: 1800, saved: 1000 },
-      { month: 'Sep 2026', income: 2500, spending: 300, net: 2200, saved: -200 },
+      { month: 'Aug 2026', income: 5000, spending: 3200, net: 1800, savingsChange: 1000 },
+      { month: 'Sep 2026', income: 2500, spending: 3000, net: -500, savingsChange: -200 },
     ],
     averageMonthlyIncome: 5000,
     averageMonthlySpending: 3200,
-    averageMonthlySaved: 1000,
+    averageMonthlyNet: 1800,
+    averageMonthlySavingsChange: 1000,
+    averagedMonths: 1,
+    averagesIncludeCurrentMonth: false,
   };
 
-  it('puts income, spending and saved side by side per month', () => {
+  it('puts income, spending and what was left over side by side per month', () => {
     const { chartData, chartOptions } = ChartHelper.generateCashFlowChartConfiguration(cashFlow);
 
     expect(chartData.labels).toEqual(['Aug 2026', 'Sep 2026']);
     expect(chartData.datasets.map((d) => [d.label, d.data])).toEqual([
       ['Income', [5000, 2500]],
-      ['Spending', [3200, 300]],
-      ['Saved', [1000, -200]],
+      ['Spending', [3200, 3000]],
+      ['Left over', [1800, -500]],
+      ['Savings change', [1000, -200]],
     ]);
     expect(chartOptions?.scales?.['x']?.stacked).toBeUndefined();
   });
 
-  it('adds the month’s net to the tooltip', () => {
-    const { chartOptions } = ChartHelper.generateCashFlowChartConfiguration(cashFlow);
-    const footer = chartOptions!.plugins!.tooltip!.callbacks!.footer as unknown as (
-      items: { dataIndex: number }[],
-    ) => string;
+  it('leaves the savings change out when no savings account changed', () => {
+    const { chartData } = ChartHelper.generateCashFlowChartConfiguration({
+      ...cashFlow,
+      months: cashFlow.months.map((month) => ({ ...month, savingsChange: 0 })),
+    });
 
-    expect(footer([{ dataIndex: 1 }])).toBe('Net: $2,200.00');
+    expect(chartData.datasets.map((d) => d.label)).toEqual(['Income', 'Spending', 'Left over']);
+  });
+
+  it('labels each bar with its amount in the tooltip', () => {
+    const { chartOptions } = ChartHelper.generateCashFlowChartConfiguration(cashFlow);
+    const label = chartOptions!.plugins!.tooltip!.callbacks!.label as unknown as (context: {
+      dataset: { label: string };
+      raw: number;
+    }) => string;
+
+    expect(label({ dataset: { label: 'Left over' }, raw: -500 })).toBe('Left over: -$500.00');
   });
 });
 

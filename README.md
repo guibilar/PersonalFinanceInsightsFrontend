@@ -16,6 +16,10 @@ count spending by itself, by categories or by a merchant (part of the descriptio
 in every store of the chain); a budget counts one or the other, so the form locks the categories once a merchant is
 typed and the merchant once a category is ticked.
 
+The dashboard's "Income and spending" chart shows, per month of the year, income, spending and what was left over
+(income minus spending, red when negative), with the averages above it; how the savings accounts changed is added
+only when any of them has activity. Which months the averages cover comes from the API.
+
 Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
 transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
 
