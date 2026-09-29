@@ -1,9 +1,12 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TransactionBreakdownComponent } from './transaction-breakdown.component';
 import {
   BreakdownInterval,
   BreakdownPeriodDto,
+  MerchantTotalDto,
   TransactionBreakdownOutputDto,
 } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { TEST_BREAKDOWN } from '../../../testing/test-breakdown';
@@ -25,7 +28,11 @@ describe('TransactionBreakdownComponent', () => {
   ) {
     TestBed.configureTestingModule({
       imports: [TransactionBreakdownComponent],
-      providers: [provideZonelessChangeDetection()],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     fixture = TestBed.createComponent(TransactionBreakdownComponent);
     fixture.componentRef.setInput('breakdown', breakdown);
@@ -115,5 +122,88 @@ describe('TransactionBreakdownComponent', () => {
 
     expect(text('[aria-live]')).toContain('Could not total these transactions.');
     expect(retried).toBe(1);
+  });
+
+  describe('more merchants', () => {
+    const store = (n: number): MerchantTotalDto => ({
+      name: `STORE ${n}`,
+      count: 1,
+      spending: 200 - n,
+    });
+    const stores = (from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, i) => store(from + i));
+    const withTwenty = { ...TEST_BREAKDOWN, topMerchants: stores(1, 8), merchantCount: 20 };
+    const names = () =>
+      Array.from(root().querySelectorAll<HTMLElement>('#breakdown-panel li span[title]')).map(
+        (s) => s.title,
+      );
+    const button = (label: string) =>
+      Array.from(root().querySelectorAll<HTMLButtonElement>('#breakdown-panel button')).find(
+        (b) => b.textContent!.trim() === label,
+      );
+    let http: HttpTestingController;
+
+    beforeEach(async () => {
+      await create(withTwenty, true);
+      fixture.componentRef.setInput('criteria', { description: 'store', startDate: '2026-09-01' });
+      http = TestBed.inject(HttpTestingController);
+      await fixture.whenStable();
+    });
+
+    afterEach(() => http.verify());
+
+    it('loads the next pages with the same criteria, until there are none left', async () => {
+      expect(text('#breakdown-panel .d-flex.flex-wrap.mt-2')).toContain('8 of 20 merchants');
+
+      button('Show 8 more')!.click();
+      const request = http.expectOne({ method: 'POST', url: '/api/Reports/merchants' });
+      expect(request.request.body).toEqual({
+        description: 'store',
+        startDate: '2026-09-01',
+        page: 2,
+        pageSize: 8,
+      });
+      request.flush({ items: stores(9, 16), page: 2, pageSize: 8, totalCount: 20 });
+      await fixture.whenStable();
+
+      expect(names().length).toBe(16);
+      button('Show 4 more')!.click();
+      expect(http.expectOne('/api/Reports/merchants').request.body.page).toBe(3);
+    });
+
+    it('shows fewer again, and starts over for a new breakdown', async () => {
+      button('Show 8 more')!.click();
+      http.expectOne('/api/Reports/merchants').flush({ items: stores(9, 16) });
+      await fixture.whenStable();
+
+      button('Show fewer')!.click();
+      await fixture.whenStable();
+      expect(names()).toEqual(stores(1, 8).map((m) => m.name));
+
+      button('Show 8 more')!.click();
+      http.expectOne('/api/Reports/merchants').flush({ items: stores(9, 16) });
+      fixture.componentRef.setInput('breakdown', { ...withTwenty });
+      await fixture.whenStable();
+      expect(names().length).toBe(8);
+      expect(button('Show fewer')).toBeUndefined();
+    });
+
+    it('keeps what it has and says so when loading more fails', async () => {
+      button('Show 8 more')!.click();
+      http.expectOne('/api/Reports/merchants').flush(null, { status: 500, statusText: 'Error' });
+      await fixture.whenStable();
+
+      expect(names().length).toBe(8);
+      expect(text('#breakdown-panel [role=alert]')).toBe('Could not load more merchants.');
+      expect(button('Show 8 more')!.disabled).toBe(false);
+    });
+
+    it('offers nothing more when every merchant is shown', async () => {
+      fixture.componentRef.setInput('breakdown', TEST_BREAKDOWN);
+      await fixture.whenStable();
+
+      expect(button('Show 8 more')).toBeUndefined();
+      expect(root().textContent).not.toContain('merchants');
+    });
   });
 });

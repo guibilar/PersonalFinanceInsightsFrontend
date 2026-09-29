@@ -29,6 +29,7 @@ describe('TransactionListComponent', () => {
     averagedPeriods: 0,
     periods: [],
     topMerchants: [],
+    merchantCount: 0,
   };
 
   const emptyPage = {

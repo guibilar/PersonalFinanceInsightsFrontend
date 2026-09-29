@@ -36,6 +36,8 @@ export interface TransactionBreakdownOutputDto {
   averagedPeriods: number;
   /** Oldest first, empty ones included. */
   periods: BreakdownPeriodDto[];
-  /** Largest first, at most eight. */
+  /** Largest first, at most eight; the rest come a page at a time from the merchants report. */
   topMerchants: MerchantTotalDto[];
+  /** How many merchants the spending went to, the top ones included. */
+  merchantCount: number;
 }

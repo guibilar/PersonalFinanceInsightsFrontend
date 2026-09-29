@@ -167,7 +167,7 @@ export class TransactionListComponent {
     intervalFromQuery(this.route.snapshot.queryParamMap) ?? 'Month',
   );
   // Only the criteria and the interval: paging and sorting the list doesn't change the totals.
-  private readonly breakdownParams = computed(
+  readonly breakdownParams = computed(
     () => {
       const { description, categoryId, accountId, flow, startDate, endDate, hidden } =
         this.filter();
