@@ -5,12 +5,25 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { StatementImportComponent } from './statement-import.component';
 import { AccountType } from '../../../core/models/enums/account-type';
+import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { AccountOutputDto } from '../../../core/models/outputs/account-output-dto';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 
 const accounts: AccountOutputDto[] = [
-  { id: 'a1', name: 'Chequing', type: AccountType.Chequing, transactionCount: 10 },
-  { id: 'a2', name: 'Visa', type: AccountType.CreditCard, transactionCount: 5 },
+  {
+    id: 'a1',
+    name: 'Chequing',
+    type: AccountType.Chequing,
+    format: StatementFormat.Cibc,
+    transactionCount: 10,
+  },
+  {
+    id: 'a2',
+    name: 'Visa',
+    type: AccountType.CreditCard,
+    format: StatementFormat.Cibc,
+    transactionCount: 5,
+  },
 ];
 
 describe('StatementImportComponent', () => {

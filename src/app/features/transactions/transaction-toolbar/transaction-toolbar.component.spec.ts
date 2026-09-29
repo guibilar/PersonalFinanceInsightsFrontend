@@ -8,6 +8,7 @@ import {
 import { Category } from '../../../core/models/enums/category';
 import { Flow } from '../../../core/models/enums/flow';
 import { AccountType } from '../../../core/models/enums/account-type';
+import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
 
 describe('TransactionToolbarComponent', () => {
@@ -143,8 +144,20 @@ describe('TransactionToolbarComponent', () => {
   it('filters by account and flow, with the account name on its chip', () => {
     create({ page: 1, pageSize: 10, accountId: 'a2', flow: Flow.Income });
     fixture.componentRef.setInput('accounts', [
-      { id: 'a1', name: 'Chequing', type: AccountType.Chequing, transactionCount: 3 },
-      { id: 'a2', name: 'Visa', type: AccountType.CreditCard, transactionCount: 2 },
+      {
+        id: 'a1',
+        name: 'Chequing',
+        type: AccountType.Chequing,
+        format: StatementFormat.Cibc,
+        transactionCount: 3,
+      },
+      {
+        id: 'a2',
+        name: 'Visa',
+        type: AccountType.CreditCard,
+        format: StatementFormat.Cibc,
+        transactionCount: 2,
+      },
     ]);
     fixture.detectChanges();
 

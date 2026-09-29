@@ -42,10 +42,28 @@
     </div>
   </div>
 
+  <div class="mb-3">
+    <label for="account-format" class="form-label">Statement files from *</label>
+    <select
+      id="account-format"
+      class="form-select"
+      formControlName="format"
+      aria-describedby="account-format-hint"
+    >
+      @for (format of formats; track format) {
+        <option [ngValue]="format">{{ formatLabels[format] }}</option>
+      }
+    </select>
+    <div id="account-format-hint" class="form-text">
+      The bank the account's CSV exports come from: it decides how its files are read. Pick the
+      right one, or an import is refused.
+    </div>
+  </div>
+
   <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
     <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
     <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
-      {{ saving() ? 'Saving…' : isEditing() ? 'Rename' : 'Add account' }}
+      {{ saving() ? 'Saving…' : isEditing() ? 'Save' : 'Add account' }}
     </button>
   </div>
 </form>

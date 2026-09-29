@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
-import { AccountInputDto } from '../models/inputs/account-input-dto';
+import { AccountInputDto, AccountUpdateInputDto } from '../models/inputs/account-input-dto';
 import { AccountOutputDto } from '../models/outputs/account-output-dto';
 
 /**
@@ -25,9 +25,9 @@ export class AccountRepository {
     return this.http.post<AccountOutputDto>(this.baseUrl, account);
   }
 
-  /** The type can't change, so only the name is sent. */
-  rename(id: string, name: string): Observable<AccountOutputDto> {
-    return this.http.put<AccountOutputDto>(`${this.baseUrl}/${id}`, { name });
+  /** Renames the account and/or corrects its statement format; the type can't change. */
+  update(id: string, update: AccountUpdateInputDto): Observable<AccountOutputDto> {
+    return this.http.put<AccountOutputDto>(`${this.baseUrl}/${id}`, update);
   }
 
   delete(id: string): Observable<void> {

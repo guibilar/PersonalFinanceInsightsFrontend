@@ -2,6 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BankAccountFormComponent } from './bank-account-form.component';
 import { AccountType } from '../../core/models/enums/account-type';
+import { StatementFormat } from '../../core/models/enums/statement-format';
 import { AccountInputDto } from '../../core/models/inputs/account-input-dto';
 import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
 
@@ -29,7 +30,27 @@ describe('BankAccountFormComponent', () => {
 
     component.onSubmit();
 
-    expect(submitted).toEqual([{ name: 'Visa', type: AccountType.CreditCard }]);
+    // CIBC unless another format is chosen: the first bank the app read.
+    expect(submitted).toEqual([
+      { name: 'Visa', type: AccountType.CreditCard, format: StatementFormat.Cibc },
+    ]);
+  });
+
+  it('adds an account with the chosen statement format', () => {
+    create(null);
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>(
+      '#account-format',
+    )!;
+    const options = Array.from(select.options).map((o) => o.textContent?.trim());
+    component.form.patchValue({ name: 'Neo card', type: AccountType.CreditCard });
+    component.form.controls.format.setValue(StatementFormat.Neo);
+
+    component.onSubmit();
+
+    expect(options).toEqual(['CIBC', 'Neo Financial']);
+    expect(submitted).toEqual([
+      { name: 'Neo card', type: AccountType.CreditCard, format: StatementFormat.Neo },
+    ]);
   });
 
   it('lists the types by their labels', () => {
@@ -41,17 +62,31 @@ describe('BankAccountFormComponent', () => {
     expect(options).toEqual(['Chequing', 'Savings', 'Credit card']);
   });
 
-  it('renames without changing the type', () => {
-    create({ id: 'a1', name: 'Visa', type: AccountType.CreditCard, transactionCount: 3 });
+  it('edits the name and format without changing the type', () => {
+    create({
+      id: 'a1',
+      name: 'Visa',
+      type: AccountType.CreditCard,
+      format: StatementFormat.Cibc,
+      transactionCount: 3,
+    });
     const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>(
       '#account-type',
     )!;
 
+    const format = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>(
+      '#account-format',
+    )!;
+
     expect(select.disabled).toBe(true);
+    expect(format.disabled).toBe(false);
     component.form.controls.name.setValue('Visa Infinite');
+    component.form.controls.format.setValue(StatementFormat.Neo);
     component.onSubmit();
 
-    expect(submitted).toEqual([{ name: 'Visa Infinite', type: AccountType.CreditCard }]);
+    expect(submitted).toEqual([
+      { name: 'Visa Infinite', type: AccountType.CreditCard, format: StatementFormat.Neo },
+    ]);
   });
 
   it('needs a name of at most 100 characters', async () => {
