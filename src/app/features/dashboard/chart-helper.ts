@@ -12,9 +12,15 @@ const AVERAGE_COLOR = 'red';
 export const CASH_FLOW_COLORS = {
   income: '#16a34a',
   spending: '#dc2626',
-  saved: '#4f46e5',
+  net: '#4f46e5',
+  savings: '#0ea5e9',
 } as const;
 const AVERAGE_ANNOTATION_ID = 'avgLine';
+
+/** Whether the savings accounts changed in any month: nothing recorded on one is not the same as nothing saved. */
+export function hasSavingsChange(report: CashFlowReportOutputDto): boolean {
+  return report.months.some((month) => month.savingsChange !== 0);
+}
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
 
@@ -224,7 +230,10 @@ export class ChartHelper {
     return { chartData, chartOptions };
   }
 
-  /** Income, spending and saved side by side per month; the tooltip adds the month's net. */
+  /**
+   * Income, spending and what was left over side by side per month, plus how the savings accounts changed when
+   * any month has that (without savings accounts it would be a row of empty bars).
+   */
   static generateCashFlowChartConfiguration(
     report: CashFlowReportOutputDto,
     theme: ChartTheme = CHART_THEMES.light,
@@ -247,12 +256,19 @@ export class ChartHelper {
           backgroundColor: CASH_FLOW_COLORS.spending,
         },
         {
-          label: 'Saved',
-          data: months.map((month) => month.saved),
-          backgroundColor: CASH_FLOW_COLORS.saved,
+          label: 'Left over',
+          data: months.map((month) => month.net),
+          backgroundColor: CASH_FLOW_COLORS.net,
         },
       ],
     };
+    if (hasSavingsChange(report)) {
+      chartData.datasets.push({
+        label: 'Savings change',
+        data: months.map((month) => month.savingsChange),
+        backgroundColor: CASH_FLOW_COLORS.savings,
+      });
+    }
 
     const chartOptions: ChartConfiguration<'bar'>['options'] = {
       responsive: true,
@@ -267,10 +283,6 @@ export class ChartHelper {
           callbacks: {
             label: (context) =>
               `${context.dataset.label}: ${formatCurrency(context.raw as number)}`,
-            footer: (items) => {
-              const month = months[items[0]?.dataIndex ?? -1];
-              return month ? `Net: ${formatCurrency(month.net)}` : '';
-            },
           },
         },
       },

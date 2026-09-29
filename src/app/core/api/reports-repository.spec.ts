@@ -27,10 +27,13 @@ describe('ReportsRepository', () => {
     repository.getCashFlow().subscribe((report) => (months = report.months.length));
 
     http.expectOne({ method: 'GET', url: '/api/Reports/cash-flow' }).flush({
-      months: [{ month: 'Jan 2026', income: 5000, spending: 3000, net: 2000, saved: 500 }],
+      months: [{ month: 'Jan 2026', income: 5000, spending: 3000, net: 2000, savingsChange: 500 }],
       averageMonthlyIncome: 5000,
       averageMonthlySpending: 3000,
-      averageMonthlySaved: 500,
+      averageMonthlyNet: 2000,
+      averageMonthlySavingsChange: 500,
+      averagedMonths: 1,
+      averagesIncludeCurrentMonth: true,
     });
 
     expect(months).toBe(1);

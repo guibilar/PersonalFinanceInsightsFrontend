@@ -22,7 +22,10 @@ const emptyCashFlow: CashFlowReportOutputDto = {
   months: [],
   averageMonthlyIncome: 0,
   averageMonthlySpending: 0,
-  averageMonthlySaved: 0,
+  averageMonthlyNet: 0,
+  averageMonthlySavingsChange: 0,
+  averagedMonths: 0,
+  averagesIncludeCurrentMonth: false,
 };
 
 function currentMonth(
@@ -97,15 +100,18 @@ describe('DashboardComponent', () => {
     expect((await load(currentMonth(300))).dashboard.spentHint()).toBeNull();
   });
 
-  it('shows income, spending and saved per month with their averages', async () => {
+  it('shows income, spending and what was left over per month with their averages', async () => {
     const { root } = await load(currentMonth(300), {
       months: [
-        { month: 'Aug 2026', income: 5000, spending: 3200, net: 1800, saved: 1000 },
-        { month: 'Sep 2026', income: 2500, spending: 300, net: 2200, saved: 0 },
+        { month: 'Aug 2026', income: 5000, spending: 3200, net: 1800, savingsChange: 0 },
+        { month: 'Sep 2026', income: 2500, spending: 300, net: 2200, savingsChange: 0 },
       ],
       averageMonthlyIncome: 5000,
       averageMonthlySpending: 3200,
-      averageMonthlySaved: 1000,
+      averageMonthlyNet: 1800,
+      averageMonthlySavingsChange: 0,
+      averagedMonths: 1,
+      averagesIncludeCurrentMonth: false,
     });
     const card = root.querySelector('app-cash-flow')!;
 
@@ -113,8 +119,36 @@ describe('DashboardComponent', () => {
     const figures = Array.from(card.querySelectorAll('dl > div')).map((e) =>
       e.textContent!.replace(/\s+/g, ' ').trim(),
     );
-    expect(figures).toEqual(['Income $5,000.00', 'Spending $3,200.00', 'Saved $1,000.00']);
+    // No savings account changed: there is no savings figure to show.
+    expect(figures).toEqual(['Income $5,000.00', 'Spending $3,200.00', 'Left over $1,800.00']);
     expect(card.textContent).toContain('Averages per month · Over 1 finished month');
+    expect(card.textContent).not.toContain('Savings change');
+  });
+
+  it('adds how the savings accounts changed when one did, and marks a negative average', async () => {
+    const { root } = await load(currentMonth(300), {
+      months: [{ month: 'Sep 2026', income: 1000, spending: 1500, net: -500, savingsChange: -200 }],
+      averageMonthlyIncome: 1000,
+      averageMonthlySpending: 1500,
+      averageMonthlyNet: -500,
+      averageMonthlySavingsChange: -200,
+      averagedMonths: 1,
+      averagesIncludeCurrentMonth: true,
+    });
+    const card = root.querySelector('app-cash-flow')!;
+
+    const figures = Array.from(card.querySelectorAll('dl > div')).map((e) =>
+      e.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(figures).toEqual([
+      'Income $1,000.00',
+      'Spending $1,500.00',
+      'Left over -$500.00',
+      'Savings change -$200.00',
+    ]);
+    expect(card.querySelectorAll('dd.text-danger').length).toBe(2);
+    expect(card.textContent).toContain('Averages per month · This month so far');
+    expect(card.textContent).toContain('Savings change is what went into your savings accounts');
   });
 
   it('says when nothing is recorded this year', async () => {

@@ -149,7 +149,7 @@
         />
       } @else if (cashFlow.value(); as report) {
         @if (report.months.length > 0) {
-          <app-cash-flow [report]="report" [today]="today" />
+          <app-cash-flow [report]="report" />
         } @else {
           <p class="text-body-secondary text-center py-5 mb-0">Nothing recorded this year yet.</p>
         }
