@@ -131,14 +131,15 @@ describe('TransactionToolbarComponent', () => {
   });
 
   it('fills the fields from the applied filter without emitting', () => {
-    create({ page: 1, pageSize: 10, description: 'rent', startDate: '2026-01-01' });
+    create({ page: 1, pageSize: 10, description: 'rent', startDate: '2026-01-05' });
 
     expect(component.form.getRawValue()).toEqual({
       description: 'rent',
       categoryId: null,
       accountId: null,
       flow: null,
-      startDate: '2026-01-01',
+      period: 'custom',
+      startDate: '2026-01-05',
       endDate: '',
     });
     expect(emitted).toEqual([]);
@@ -178,6 +179,85 @@ describe('TransactionToolbarComponent', () => {
 
     component.remove('flow');
     expect(emitted.at(-1)).toEqual({ accountId: 'a1', flow: undefined });
+  });
+
+  describe('dates', () => {
+    const root = () => fixture.nativeElement as HTMLElement;
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 8, 15, 12));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('offers presets, and the date fields only for a custom range', () => {
+      create();
+
+      const options = Array.from(root().querySelectorAll('#tx-period option')).map((o) =>
+        o.textContent!.trim(),
+      );
+      expect(options).toEqual([
+        'All dates',
+        'This month',
+        'Last month',
+        'Last 3 months',
+        'Last 6 months',
+        'Last 12 months',
+        'This year',
+        'Last year',
+        'Custom range…',
+      ]);
+      expect(root().querySelector('#tx-from')).toBeNull();
+    });
+
+    it("applies a preset's dates at once", () => {
+      create({ page: 1, pageSize: 10, description: 'rent' });
+
+      component.form.controls.period.setValue('last3Months');
+      expect(emitted.at(-1)).toEqual(
+        expect.objectContaining({
+          description: 'rent',
+          startDate: '2026-06-01',
+          endDate: '2026-08-31',
+        }),
+      );
+
+      component.form.controls.period.setValue('all');
+      expect(emitted.at(-1)).toEqual(
+        expect.objectContaining({ startDate: undefined, endDate: undefined }),
+      );
+    });
+
+    it('recognises a preset in the applied dates, and names it on one chip', () => {
+      create({ page: 1, pageSize: 10, startDate: '2026-08-01', endDate: '2026-08-31' });
+
+      expect(component.form.controls.period.value).toBe('lastMonth');
+      expect(component.chips()).toEqual([
+        { key: 'dates', label: 'Last month · Aug 1 – Aug 31, 2026' },
+      ]);
+
+      component.remove('dates');
+      expect(emitted.at(-1)).toEqual(
+        expect.objectContaining({ startDate: undefined, endDate: undefined }),
+      );
+    });
+
+    it('opens the fields for other dates, and on "Custom range" keeps the dates there are', () => {
+      create({ page: 1, pageSize: 10, startDate: '2026-08-10' });
+      expect(component.form.controls.period.value).toBe('custom');
+      expect(root().querySelector('#tx-from')).not.toBeNull();
+      expect(component.chips()).toEqual([{ key: 'startDate', label: 'From 2026-08-10' }]);
+
+      component.form.controls.period.setValue('thisYear');
+      fixture.detectChanges();
+      expect(root().querySelector('#tx-from')).toBeNull();
+
+      const before = emitted.length;
+      component.form.controls.period.setValue('custom');
+      fixture.detectChanges();
+      expect(emitted.length).toBe(before);
+      expect(root().querySelector('#tx-from')).not.toBeNull();
+    });
   });
 
   it('clears everything', () => {

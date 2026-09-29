@@ -7,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -17,6 +18,12 @@ import { AccountOutputDto } from '../../../core/models/outputs/account-output-dt
 import { CategoryReference } from '../../../core/models/outputs/category-output-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { FLOW_LABELS } from '../../../shared/utils/flow-helper';
+import {
+  DATE_PRESETS,
+  DatePresetId,
+  describeRange,
+  matchDatePreset,
+} from '../../../shared/utils/date-presets';
 
 /** The criteria this toolbar controls; paging and sorting stay with the page. */
 export type TransactionCriteria = Pick<
@@ -26,8 +33,12 @@ export type TransactionCriteria = Pick<
 
 type CriteriaKey = keyof TransactionCriteria;
 
+/** What the period picker offers: every preset, all dates, or dates of one's own. */
+export type PeriodChoice = DatePresetId | 'all' | 'custom';
+
 interface Chip {
-  key: CriteriaKey;
+  /** "dates" stands for both dates, when they are a preset. */
+  key: CriteriaKey | 'dates';
   label: string;
 }
 
@@ -35,7 +46,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Search, category, account, flow and date filters that apply as you type, with removable chips for active
- * filters.
+ * filters. Dates are picked from presets ("Last 3 months"), or typed in for a custom range.
  */
 @Component({
   selector: 'app-transaction-toolbar',
@@ -55,12 +66,17 @@ export class TransactionToolbarComponent {
 
   readonly flows = Object.values(Flow);
   readonly flowLabels = FLOW_LABELS;
+  readonly datePresets = DATE_PRESETS;
+
+  /** Shows the From and To fields: chosen as "Custom range", or dates that aren't a preset. */
+  readonly customRange = signal(false);
 
   readonly form = this.fb.group({
     description: '',
     categoryId: this.fb.control<string | null>(null),
     accountId: this.fb.control<string | null>(null),
     flow: this.fb.control<Flow | null>(null),
+    period: this.fb.control<PeriodChoice>('all'),
     startDate: '',
     endDate: '',
   });
@@ -78,8 +94,14 @@ export class TransactionToolbarComponent {
       chips.push({ key: 'accountId', label: account?.name ?? 'Account' });
     }
     if (filter.flow) chips.push({ key: 'flow', label: FLOW_LABELS[filter.flow] });
-    if (filter.startDate) chips.push({ key: 'startDate', label: `From ${filter.startDate}` });
-    if (filter.endDate) chips.push({ key: 'endDate', label: `To ${filter.endDate}` });
+    const period = matchDatePreset(filter, new Date());
+    const preset = DATE_PRESETS.find((p) => p.id === period);
+    if (preset) {
+      chips.push({ key: 'dates', label: `${preset.label} · ${describeRange(filter)}` });
+    } else {
+      if (filter.startDate) chips.push({ key: 'startDate', label: `From ${filter.startDate}` });
+      if (filter.endDate) chips.push({ key: 'endDate', label: `To ${filter.endDate}` });
+    }
     return chips;
   });
 
@@ -87,12 +109,15 @@ export class TransactionToolbarComponent {
     // Keep the fields in sync with the applied filter (e.g. after a chip is removed).
     effect(() => {
       const filter = this.filter();
+      const period = matchDatePreset(filter, new Date());
+      if (period === 'custom') this.customRange.set(true);
       this.form.setValue(
         {
           description: filter.description ?? '',
           categoryId: filter.categoryId ?? null,
           accountId: filter.accountId ?? null,
           flow: filter.flow ?? null,
+          period,
           startDate: filter.startDate ?? '',
           endDate: filter.endDate ?? '',
         },
@@ -116,9 +141,29 @@ export class TransactionToolbarComponent {
     )
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
       .subscribe(() => this.criteriaChange.emit(this.criteria()));
+
+    controls.period.valueChanges
+      .pipe(takeUntilDestroyed(inject(DestroyRef)))
+      .subscribe((period) => this.choosePeriod(period));
   }
 
-  remove(key: CriteriaKey): void {
+  private choosePeriod(period: PeriodChoice): void {
+    // Custom keeps the dates there are, for the fields to change.
+    this.customRange.set(period === 'custom');
+    if (period === 'custom') return;
+    const range = DATE_PRESETS.find((p) => p.id === period)?.range(new Date()) ?? {};
+    this.criteriaChange.emit({
+      ...this.criteria(),
+      startDate: range.startDate,
+      endDate: range.endDate,
+    });
+  }
+
+  remove(key: Chip['key']): void {
+    if (key === 'dates') {
+      this.criteriaChange.emit({ ...this.criteria(), startDate: undefined, endDate: undefined });
+      return;
+    }
     this.criteriaChange.emit({ ...this.criteria(), [key]: undefined });
   }
 
