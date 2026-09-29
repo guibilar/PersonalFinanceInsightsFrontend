@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  effect,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { ToastService } from './toast.service';
 import { IconComponent } from '../icon/icon.component';
 
@@ -6,7 +13,7 @@ import { IconComponent } from '../icon/icon.component';
   selector: 'app-toast-container',
   imports: [IconComponent],
   template: `
-    <div class="toast-stack" aria-live="polite">
+    <div #stack class="toast-stack" popover="manual" aria-live="polite">
       @for (toast of toasts.toasts(); track toast.id) {
         <div
           class="app-toast"
@@ -30,9 +37,14 @@ import { IconComponent } from '../icon/icon.component';
   styles: `
     .toast-stack {
       position: fixed;
-      right: 1rem;
-      bottom: 1rem;
+      inset: auto 1rem 1rem auto;
       z-index: 1090;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      overflow: visible;
+      color: inherit;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
@@ -88,4 +100,17 @@ import { IconComponent } from '../icon/icon.component';
 })
 export class ToastContainerComponent {
   protected readonly toasts = inject(ToastService);
+  private readonly stack = viewChild.required<ElementRef<HTMLElement>>('stack');
+
+  constructor() {
+    // A popover in the top layer, so notifications show above an open dialog (ModalComponent) too. Shown again on
+    // every change: the top layer stacks by opening order, and a dialog opened later would cover it.
+    effect(() => {
+      this.toasts.toasts();
+      const stack = this.stack().nativeElement;
+      if (typeof stack.showPopover !== 'function') return;
+      if (stack.matches(':popover-open')) stack.hidePopover();
+      stack.showPopover();
+    });
+  }
 }
