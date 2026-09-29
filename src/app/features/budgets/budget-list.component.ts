@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { CategoryRepository } from '../../core/api/category-repository';
 import { BudgetRepository } from '../../core/api/budget-repository';
 import { BudgetInputDto } from '../../core/models/inputs/budget-input-dto';
 import { BudgetFilterInputDto } from '../../core/models/inputs/budget-filter-input-dto';
@@ -50,6 +51,7 @@ const PAGE_SIZE = 12;
 })
 export class BudgetListComponent {
   private readonly budgetRepository = inject(BudgetRepository);
+  private readonly categoryRepository = inject(CategoryRepository);
   private readonly toasts = inject(ToastService);
 
   readonly filter = signal<BudgetFilterInputDto>({ page: 1, pageSize: PAGE_SIZE });
@@ -63,6 +65,12 @@ export class BudgetListComponent {
   readonly editing = signal<BudgetOutputDto | null | undefined>(undefined);
   readonly deleting = signal<BudgetOutputDto | null>(null);
   readonly saving = signal(false);
+
+  // For the budget form's categories.
+  private readonly categoriesResource = rxResource({
+    stream: () => this.categoryRepository.getAll(),
+  });
+  readonly categories = computed(() => this.categoriesResource.value() ?? []);
 
   readonly budgets = rxResource({
     params: () => this.filter(),

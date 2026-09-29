@@ -6,4 +6,5 @@ export const TEXT_LIMITS = {
   categoryRuleKeyword: 100,
   accountName: 100,
   flowRuleKeyword: 100,
+  categoryName: 50,
 } as const;

@@ -5,14 +5,14 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { RuleListComponent } from './rule-list.component';
-import { Category } from '../../core/models/enums/category';
+import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../testing/test-categories';
 import { CategoryRuleOutputDto } from '../../core/models/outputs/category-rule-output-dto';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
 const rules: CategoryRuleOutputDto[] = [
-  { id: 'r1', keyword: 'METRO', category: Category.Groceries, position: 0 },
-  { id: 'r2', keyword: 'PIZZA', category: Category.Dining, position: 1 },
-  { id: 'r3', keyword: 'UBER', category: Category.Transportation, position: 2 },
+  { id: 'r1', keyword: 'METRO', category: TEST_CATEGORIES.groceries, position: 0 },
+  { id: 'r2', keyword: 'PIZZA', category: TEST_CATEGORIES.dining, position: 1 },
+  { id: 'r3', keyword: 'UBER', category: TEST_CATEGORIES.transportation, position: 2 },
 ];
 
 describe('RuleListComponent', () => {
@@ -58,6 +58,9 @@ describe('RuleListComponent', () => {
     http = TestBed.inject(HttpTestingController);
     toasts = TestBed.inject(ToastService);
     fixture.detectChanges();
+    // Loaded with the page for the rule form.
+    TestBed.tick();
+    http.expectOne({ method: 'GET', url: '/api/Categories' }).flush(TEST_CATEGORY_LIST);
   });
 
   afterEach(() => http.verify());
@@ -128,10 +131,17 @@ describe('RuleListComponent', () => {
     await load();
     component.editing.set(null);
 
-    component.onFormSubmit({ keyword: 'corner store', category: Category.Groceries, position: 0 });
-    http
-      .expectOne({ method: 'POST', url: '/api/CategoryRules' })
-      .flush({ id: 'r4', keyword: 'CORNER STORE', category: Category.Groceries, position: 0 });
+    component.onFormSubmit({
+      keyword: 'corner store',
+      categoryId: TEST_CATEGORIES.groceries.id,
+      position: 0,
+    });
+    http.expectOne({ method: 'POST', url: '/api/CategoryRules' }).flush({
+      id: 'r4',
+      keyword: 'CORNER STORE',
+      category: TEST_CATEGORIES.groceries,
+      position: 0,
+    });
 
     expect(component.editing()).toBeUndefined();
     await reloaded();
@@ -142,7 +152,7 @@ describe('RuleListComponent', () => {
     await load();
     component.editing.set(rules[1]);
 
-    component.onFormSubmit({ keyword: 'METRO', category: Category.Dining });
+    component.onFormSubmit({ keyword: 'METRO', categoryId: TEST_CATEGORIES.dining.id });
     http
       .expectOne({ method: 'PUT', url: '/api/CategoryRules/r2' })
       .flush(

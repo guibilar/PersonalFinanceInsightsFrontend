@@ -2,9 +2,10 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CategoryAveragesComponent } from './category-averages.component';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
+import { categoryRefs } from '../../../testing/test-categories';
 
 const year: CategorizedReportOutputDto = {
-  categories: ['Dining', 'Groceries'],
+  categories: categoryRefs('Dining', 'Groceries'),
   averageMonthlyTotal: 0,
   monthlyData: [
     { month: 'Jul 2026', total: 400, categoryValues: { Dining: 100, Groceries: 300 } },

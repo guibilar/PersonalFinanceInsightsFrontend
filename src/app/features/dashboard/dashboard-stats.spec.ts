@@ -11,12 +11,13 @@ import {
 } from './dashboard-stats';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
+import { categoryRefs } from '../../testing/test-categories';
 
 function report(
   months: { month: string; values: Record<string, number> }[],
 ): CategorizedReportOutputDto {
   return {
-    categories: [],
+    categories: categoryRefs(),
     averageMonthlyTotal: 0,
     monthlyData: months.map(({ month, values }) => ({
       month,
@@ -91,7 +92,7 @@ describe('dashboard stats', () => {
 
   it('averages each category over the finished months, next to this month so far', () => {
     const year: CategorizedReportOutputDto = {
-      categories: ['Dining', 'Groceries', 'Pet'],
+      categories: categoryRefs('Dining', 'Groceries', 'Pet'),
       averageMonthlyTotal: 0,
       monthlyData: [
         { month: 'Jul 2026', total: 0, categoryValues: { Dining: 100, Groceries: 300 } },
@@ -109,7 +110,7 @@ describe('dashboard stats', () => {
 
   it('has a category that only shows up this month, with nothing to compare against', () => {
     const year: CategorizedReportOutputDto = {
-      categories: ['Dining', 'Pet'],
+      categories: categoryRefs('Dining', 'Pet'),
       averageMonthlyTotal: 0,
       monthlyData: [
         { month: 'Aug 2026', total: 0, categoryValues: { Dining: 100 } },

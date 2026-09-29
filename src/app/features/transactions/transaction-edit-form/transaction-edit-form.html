@@ -25,9 +25,9 @@
 
   <div class="mb-3">
     <label for="edit-category" class="form-label">Category *</label>
-    <select id="edit-category" class="form-select" formControlName="category">
-      @for (category of categories; track category) {
-        <option [ngValue]="category">{{ category }}</option>
+    <select id="edit-category" class="form-select" formControlName="categoryId">
+      @for (category of categoryOptions(); track category.id) {
+        <option [ngValue]="category.id">{{ category.name }}</option>
       }
     </select>
     <div class="form-text">
@@ -69,8 +69,8 @@
           Also categorise similar transactions
         </label>
         <div id="edit-also-similar-hint" class="form-text mt-0">
-          Adds a rule, checked first, so this merchant is {{ form.controls.category.value }} from
-          now on, and applies the rules to your transactions.
+          Adds a rule, checked first, so this merchant is {{ selectedCategoryName() }} from now on,
+          and applies the rules to your transactions.
         </div>
       </div>
 
@@ -107,7 +107,7 @@
               } @else {
                 {{ result.count }} other
                 {{ result.count === 1 ? 'transaction' : 'transactions' }} will change to
-                {{ form.controls.category.value }}{{ result.examples.length ? ', e.g.' : '.' }}
+                {{ selectedCategoryName() }}{{ result.examples.length ? ', e.g.' : '.' }}
               }
             }
           </div>

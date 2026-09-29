@@ -33,7 +33,14 @@ describe('ShellComponent', () => {
     const labels = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('.nav-list .label'),
     ).map((el) => el.textContent?.trim());
-    expect(labels).toEqual(['Dashboard', 'Transactions', 'Budgets', 'Rules', 'Accounts']);
+    expect(labels).toEqual([
+      'Dashboard',
+      'Transactions',
+      'Budgets',
+      'Rules',
+      'Categories',
+      'Accounts',
+    ]);
   });
 
   it('remembers the collapsed state', () => {

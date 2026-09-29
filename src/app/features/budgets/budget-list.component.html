@@ -111,11 +111,11 @@
                   class="list-unstyled d-flex flex-wrap gap-1 mb-3"
                   aria-label="Categories counted"
                 >
-                  @for (category of budget.categories; track category) {
+                  @for (category of budget.categories; track category.id) {
                     <li>
-                      <span
-                        class="badge rounded-pill bg-body-secondary text-body border fw-medium"
-                        >{{ category }}</span
+                      <span class="badge rounded-pill bg-body-secondary text-body border fw-medium"
+                        ><span class="category-dot" [style.background-color]="category.color"></span
+                        >{{ category.name }}</span
                       >
                     </li>
                   }
@@ -180,6 +180,7 @@
   <app-modal [title]="editing() ? 'Edit budget' : 'New budget'" (closed)="editing.set(undefined)">
     <app-budget-form
       [budget]="editing() ?? null"
+      [categories]="categories()"
       [saving]="saving()"
       (submitBudget)="onFormSubmit($event)"
       (cancelled)="editing.set(undefined)"

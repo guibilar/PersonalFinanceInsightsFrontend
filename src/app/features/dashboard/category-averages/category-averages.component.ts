@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
-import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
-import { averageCaption, categoryAverages } from '../dashboard-stats';
+import { averageCaption, categoryAverages, categoryColors } from '../dashboard-stats';
 
 /**
  * What each category costs in a typical month: a bar for the average of the finished months, and a thinner one
@@ -89,8 +88,10 @@ export class CategoryAveragesComponent {
     return this.today().toLocaleString('en-CA', { month: 'long' });
   }
 
+  private readonly colors = computed(() => categoryColors(this.report()));
+
   color(category: string): string {
-    return CategoryColorHelper.getColor(category);
+    return this.colors()(category);
   }
 
   percent(amount: number): number {

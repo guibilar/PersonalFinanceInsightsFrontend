@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TransactionListComponent } from './transaction-list.component';
-import { Category } from '../../../core/models/enums/category';
+import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { Flow } from '../../../core/models/enums/flow';
@@ -54,6 +54,8 @@ describe('TransactionListComponent', () => {
         },
       ]),
     );
+    // Nor the categories the filter and forms offer.
+    http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
   });
 
   afterEach(() => http.verify());
@@ -95,10 +97,10 @@ describe('TransactionListComponent', () => {
     component.sort('Amount');
     component.onPageSizeChange(50);
     component.onPageChange(3);
-    component.onCriteriaChange({ category: Category.Dining });
+    component.onCriteriaChange({ categoryId: TEST_CATEGORIES.dining.id });
 
     expect(lastFilterRequest()).toEqual({
-      category: Category.Dining,
+      categoryId: TEST_CATEGORIES.dining.id,
       sortBy: 'Amount',
       sortDirection: 'Descending',
       pageSize: 50,
@@ -122,7 +124,7 @@ describe('TransactionListComponent', () => {
     const base = {
       date: '2026-09-10',
       amount: 5,
-      category: Category.Other,
+      category: TEST_CATEGORIES.other,
       categoryLocked: false,
       accountId: 'a2',
       accountName: 'Visa',
@@ -163,7 +165,7 @@ describe('TransactionListComponent', () => {
       date: '2026-09-10',
       amount: 4,
       description: 'COFFEE',
-      category: Category.Other,
+      category: TEST_CATEGORIES.other,
       categoryLocked: false,
       accountId: 'a2',
       accountName: 'Visa',
@@ -182,14 +184,19 @@ describe('TransactionListComponent', () => {
     it('saves an edit, closes the panel and reloads', () => {
       component.editingTransaction.set(coffee);
 
-      component.onEditSubmit({ update: { description: 'Coffee', category: Category.Dining } });
+      component.onEditSubmit({
+        update: { description: 'Coffee', categoryId: TEST_CATEGORIES.dining.id },
+      });
       const put = http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' });
-      expect(put.request.body).toEqual({ description: 'Coffee', category: Category.Dining });
+      expect(put.request.body).toEqual({
+        description: 'Coffee',
+        categoryId: TEST_CATEGORIES.dining.id,
+      });
       expect(component.savingEdit()).toBe(true);
       put.flush({
         ...coffee,
         description: 'Coffee',
-        category: Category.Dining,
+        category: TEST_CATEGORIES.dining,
         categoryLocked: true,
       });
 
@@ -205,15 +212,15 @@ describe('TransactionListComponent', () => {
 
     it('can also add a rule first and apply the rules, with one toast for it all', () => {
       component.editingTransaction.set(coffee);
-      const rule = { keyword: 'COFFEE', category: Category.Dining, position: 0 };
+      const rule = { keyword: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id, position: 0 };
 
       component.onEditSubmit({
-        update: { description: 'COFFEE', category: Category.Dining },
+        update: { description: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id },
         rule,
       });
       http
         .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
-        .flush({ ...coffee, category: Category.Dining, categoryLocked: true });
+        .flush({ ...coffee, category: TEST_CATEGORIES.dining, categoryLocked: true });
       const create = http.expectOne({ method: 'POST', url: '/api/CategoryRules' });
       expect(create.request.body).toEqual(rule);
       expect(component.editingTransaction()).toEqual(coffee);
@@ -234,10 +241,10 @@ describe('TransactionListComponent', () => {
 
     it('says why the rule was not added, and still closes the saved edit', () => {
       component.editingTransaction.set(coffee);
-      const rule = { keyword: 'COFFEE', category: Category.Dining, position: 0 };
+      const rule = { keyword: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id, position: 0 };
 
       component.onEditSubmit({
-        update: { description: 'COFFEE', category: Category.Dining },
+        update: { description: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id },
         rule,
       });
       http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' }).flush(coffee);
@@ -263,7 +270,9 @@ describe('TransactionListComponent', () => {
     it('keeps the panel open when saving fails', () => {
       component.editingTransaction.set(coffee);
 
-      component.onEditSubmit({ update: { description: 'Coffee', category: Category.Dining } });
+      component.onEditSubmit({
+        update: { description: 'Coffee', categoryId: TEST_CATEGORIES.dining.id },
+      });
       http
         .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
         .flush(null, { status: 500, statusText: 'Error' });

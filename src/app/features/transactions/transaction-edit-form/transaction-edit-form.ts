@@ -13,11 +13,11 @@ import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-int
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
-import { Category } from '../../../core/models/enums/category';
 import { Flow } from '../../../core/models/enums/flow';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionUpdateInputDto } from '../../../core/models/inputs/transaction-update-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { CategoryReference } from '../../../core/models/outputs/category-output-dto';
 import { TEXT_LIMITS } from '../../../core/models/text-limits';
 import { suggestRuleKeyword } from '../../../shared/utils/suggest-rule-keyword';
 import { FLOW_DESCRIPTIONS, FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
@@ -48,13 +48,20 @@ export class TransactionEditForm implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = input.required<TransactionOutputDto>();
+  /** To pick from; the page loads them. */
+  readonly categories = input<CategoryReference[]>([]);
   readonly saving = input(false);
   readonly submitUpdate = output<TransactionEditSubmission>();
   readonly cancelled = output<void>();
   /** The parent asks for confirmation, then deletes. */
   readonly deleteRequested = output<void>();
 
-  readonly categories = Object.values(Category);
+  /** The list, and the transaction's own category while the list is loading. */
+  readonly categoryOptions = computed(() => {
+    const current = this.transaction().category;
+    const categories = this.categories();
+    return categories.some((c) => c.id === current.id) ? categories : [current, ...categories];
+  });
   readonly flowLabels = FLOW_LABELS;
   readonly flowDescriptions = FLOW_DESCRIPTIONS;
   /** Only what fits the direction: money out can't be income, money in can't be spending. */
@@ -71,7 +78,7 @@ export class TransactionEditForm implements OnInit {
       '',
       [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.transactionDescription)],
     ],
-    category: [Category.Other, Validators.required],
+    categoryId: ['', Validators.required],
     flow: [Flow.Spending, Validators.required],
     alsoSimilar: [false],
     // Enabled only while alsoSimilar is checked, so it can't block saving otherwise.
@@ -81,11 +88,15 @@ export class TransactionEditForm implements OnInit {
     ],
   });
 
-  private readonly category = toSignal(this.form.controls.category.valueChanges);
+  private readonly categoryId = toSignal(this.form.controls.categoryId.valueChanges);
   readonly selectedFlow = toSignal(this.form.controls.flow.valueChanges);
   readonly categoryChanged = computed(() => {
-    const category = this.category();
-    return category !== undefined && category !== this.transaction().category;
+    const categoryId = this.categoryId();
+    return categoryId !== undefined && categoryId !== this.transaction().category.id;
+  });
+  readonly selectedCategoryName = computed(() => {
+    const id = this.categoryId() ?? this.transaction().category.id;
+    return this.categoryOptions().find((c) => c.id === id)?.name ?? '';
   });
 
   // Asks only after typing pauses, and not again for the same rule.
@@ -93,7 +104,7 @@ export class TransactionEditForm implements OnInit {
     this.form.valueChanges.pipe(
       map(() => this.pendingRule()),
       debounceTime(RULE_PREVIEW_DEBOUNCE_MS),
-      distinctUntilChanged((a, b) => a?.keyword === b?.keyword && a?.category === b?.category),
+      distinctUntilChanged((a, b) => a?.keyword === b?.keyword && a?.categoryId === b?.categoryId),
     ),
   );
 
@@ -107,7 +118,7 @@ export class TransactionEditForm implements OnInit {
     const { description, category, flow } = this.transaction();
     this.form.patchValue({
       description,
-      category,
+      categoryId: category.id,
       flow,
       ruleKeyword: suggestRuleKeyword(description),
     });
@@ -117,18 +128,18 @@ export class TransactionEditForm implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((checked) => (checked ? ruleKeyword.enable() : ruleKeyword.disable()));
     // Going back to the original category leaves nothing to spread to similar transactions.
-    this.form.controls.category.valueChanges
+    this.form.controls.categoryId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
-        if (value === category) alsoSimilar.setValue(false);
+        if (value === category.id) alsoSimilar.setValue(false);
       });
   }
 
   /** The rule to add, while the option is on and its keyword is valid. */
   private pendingRule(): CategoryRuleInputDto | undefined {
-    const { alsoSimilar, ruleKeyword, category } = this.form.controls;
+    const { alsoSimilar, ruleKeyword, categoryId } = this.form.controls;
     if (!alsoSimilar.value || !this.categoryChanged() || ruleKeyword.invalid) return undefined;
-    return { keyword: ruleKeyword.value.trim().toUpperCase(), category: category.value };
+    return { keyword: ruleKeyword.value.trim().toUpperCase(), categoryId: categoryId.value };
   }
 
   onSubmit(): void {
@@ -136,12 +147,12 @@ export class TransactionEditForm implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    const { description, category, flow } = this.form.getRawValue();
+    const { description, categoryId, flow } = this.form.getRawValue();
     const rule = this.pendingRule();
     this.submitUpdate.emit({
       update: {
         description: description.trim(),
-        category,
+        categoryId,
         // Sent only when changed: the API then keeps it when the rules are re-applied.
         ...(flow !== this.transaction().flow ? { flow } : {}),
       },

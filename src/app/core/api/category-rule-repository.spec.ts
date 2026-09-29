@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CategoryRuleRepository } from './category-rule-repository';
-import { Category } from '../models/enums/category';
+import { TEST_CATEGORIES } from '../../testing/test-categories';
 
 describe('CategoryRuleRepository', () => {
   let repository: CategoryRuleRepository;
@@ -24,7 +24,7 @@ describe('CategoryRuleRepository', () => {
   afterEach(() => http.verify());
 
   it('lists, creates, updates and deletes rules', () => {
-    const rule = { keyword: 'CORNER STORE', category: Category.Groceries, position: 0 };
+    const rule = { keyword: 'CORNER STORE', categoryId: TEST_CATEGORIES.groceries.id, position: 0 };
     repository.getAll().subscribe();
     repository.create(rule).subscribe();
     repository.update('r1', rule).subscribe();
@@ -36,14 +36,21 @@ describe('CategoryRuleRepository', () => {
     );
     // The position only matters when adding; moving has its own call.
     const update = http.expectOne({ method: 'PUT', url: '/api/CategoryRules/r1' });
-    expect(update.request.body).toEqual({ keyword: 'CORNER STORE', category: Category.Groceries });
+    expect(update.request.body).toEqual({
+      keyword: 'CORNER STORE',
+      categoryId: TEST_CATEGORIES.groceries.id,
+    });
     http.expectOne({ method: 'DELETE', url: '/api/CategoryRules/r1' }).flush(null);
   });
 
   it('moves a rule and previews one', () => {
     repository.move('r1', 3).subscribe();
     repository
-      .preview({ keyword: 'CORNER', category: Category.Groceries, excludeTransactionId: 't1' })
+      .preview({
+        keyword: 'CORNER',
+        categoryId: TEST_CATEGORIES.groceries.id,
+        excludeTransactionId: 't1',
+      })
       .subscribe();
 
     const move = http.expectOne({ method: 'POST', url: '/api/CategoryRules/r1/Move' });
@@ -51,7 +58,7 @@ describe('CategoryRuleRepository', () => {
     const preview = http.expectOne({ method: 'POST', url: '/api/CategoryRules/Preview' });
     expect(preview.request.body).toEqual({
       keyword: 'CORNER',
-      category: Category.Groceries,
+      categoryId: TEST_CATEGORIES.groceries.id,
       excludeTransactionId: 't1',
     });
   });

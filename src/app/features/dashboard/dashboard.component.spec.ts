@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { DashboardComponent } from './dashboard.component';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
+import { categoryRefs } from '../../testing/test-categories';
 
 const emptyPage = {
   items: [],
@@ -29,7 +30,7 @@ function currentMonth(
   previousMonthToDateTotal?: number,
 ): CategorizedReportOutputDto {
   return {
-    categories: ['Dining'],
+    categories: categoryRefs('Dining'),
     averageMonthlyTotal: spent,
     monthlyData: [{ month: 'Sep 2026', total: spent, categoryValues: { Dining: spent } }],
     previousMonthToDateTotal,
@@ -68,7 +69,7 @@ describe('DashboardComponent', () => {
     TestBed.tick();
     // The year report would say August cost far more in total; the hint must not use it.
     http.expectOne('/api/Reports/monthly-categorized-graph').flush({
-      categories: ['Dining'],
+      categories: categoryRefs('Dining'),
       averageMonthlyTotal: 2000,
       monthlyData: [{ month: 'Aug 2026', total: 2000, categoryValues: { Dining: 2000 } }],
     });

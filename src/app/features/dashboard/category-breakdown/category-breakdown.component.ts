@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
-import { CategoryColorHelper } from '../../../shared/utils/category-color-helper';
 import { CurrentMonthCategorizedChartComponent } from '../current-month-categorized-chart/current-month-categorized-chart.component';
-import { categoryShares } from '../dashboard-stats';
+import { categoryColors, categoryShares } from '../dashboard-stats';
 
 /** This month's spending per category: doughnut plus a ranked list with each category's share. */
 @Component({
@@ -42,8 +41,9 @@ import { categoryShares } from '../dashboard-stats';
 export class CategoryBreakdownComponent {
   readonly report = input.required<CategorizedReportOutputDto>();
   readonly shares = computed(() => categoryShares(this.report()));
+  private readonly colors = computed(() => categoryColors(this.report()));
 
   color(category: string): string {
-    return CategoryColorHelper.getColor(category);
+    return this.colors()(category);
   }
 }

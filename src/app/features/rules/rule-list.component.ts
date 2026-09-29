@@ -4,10 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CategoryRuleRepository } from '../../core/api/category-rule-repository';
+import { CategoryRepository } from '../../core/api/category-repository';
 import { TransactionRepository } from '../../core/api/transaction-repository';
 import { CategoryRuleInputDto } from '../../core/models/inputs/category-rule-input-dto';
 import { CategoryRuleOutputDto } from '../../core/models/outputs/category-rule-output-dto';
-import { CategoryColorHelper } from '../../shared/utils/category-color-helper';
 import {
   APPLY_RULES_CONFIRMATION,
   describeRulesResult,
@@ -46,6 +46,7 @@ type RulesTab = 'categories' | 'flows';
 })
 export class RuleListComponent {
   private readonly ruleRepository = inject(CategoryRuleRepository);
+  private readonly categoryRepository = inject(CategoryRepository);
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
@@ -64,6 +65,11 @@ export class RuleListComponent {
   );
 
   readonly rules = rxResource({ stream: () => this.ruleRepository.getAll() });
+  // For the rule form.
+  private readonly categoriesResource = rxResource({
+    stream: () => this.categoryRepository.getAll(),
+  });
+  readonly categories = computed(() => this.categoriesResource.value() ?? []);
 
   readonly search = new FormControl('', { nonNullable: true });
   private readonly searchText = toSignal(this.search.valueChanges, { initialValue: '' });
@@ -75,7 +81,7 @@ export class RuleListComponent {
     const query = this.query();
     if (!query) return rules;
     return rules.filter(
-      (rule) => rule.keyword.includes(query) || rule.category.toUpperCase().includes(query),
+      (rule) => rule.keyword.includes(query) || rule.category.name.toUpperCase().includes(query),
     );
   });
   readonly total = computed(() => this.rules.value()?.length ?? 0);
@@ -115,10 +121,6 @@ export class RuleListComponent {
     const tab = this.tabs[next].id;
     this.selectTab(tab);
     document.getElementById(`rules-tab-${tab}`)?.focus();
-  }
-
-  categoryColor(category: string): string {
-    return CategoryColorHelper.getColor(category);
   }
 
   clearSearch(): void {

@@ -11,17 +11,17 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, filter, merge } from 'rxjs';
-import { Category } from '../../../core/models/enums/category';
 import { Flow } from '../../../core/models/enums/flow';
 import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
 import { AccountOutputDto } from '../../../core/models/outputs/account-output-dto';
+import { CategoryReference } from '../../../core/models/outputs/category-output-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { FLOW_LABELS } from '../../../shared/utils/flow-helper';
 
 /** The criteria this toolbar controls; paging and sorting stay with the page. */
 export type TransactionCriteria = Pick<
   TransactionFilterInputDto,
-  'description' | 'category' | 'accountId' | 'flow' | 'startDate' | 'endDate'
+  'description' | 'categoryId' | 'accountId' | 'flow' | 'startDate' | 'endDate'
 >;
 
 type CriteriaKey = keyof TransactionCriteria;
@@ -49,15 +49,16 @@ export class TransactionToolbarComponent {
   readonly filter = input.required<TransactionFilterInputDto>();
   /** For the account filter; the page loads them. */
   readonly accounts = input<AccountOutputDto[]>([]);
+  /** For the category filter; the page loads them. */
+  readonly categories = input<CategoryReference[]>([]);
   readonly criteriaChange = output<TransactionCriteria>();
 
-  readonly categories = Object.values(Category);
   readonly flows = Object.values(Flow);
   readonly flowLabels = FLOW_LABELS;
 
   readonly form = this.fb.group({
     description: '',
-    category: this.fb.control<Category | null>(null),
+    categoryId: this.fb.control<string | null>(null),
     accountId: this.fb.control<string | null>(null),
     flow: this.fb.control<Flow | null>(null),
     startDate: '',
@@ -68,7 +69,10 @@ export class TransactionToolbarComponent {
     const filter = this.filter();
     const chips: Chip[] = [];
     if (filter.description) chips.push({ key: 'description', label: `“${filter.description}”` });
-    if (filter.category) chips.push({ key: 'category', label: filter.category });
+    if (filter.categoryId) {
+      const category = this.categories().find((c) => c.id === filter.categoryId);
+      chips.push({ key: 'categoryId', label: category?.name ?? 'Category' });
+    }
     if (filter.accountId) {
       const account = this.accounts().find((a) => a.id === filter.accountId);
       chips.push({ key: 'accountId', label: account?.name ?? 'Account' });
@@ -86,7 +90,7 @@ export class TransactionToolbarComponent {
       this.form.setValue(
         {
           description: filter.description ?? '',
-          category: filter.category ?? null,
+          categoryId: filter.categoryId ?? null,
           accountId: filter.accountId ?? null,
           flow: filter.flow ?? null,
           startDate: filter.startDate ?? '',
@@ -104,7 +108,7 @@ export class TransactionToolbarComponent {
         // resets the field, typing the same words again must search again.
         filter((value) => (value.trim() || undefined) !== this.filter().description),
       ),
-      controls.category.valueChanges,
+      controls.categoryId.valueChanges,
       controls.accountId.valueChanges,
       controls.flow.valueChanges,
       controls.startDate.valueChanges,
@@ -126,7 +130,7 @@ export class TransactionToolbarComponent {
     const value = this.form.getRawValue();
     return {
       description: value.description.trim() || undefined,
-      category: value.category ?? undefined,
+      categoryId: value.categoryId ?? undefined,
       accountId: value.accountId ?? undefined,
       flow: value.flow ?? undefined,
       startDate: value.startDate || undefined,

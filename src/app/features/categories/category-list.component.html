@@ -1,0 +1,103 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Categories</h1>
+    <p class="text-body-secondary mb-0">
+      What your spending is grouped by, and the colour each has in lists and charts
+    </p>
+  </div>
+  <button
+    type="button"
+    class="btn btn-primary d-inline-flex align-items-center gap-2"
+    (click)="editing.set(null)"
+  >
+    <app-icon name="plus" [size]="16" /> New category
+  </button>
+</div>
+
+@if (categories.error()) {
+  <app-error-state message="Could not load the categories." (retry)="categories.reload()" />
+} @else if (categories.isLoading() && !categories.hasValue()) {
+  <div class="card">
+    <div class="card-body"><app-skeleton [lines]="6" height="1.75rem" /></div>
+  </div>
+} @else {
+  <div class="card">
+    <ul class="category-list" aria-label="Categories" [class.is-reloading]="categories.isLoading()">
+      @for (category of list(); track category.id) {
+        <li class="category-row d-flex align-items-center gap-2 gap-sm-3">
+          <span
+            class="swatch flex-shrink-0"
+            [style.background-color]="category.color"
+            aria-hidden="true"
+          ></span>
+          <div class="flex-grow-1 min-w-0">
+            <div class="fw-medium text-truncate" [title]="category.name">
+              {{ category.name }}
+              @if (category.builtInReason) {
+                <span
+                  class="badge rounded-pill bg-body-secondary text-body-secondary fw-normal ms-1"
+                  >Built in</span
+                >
+              }
+            </div>
+            <div class="small text-body-secondary">{{ usage(category) }}</div>
+          </div>
+          <div class="d-flex flex-shrink-0">
+            <button
+              type="button"
+              class="btn btn-icon"
+              [attr.aria-label]="'Edit ' + category.name"
+              title="Edit"
+              (click)="editing.set(category)"
+            >
+              <app-icon name="pencil" [size]="16" />
+            </button>
+            <!-- Wrapped so the reason shows on hover even though the button is disabled. -->
+            <span [title]="category.builtInReason ?? 'Delete'">
+              <button
+                type="button"
+                class="btn btn-icon btn-icon-danger"
+                [attr.aria-label]="'Delete ' + category.name"
+                [disabled]="!!category.builtInReason"
+                (click)="deleting.set(category)"
+              >
+                <app-icon name="trash" [size]="16" />
+              </button>
+            </span>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+  <p class="small text-body-secondary mt-2 mb-0">
+    Renaming or recolouring a category changes it everywhere. Deleting one moves its transactions
+    and rules to another category. The built-in ones can be renamed but not deleted.
+  </p>
+}
+
+@if (editing() !== undefined) {
+  <app-modal
+    [title]="editing() ? 'Edit category' : 'New category'"
+    (closed)="editing.set(undefined)"
+  >
+    <app-category-form
+      [category]="editing() ?? null"
+      [categories]="list()"
+      [saving]="saving()"
+      (submitCategory)="onFormSubmit($event)"
+      (cancelled)="editing.set(undefined)"
+    />
+  </app-modal>
+}
+
+@if (deleting(); as category) {
+  <app-modal [title]="'Delete “' + category.name + '”?'" (closed)="deleting.set(null)">
+    <app-category-delete-form
+      [category]="category"
+      [categories]="list()"
+      [deleting]="removing()"
+      (confirmDelete)="confirmDelete($event)"
+      (cancelled)="deleting.set(null)"
+    />
+  </app-modal>
+}

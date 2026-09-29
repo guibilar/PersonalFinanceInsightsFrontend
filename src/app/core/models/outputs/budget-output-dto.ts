@@ -1,6 +1,6 @@
 import { Status } from '../enums/status';
 import { BudgetPeriod } from '../enums/budget-period';
-import { Category } from '../enums/category';
+import { CategoryReference } from './category-output-dto';
 
 export interface BudgetOutputDto {
   id: string;
@@ -9,7 +9,7 @@ export interface BudgetOutputDto {
   status: Status;
   period: BudgetPeriod;
   /** Counted by themselves (monthly budgets only): this month's spending in them, with no linking. */
-  categories: Category[];
+  categories: CategoryReference[];
   totalAmount: number;
   totalSpent: number;
   totalRemaining: number;

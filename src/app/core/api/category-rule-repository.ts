@@ -29,8 +29,8 @@ export class CategoryRuleRepository {
   }
 
   update(id: string, rule: CategoryRuleInputDto): Observable<CategoryRuleOutputDto> {
-    const { keyword, category } = rule;
-    return this.http.put<CategoryRuleOutputDto>(`${this.baseUrl}/${id}`, { keyword, category });
+    const { keyword, categoryId } = rule;
+    return this.http.put<CategoryRuleOutputDto>(`${this.baseUrl}/${id}`, { keyword, categoryId });
   }
 
   delete(id: string): Observable<void> {

@@ -48,6 +48,7 @@
 <app-transaction-toolbar
   [filter]="filter()"
   [accounts]="accounts()"
+  [categories]="categories()"
   (criteriaChange)="onCriteriaChange($event)"
 />
 
@@ -192,17 +193,17 @@
                   {{ transaction.date | date: 'MMM d' : 'UTC' }} ·
                   <span
                     class="category-dot"
-                    [style.background-color]="getCategoryColor(transaction.category)"
+                    [style.background-color]="transaction.category.color"
                   ></span
-                  >{{ transaction.category }}
+                  >{{ transaction.category.name }}
                 </div>
               </td>
               <td class="d-none d-md-table-cell text-nowrap">
                 <span
                   class="category-dot"
-                  [style.background-color]="getCategoryColor(transaction.category)"
+                  [style.background-color]="transaction.category.color"
                 ></span
-                >{{ transaction.category }}
+                >{{ transaction.category.name }}
                 @if (transaction.categoryLocked) {
                   <span title="Picked by hand: kept when rules are re-applied">
                     <app-icon name="lock" [size]="12" class="lock-icon" />
@@ -293,6 +294,7 @@
   <app-modal title="Add transaction" (closed)="showAdd.set(false)">
     <app-transaction-add-form
       [accounts]="accounts()"
+      [categories]="categories()"
       [saving]="savingAdd()"
       [previous]="lastAdded()"
       [duplicate]="addDuplicate()"
@@ -306,6 +308,7 @@
   <app-modal title="Edit transaction" (closed)="editingTransaction.set(null)">
     <app-transaction-edit-form
       [transaction]="transaction"
+      [categories]="categories()"
       [saving]="savingEdit()"
       (submitUpdate)="onEditSubmit($event)"
       (cancelled)="editingTransaction.set(null)"

@@ -5,7 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { BudgetListComponent, budgetHealth } from './budget-list.component';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { Status } from '../../core/models/enums/status';
-import { Category } from '../../core/models/enums/category';
+import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../testing/test-categories';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 
@@ -66,6 +66,8 @@ describe('BudgetListComponent', () => {
     fixture.detectChanges();
     TestBed.tick();
     http.expectOne('/api/Budget/Filter').flush(page);
+    // For the budget form.
+    http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
     // Let the first load settle: reload() is ignored while a load is still in progress.
     await fixture.whenStable();
   });
@@ -84,6 +86,8 @@ describe('BudgetListComponent', () => {
     await new Promise((resolve) => setTimeout(resolve));
     TestBed.tick();
     http.expectOne('/api/Budget/Filter').flush(page);
+    // For the budget form.
+    http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
 
     expect(component.deleting()).toBeNull();
     expect(toasts.toasts().map((t) => t.message)).toEqual(['Deleted “Food”']);
@@ -99,7 +103,7 @@ describe('BudgetListComponent', () => {
       amount: 120,
       status: Status.Active,
       period: BudgetPeriod.Total,
-      categories: [],
+      categoryIds: [],
     });
     http
       .expectOne({ method: 'PUT', url: '/api/Budget/b1' })
@@ -121,7 +125,7 @@ describe('BudgetListComponent', () => {
       amount: 120,
       status: Status.Active,
       period: BudgetPeriod.Monthly,
-      categories: [Category.Dining],
+      categoryIds: [TEST_CATEGORIES.dining.id],
     });
     http
       .expectOne({ method: 'PUT', url: '/api/Budget/b1' })
@@ -147,7 +151,7 @@ describe('BudgetListComponent', () => {
       amount: 120,
       status: Status.Active,
       period: BudgetPeriod.Total,
-      categories: [],
+      categoryIds: [],
     };
     component.editing.set(null);
 

@@ -1,4 +1,3 @@
-import { Category } from '../enums/category';
 import { Flow } from '../enums/flow';
 import { TransactionType } from '../enums/transaction-type';
 
@@ -12,7 +11,7 @@ export interface TransactionInputDto {
   transactionType: TransactionType;
   accountId: string;
   /** Omitted: the category rules decide. Given: kept when the rules are re-applied. */
-  category?: Category;
+  categoryId?: string;
   /** Omitted: the flow rules decide. Given: kept when the rules are re-applied. */
   flow?: Flow;
   /** Add it although an identical transaction exists (the API answers 409 otherwise). */

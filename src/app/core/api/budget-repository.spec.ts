@@ -42,7 +42,7 @@ describe('BudgetRepository', () => {
       amount: 10,
       status: Status.Active,
       period: BudgetPeriod.Total,
-      categories: [],
+      categoryIds: [],
     };
     repository.update('b1', budget).subscribe();
     repository.delete('b1').subscribe();

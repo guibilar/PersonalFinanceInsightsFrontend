@@ -4,7 +4,7 @@ import { TransactionLinkForm } from './transaction-link-form';
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { AccountType } from '../../../core/models/enums/account-type';
-import { Category } from '../../../core/models/enums/category';
+import { TEST_CATEGORIES } from '../../../testing/test-categories';
 import { Flow } from '../../../core/models/enums/flow';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
@@ -15,7 +15,7 @@ function transaction(budgetId: string): TransactionOutputDto {
     date: '2026-09-10',
     amount: 10,
     description: 'Coffee',
-    category: Category.Dining,
+    category: TEST_CATEGORIES.dining,
     categoryLocked: false,
     accountId: 'a2',
     accountName: 'Visa',

@@ -81,18 +81,18 @@
         no linking. A category can belong to one budget only.
       </div>
       <div class="row row-cols-2 row-cols-sm-3 g-1">
-        @for (category of categoryOptions; track category) {
+        @for (category of categoryOptions(); track category.id) {
           <div class="col">
             <div class="form-check">
               <input
                 class="form-check-input"
                 type="checkbox"
-                [id]="'budget-category-' + category"
-                [checked]="isCategoryChosen(category)"
-                (change)="toggleCategory(category, $any($event.target).checked)"
+                [id]="'budget-category-' + category.id"
+                [checked]="isCategoryChosen(category.id)"
+                (change)="toggleCategory(category.id, $any($event.target).checked)"
               />
-              <label class="form-check-label" [for]="'budget-category-' + category">{{
-                category
+              <label class="form-check-label text-break" [for]="'budget-category-' + category.id">{{
+                category.name
               }}</label>
             </div>
           </div>

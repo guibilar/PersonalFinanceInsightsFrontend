@@ -45,6 +45,7 @@ export class ShellComponent {
     { path: '/transactions', label: 'Transactions', icon: 'transactions', exact: false },
     { path: '/budgets', label: 'Budgets', icon: 'budgets', exact: false },
     { path: '/rules', label: 'Rules', icon: 'rules', exact: false },
+    { path: '/categories', label: 'Categories', icon: 'tag', exact: false },
     { path: '/accounts', label: 'Accounts', icon: 'bank', exact: false },
   ];
 
