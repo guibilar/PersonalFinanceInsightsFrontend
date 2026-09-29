@@ -1,5 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { CategoryAveragesComponent } from './category-averages.component';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
 import { categoryRefs } from '../../../testing/test-categories';
@@ -21,7 +22,7 @@ describe('CategoryAveragesComponent', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [CategoryAveragesComponent],
-      providers: [provideZonelessChangeDetection()],
+      providers: [provideZonelessChangeDetection(), provideRouter([])],
     });
     fixture = TestBed.createComponent(CategoryAveragesComponent);
     fixture.componentRef.setInput('report', year);
@@ -50,5 +51,12 @@ describe('CategoryAveragesComponent', () => {
     expect(root().querySelector('li:nth-child(2) [role=img]')!.getAttribute('aria-label')).toBe(
       'Dining: average $150.00 a month, $375.00 this month',
     );
+  });
+
+  it('links each category to its transactions over time', () => {
+    const link = root().querySelector<HTMLAnchorElement>('li a.category-link')!;
+
+    expect(link.textContent!.trim()).toBe('Groceries');
+    expect(link.getAttribute('href')).toBe('/transactions?categoryId=c-groceries&overTime=1');
   });
 });

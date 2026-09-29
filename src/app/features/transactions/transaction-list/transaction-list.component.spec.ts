@@ -2,6 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { TransactionListComponent } from './transaction-list.component';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { AccountType } from '../../../core/models/enums/account-type';
@@ -9,12 +10,26 @@ import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { Flow } from '../../../core/models/enums/flow';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { TransactionBreakdownOutputDto } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('TransactionListComponent', () => {
   let fixture: ComponentFixture<TransactionListComponent>;
   let component: TransactionListComponent;
   let http: HttpTestingController;
+
+  const emptyBreakdown: TransactionBreakdownOutputDto = {
+    interval: 'Month',
+    count: 0,
+    spending: 0,
+    refunds: 0,
+    income: 0,
+    averageSpending: 0,
+    averageIncome: 0,
+    averagedPeriods: 0,
+    periods: [],
+    topMerchants: [],
+  };
 
   const emptyPage = {
     items: [],
@@ -33,6 +48,7 @@ describe('TransactionListComponent', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
       ],
     });
     fixture = TestBed.createComponent(TransactionListComponent);
@@ -58,10 +74,22 @@ describe('TransactionListComponent', () => {
     http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    flushBreakdowns();
+    http.verify();
+  });
+
+  /** The totals over the list's criteria, which reload with it; tested on their own below. */
+  function flushBreakdowns() {
+    http
+      .match('/api/Reports/breakdown')
+      .filter((r) => !r.cancelled)
+      .forEach((r) => r.flush(emptyBreakdown));
+  }
 
   function lastFilterRequest() {
     TestBed.tick();
+    flushBreakdowns();
     const requests = http.match('/api/Transaction/Filter');
     // A new filter cancels the previous request, as the app should; answer only the live ones.
     requests.filter((r) => !r.cancelled).forEach((r) => r.flush(emptyPage));
@@ -148,6 +176,7 @@ describe('TransactionListComponent', () => {
       totalCount: 2,
       totalPages: 1,
     });
+    flushBreakdowns();
     await fixture.whenStable();
     const rows = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'));
 
@@ -434,5 +463,113 @@ describe('TransactionListComponent', () => {
           .map((t) => t.message),
       ).toEqual(['Could not add the transaction.']);
     });
+  });
+
+  describe('totals and over time', () => {
+    it('totals the list’s criteria, without asking again when only the page or sort changes', async () => {
+      TestBed.tick();
+      const first = http.expectOne({ method: 'POST', url: '/api/Reports/breakdown' });
+      expect(first.request.body).toEqual({ interval: 'Month' });
+      first.flush(emptyBreakdown);
+      lastFilterRequest();
+      await fixture.whenStable();
+
+      component.onPageChange(2);
+      component.sort('Amount');
+      TestBed.tick();
+      http.expectNone('/api/Reports/breakdown');
+      lastFilterRequest();
+
+      component.onCriteriaChange({
+        description: 'no frills',
+        categoryId: TEST_CATEGORIES.groceries.id,
+      });
+      TestBed.tick();
+      expect(http.expectOne('/api/Reports/breakdown').request.body).toEqual({
+        description: 'no frills',
+        categoryId: TEST_CATEGORIES.groceries.id,
+        interval: 'Month',
+      });
+      lastFilterRequest();
+    });
+
+    it('lists the period of a clicked bar, and looks at it a step closer', async () => {
+      lastFilterRequest();
+      await fixture.whenStable();
+
+      component.onPeriodPicked({
+        start: '2026-09-01T00:00:00Z',
+        end: '2026-09-30T00:00:00Z',
+        label: 'Sep 2026',
+        count: 3,
+        spending: 70,
+        income: 0,
+        cumulativeSpending: 190,
+        cumulativeIncome: 0,
+      });
+
+      expect(lastFilterRequest()).toEqual(
+        expect.objectContaining({ startDate: '2026-09-01', endDate: '2026-09-30', page: 1 }),
+      );
+      expect(component.breakdownInterval()).toBe('Week');
+    });
+
+    it('asks for no totals while showing deleted transactions', async () => {
+      lastFilterRequest();
+      await fixture.whenStable();
+
+      component.toggleDeleted();
+      TestBed.tick();
+
+      http.expectNone('/api/Reports/breakdown');
+      lastFilterRequest();
+    });
+  });
+});
+
+describe('TransactionListComponent, opened from a link', () => {
+  it('starts on the linked category and interval, with its chart open', () => {
+    TestBed.configureTestingModule({
+      imports: [TransactionListComponent],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({
+                categoryId: 'c-dining',
+                startDate: '2026-09-01',
+                endDate: '2026-09-30',
+                interval: 'Week',
+                overTime: '1',
+              }),
+            },
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(TransactionListComponent);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    TestBed.tick();
+
+    const filter = http.expectOne('/api/Transaction/Filter').request.body;
+    const breakdown = http.expectOne('/api/Reports/breakdown').request.body;
+
+    expect(filter).toEqual(
+      expect.objectContaining({
+        categoryId: 'c-dining',
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+      }),
+    );
+    expect(breakdown).toEqual(
+      expect.objectContaining({ categoryId: 'c-dining', interval: 'Week' }),
+    );
+    expect(fixture.componentInstance.breakdownOpen()).toBe(true);
   });
 });

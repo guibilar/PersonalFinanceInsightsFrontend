@@ -17,6 +17,25 @@ export function categoryColors(report: CategorizedReportOutputDto): (name: strin
   return (name) => colors.get(name) ?? FALLBACK_CATEGORY_COLOR;
 }
 
+/**
+ * Query parameters that open the transactions list on a category with its "Over time" chart: all of its history, or
+ * one month of it (a report label, "Sep 2026") week by week.
+ */
+export function categoryLink(categoryId: string, month?: string): Record<string, string> {
+  const params: Record<string, string> = { categoryId, overTime: '1' };
+  const index = month ? monthIndex(month) : null;
+  if (index !== null) {
+    const year = Math.floor(index / 12);
+    const monthNumber = (index % 12) + 1;
+    const lastDay = new Date(year, monthNumber, 0).getDate();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    params['startDate'] = `${year}-${pad(monthNumber)}-01`;
+    params['endDate'] = `${year}-${pad(monthNumber)}-${pad(lastDay)}`;
+    params['interval'] = 'Week';
+  }
+  return params;
+}
+
 export function spentThisMonth(currentMonth: CategorizedReportOutputDto): number {
   return currentMonth.monthlyData[0]?.total ?? 0;
 }

@@ -114,3 +114,14 @@ body {
   background: var(--bs-secondary-bg);
   border-color: var(--bs-border-color);
 }
+
+// A category name that opens its transactions: reads as text, shows it is a link on hover and focus.
+.category-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
