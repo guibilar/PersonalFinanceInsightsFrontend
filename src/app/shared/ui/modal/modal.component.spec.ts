@@ -38,12 +38,12 @@ describe('ModalComponent', () => {
     await fixture.whenStable();
   }
 
-  it('is an accessible dialog titled by its heading and focuses the first field', async () => {
+  it('is a modal dialog titled by its heading and focuses the first field', async () => {
     const { fixture, el } = setup();
     await openModal(fixture, el);
 
-    const dialog = el.querySelector('[role=dialog]')!;
-    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    const dialog = el.querySelector('dialog')!;
+    expect(dialog.matches(':modal')).toBe(true);
     expect(el.querySelector('#' + dialog.getAttribute('aria-labelledby'))?.textContent).toContain(
       'Edit thing',
     );
@@ -60,7 +60,7 @@ describe('ModalComponent', () => {
     const { fixture, el } = setup();
     await openModal(fixture, el);
 
-    expect(document.activeElement).toBe(el.querySelector('[role=dialog]'));
+    expect(document.activeElement).toBe(el.querySelector('dialog'));
     matchMedia.mockRestore();
     fixture.nativeElement.remove();
   });
@@ -69,9 +69,12 @@ describe('ModalComponent', () => {
     const { fixture, host, el } = setup();
     await openModal(fixture, el);
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    // What the browser does on Escape; the dialog must not close itself before its parent removes it.
+    const cancel = new Event('cancel', { cancelable: true });
+    el.querySelector('dialog')!.dispatchEvent(cancel);
     await fixture.whenStable();
 
+    expect(cancel.defaultPrevented).toBe(true);
     expect(host.open()).toBe(false);
     expect(document.activeElement?.id).toBe('opener');
     fixture.nativeElement.remove();
@@ -98,7 +101,8 @@ describe('ModalComponent', () => {
   it('closes on a click on the backdrop', async () => {
     const { fixture, host, el } = setup();
     await openModal(fixture, el);
-    const backdrop = el.querySelector<HTMLElement>('.modal-backdrop-layer')!;
+    // A click on the backdrop targets the dialog element itself.
+    const backdrop = el.querySelector('dialog')!;
 
     backdrop.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     backdrop.click();
@@ -110,13 +114,13 @@ describe('ModalComponent', () => {
   it('stays open when a press inside the dialog is let go over the backdrop', async () => {
     const { fixture, host, el } = setup();
     await openModal(fixture, el);
-    const backdrop = el.querySelector<HTMLElement>('.modal-backdrop-layer')!;
+    const backdrop = el.querySelector('dialog')!;
 
     // Selecting text in a field and letting go outside the dialog.
     el.querySelector('#first-field')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     backdrop.click();
-    // A click inside the dialog never closes it.
-    el.querySelector<HTMLElement>('[role=dialog]')!.click();
+    // A click on the content never closes it.
+    el.querySelector<HTMLElement>('.modal-body-area')!.click();
 
     expect(host.open()).toBe(true);
     fixture.nativeElement.remove();

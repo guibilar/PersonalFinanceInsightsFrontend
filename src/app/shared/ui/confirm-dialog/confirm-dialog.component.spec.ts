@@ -40,7 +40,8 @@ describe('ConfirmDialogComponent', () => {
     const { fixture, el } = setup();
     await fixture.whenStable();
 
-    const dialog = el.querySelector('[role=alertdialog]')!;
+    const dialog = el.querySelector('dialog[role=alertdialog]')!;
+    expect(dialog.matches(':modal')).toBe(true);
     expect(el.querySelector('#' + dialog.getAttribute('aria-labelledby'))?.textContent).toContain(
       'Delete budget?',
     );
@@ -62,10 +63,25 @@ describe('ConfirmDialogComponent', () => {
   });
 
   it('cancels on Escape', async () => {
-    const { fixture, host } = setup();
+    const { fixture, host, el } = setup();
     await fixture.whenStable();
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    // What the browser does on Escape.
+    const cancel = new Event('cancel', { cancelable: true });
+    el.querySelector('dialog')!.dispatchEvent(cancel);
+
+    expect(cancel.defaultPrevented).toBe(true);
+    expect(host.result()).toBe('cancelled');
+    fixture.nativeElement.remove();
+  });
+
+  it('cancels on a click on the backdrop, but not on the card', async () => {
+    const { fixture, host, el } = setup();
+    await fixture.whenStable();
+
+    el.querySelector<HTMLElement>('.card')!.click();
+    expect(host.result()).toBeNull();
+    el.querySelector('dialog')!.click();
 
     expect(host.result()).toBe('cancelled');
     fixture.nativeElement.remove();

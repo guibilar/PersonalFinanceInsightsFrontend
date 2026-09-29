@@ -1,26 +1,22 @@
-// The backdrop is also the scroll container: a form taller than the window scrolls as a whole.
-.modal-backdrop-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 1050;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 3rem 1rem;
-  overflow-y: auto;
-  background: rgb(0 0 0 / 0.45);
-  animation: fade-in 0.15s ease-out;
-}
-
+// The browser centres a modal <dialog> in the top layer; a form taller than the window scrolls inside it.
 .modal-dialog-box {
-  width: min(32rem, 100%);
-  margin: auto 0;
+  width: min(32rem, calc(100% - 1rem));
+  max-width: none;
+  max-height: calc(100% - 2rem);
+  padding: 0;
+  overflow-y: auto;
   background: var(--bs-body-bg);
+  color: var(--bs-body-color);
   border: var(--bs-border-width) solid var(--bs-border-color-translucent);
   border-radius: var(--bs-border-radius-lg);
   box-shadow: var(--bs-box-shadow-lg);
   outline: none;
-  animation: pop-in 0.18s ease-out;
+  animation: fade-in 0.18s ease-out;
+
+  &::backdrop {
+    background: rgb(0 0 0 / 0.45);
+    animation: fade-in 0.15s ease-out;
+  }
 }
 
 .modal-header-bar {
@@ -49,27 +45,15 @@
 
 // Opacity only: a transform on the dialog, even mid-animation, can throw off where mobile browsers think a
 // tapped field or dropdown is.
-@keyframes pop-in {
-  from {
-    opacity: 0;
-  }
-}
-
 @keyframes fade-in {
   from {
     opacity: 0;
   }
 }
 
-@media (max-width: 575.98px) {
-  .modal-backdrop-layer {
-    padding: 1rem 0.5rem;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .modal-backdrop-layer,
-  .modal-dialog-box {
+  .modal-dialog-box,
+  .modal-dialog-box::backdrop {
     animation: none;
   }
 }
