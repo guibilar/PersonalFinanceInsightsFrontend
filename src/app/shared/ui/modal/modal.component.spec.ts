@@ -126,6 +126,20 @@ describe('ModalComponent', () => {
     fixture.nativeElement.remove();
   });
 
+  it('leaves a press on a field alone, so dropdowns still open', async () => {
+    const { fixture, el } = setup();
+    await openModal(fixture, el);
+    const field = el.querySelector('#first-field')!;
+
+    // A template handler that evaluates to false makes Angular cancel the event, and a cancelled press
+    // neither focuses a field nor opens a dropdown.
+    const press = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    field.dispatchEvent(press);
+
+    expect(press.defaultPrevented).toBe(false);
+    fixture.nativeElement.remove();
+  });
+
   it('stops the page behind it from scrolling while open', async () => {
     const { fixture, host, el } = setup();
     await openModal(fixture, el);

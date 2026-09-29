@@ -39,7 +39,7 @@ let nextId = 0;
       [attr.aria-labelledby]="titleId"
       tabindex="-1"
       (cancel)="onCancel($event)"
-      (mousedown)="pressedOnBackdrop = $event.target === $event.currentTarget"
+      (mousedown)="onBackdropPress($event)"
       (click)="onBackdropClick($event)"
     >
       <header class="modal-header-bar">
@@ -101,6 +101,12 @@ export class ModalComponent implements OnDestroy {
   protected onCancel(event: Event): void {
     event.preventDefault();
     this.closed.emit();
+  }
+
+  // A method, not an assignment in the template: Angular cancels an event whose handler expression evaluates to
+  // false, and a cancelled press neither focuses a field nor opens a dropdown.
+  protected onBackdropPress(event: MouseEvent): void {
+    this.pressedOnBackdrop = event.target === event.currentTarget;
   }
 
   // Only a click on the backdrop has the dialog itself as its target: its content fills it edge to edge.
