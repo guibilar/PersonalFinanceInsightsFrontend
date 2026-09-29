@@ -11,6 +11,7 @@ import {
   TransactionFilterInputDto,
   TransactionSortField,
 } from '../../../core/models/inputs/transaction-filter-input-dto';
+import { TransactionInputDto } from '../../../core/models/inputs/transaction-input-dto';
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
@@ -42,6 +43,7 @@ import {
   TransactionEditForm,
   TransactionEditSubmission,
 } from '../transaction-edit-form/transaction-edit-form';
+import { TransactionAddForm } from '../transaction-add-form/transaction-add-form';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
 
 interface SortableColumn {
@@ -68,6 +70,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
     TransactionToolbarComponent,
     TransactionLinkForm,
     TransactionEditForm,
+    TransactionAddForm,
     StatementImportComponent,
     ConfirmDialogComponent,
     ModalComponent,
@@ -101,6 +104,10 @@ export class TransactionListComponent {
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
   readonly savingLink = signal(false);
   readonly showImport = signal(false);
+  readonly showAdd = signal(false);
+  readonly savingAdd = signal(false);
+  /** The API's reason when the transaction being added already exists; the form then offers to add it anyway. */
+  readonly addDuplicate = signal<string | null>(null);
   readonly editingTransaction = signal<TransactionOutputDto | null>(null);
   readonly savingEdit = signal(false);
   readonly confirmingRules = signal(false);
@@ -215,6 +222,34 @@ export class TransactionListComponent {
       `Imported ${result.added} new ${noun}` +
         (result.skipped > 0 ? ` (${result.skipped} already imported)` : ''),
     );
+  }
+
+  openAdd(): void {
+    this.addDuplicate.set(null);
+    this.showAdd.set(true);
+  }
+
+  onAddSubmit(input: TransactionInputDto): void {
+    if (this.savingAdd()) return;
+    this.savingAdd.set(true);
+    this.addDuplicate.set(null);
+    this.transactionRepository.add(input).subscribe({
+      next: (added) => {
+        this.savingAdd.set(false);
+        this.showAdd.set(false);
+        this.transactions.reload();
+        this.toasts.success(`Added “${added.description}” to ${added.accountName}`);
+      },
+      error: (error: unknown) => {
+        this.savingAdd.set(false);
+        const detail = conflictDetail(error, '');
+        if (detail) {
+          this.addDuplicate.set(detail);
+        } else {
+          this.toasts.error('Could not add the transaction.');
+        }
+      },
+    });
   }
 
   onLinkSubmit(linking: TransactionLinkingInputDto): void {
