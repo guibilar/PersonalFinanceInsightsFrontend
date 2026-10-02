@@ -260,6 +260,27 @@ describe('TransactionToolbarComponent', () => {
     });
   });
 
+  it('holds back a range that ends before it starts, and says so', () => {
+    create({ page: 1, pageSize: 10, startDate: '2026-09-01' });
+    const root = fixture.nativeElement as HTMLElement;
+
+    component.form.controls.endDate.setValue('2026-08-15');
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([]);
+    expect(component.rangeBackwards()).toBe(true);
+    expect(root.querySelector('[role=alert]')!.textContent).toContain('ends before it starts');
+    expect(root.querySelector('#tx-to')!.classList).toContain('is-invalid');
+
+    component.form.controls.endDate.setValue('2026-09-15');
+    fixture.detectChanges();
+
+    expect(emitted.at(-1)).toEqual(
+      expect.objectContaining({ startDate: '2026-09-01', endDate: '2026-09-15' }),
+    );
+    expect(root.querySelector('[role=alert]')).toBeNull();
+  });
+
   it('clears everything', () => {
     create({ page: 1, pageSize: 10, description: 'rent' });
 

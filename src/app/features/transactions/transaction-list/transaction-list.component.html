@@ -54,7 +54,7 @@
 
 @if (!showDeleted()) {
   <app-transaction-breakdown
-    [breakdown]="breakdown.value()"
+    [breakdown]="breakdownValue()"
     [loading]="breakdown.isLoading()"
     [failed]="!!breakdown.error()"
     [open]="breakdownOpen()"

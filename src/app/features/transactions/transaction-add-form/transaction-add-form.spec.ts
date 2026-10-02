@@ -120,6 +120,18 @@ describe('TransactionAddForm', () => {
     expect(root().textContent).toContain('Enter an amount above zero.');
   });
 
+  it('takes whole cents only, as the API does', async () => {
+    component.form.patchValue({ description: 'Coffee', amount: 4.555 });
+    component.form.markAllAsTouched();
+    await fixture.whenStable();
+
+    expect(component.form.controls.amount.hasError('cents')).toBe(true);
+    expect(root().textContent).toContain('Use whole cents: at most 2 decimal places.');
+
+    component.form.patchValue({ amount: 4.55 });
+    expect(component.form.controls.amount.valid).toBe(true);
+  });
+
   it('offers to add a duplicate anyway', async () => {
     component.form.patchValue({ description: 'Coffee', amount: 4.5 });
     fixture.componentRef.setInput('duplicate', 'An identical transaction already exists.');

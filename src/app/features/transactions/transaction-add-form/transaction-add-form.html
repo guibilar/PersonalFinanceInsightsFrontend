@@ -39,7 +39,13 @@
         inputmode="decimal"
         [class.is-invalid]="form.controls.amount.invalid && form.controls.amount.touched"
       />
-      <div class="invalid-feedback">Enter an amount above zero.</div>
+      <div class="invalid-feedback">
+        @if (form.controls.amount.hasError('cents')) {
+          Use whole cents: at most 2 decimal places.
+        } @else {
+          Enter an amount above zero.
+        }
+      </div>
     </div>
   </div>
 

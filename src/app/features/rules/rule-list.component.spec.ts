@@ -127,6 +127,31 @@ describe('RuleListComponent', () => {
     expect(component.moving()).toBe(false);
   });
 
+  it('while searching, moves a rule past the one shown next to it, not a hidden one', async () => {
+    // A search for groceries shows METRO and FRESHCO, with the two transport rules hidden between them.
+    await load([
+      { id: 'r1', keyword: 'METRO', category: TEST_CATEGORIES.groceries, position: 0 },
+      { id: 'r2', keyword: 'UBER', category: TEST_CATEGORIES.transportation, position: 1 },
+      { id: 'r3', keyword: 'LYFT', category: TEST_CATEGORIES.transportation, position: 2 },
+      { id: 'r4', keyword: 'FRESHCO', category: TEST_CATEGORIES.groceries, position: 3 },
+    ]);
+    component.search.setValue('groceries');
+    await fixture.whenStable();
+    expect(keywords()).toEqual(['METRO', 'FRESHCO']);
+    const button = (label: string) =>
+      root().querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!;
+
+    // The ends of what is shown, not of the whole list.
+    expect(button('Move FRESHCO down').disabled).toBe(true);
+    expect(button('Move METRO up').disabled).toBe(true);
+
+    button('Move FRESHCO up').click();
+    const request = http.expectOne({ method: 'POST', url: '/api/CategoryRules/r4/Move' });
+    // METRO's place: FRESHCO goes above it, past the two hidden rules.
+    expect(request.request.body).toEqual({ position: 0 });
+    request.flush([]);
+  });
+
   it('adds a rule, then reloads and confirms', async () => {
     await load();
     component.editing.set(null);

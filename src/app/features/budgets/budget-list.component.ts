@@ -18,6 +18,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { conflictDetail } from '../../shared/utils/problem-detail';
 import { periodName, periodSuffix } from '../../shared/utils/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { valueOf } from '../../shared/utils/resource-value';
 
 export type BudgetHealth = 'ok' | 'warning' | 'over';
 
@@ -70,7 +71,7 @@ export class BudgetListComponent {
   private readonly categoriesResource = rxResource({
     stream: () => this.categoryRepository.getAll(),
   });
-  readonly categories = computed(() => this.categoriesResource.value() ?? []);
+  readonly categories = computed(() => valueOf(this.categoriesResource) ?? []);
 
   readonly budgets = rxResource({
     params: () => this.filter(),

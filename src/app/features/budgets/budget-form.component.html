@@ -51,7 +51,13 @@
       placeholder="Enter budget amount"
       [class.is-invalid]="isInvalid('amount')"
     />
-    <div class="invalid-feedback">Amount must be greater than 0.</div>
+    <div class="invalid-feedback">
+      @if (form.controls.amount.hasError('cents')) {
+        Use whole cents: at most 2 decimal places.
+      } @else {
+        Amount must be greater than 0.
+      }
+    </div>
   </div>
 
   <fieldset class="mb-3">

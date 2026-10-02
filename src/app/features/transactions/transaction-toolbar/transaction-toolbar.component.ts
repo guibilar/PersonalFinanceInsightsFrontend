@@ -70,6 +70,8 @@ export class TransactionToolbarComponent {
 
   /** Shows the From and To fields: chosen as "Custom range", or dates that aren't a preset. */
   readonly customRange = signal(false);
+  /** The custom range ends before it starts; it isn't applied until it doesn't. */
+  readonly rangeBackwards = signal(false);
 
   readonly form = this.fb.group({
     description: '',
@@ -140,7 +142,14 @@ export class TransactionToolbarComponent {
       controls.endDate.valueChanges,
     )
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
-      .subscribe(() => this.criteriaChange.emit(this.criteria()));
+      .subscribe(() => {
+        const criteria = this.criteria();
+        // Typed the wrong way round: say so, and keep the list as it is until the range makes sense.
+        const backwards =
+          !!criteria.startDate && !!criteria.endDate && criteria.startDate > criteria.endDate;
+        this.rangeBackwards.set(backwards);
+        if (!backwards) this.criteriaChange.emit(criteria);
+      });
 
     controls.period.valueChanges
       .pipe(takeUntilDestroyed(inject(DestroyRef)))

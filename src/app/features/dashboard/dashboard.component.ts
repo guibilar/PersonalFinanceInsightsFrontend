@@ -37,6 +37,7 @@ import {
   previousMonthToDateLabel,
   spentThisMonth,
 } from './dashboard-stats';
+import { valueOf } from '../../shared/utils/resource-value';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
 Chart.register(
@@ -98,14 +99,18 @@ export class DashboardComponent {
     stream: () => this.transactionRepository.filter({ page: 1, pageSize: RECENT_TRANSACTIONS }),
   });
 
+  // The reports, or nothing while they load or when they failed: reading a failed one would break the page.
+  readonly yearValue = computed(() => valueOf(this.yearReport));
+  readonly monthValue = computed(() => valueOf(this.monthReport));
+
   readonly spent = computed(() => {
-    const month = this.monthReport.value();
+    const month = valueOf(this.monthReport);
     return month ? spentThisMonth(month) : null;
   });
 
   readonly spentHint = computed<{ text: string; tone: StatTone; up: boolean } | null>(() => {
     const spent = this.spent();
-    const month = this.monthReport.value();
+    const month = valueOf(this.monthReport);
     if (spent === null || !month) return null;
     // Like for like: last month up to the same day, not all of it against a month in progress.
     const change = percentChange(spent, month.previousMonthToDateTotal ?? null);
@@ -118,7 +123,7 @@ export class DashboardComponent {
   });
 
   readonly averageHint = computed(() => {
-    const year = this.yearReport.value();
+    const year = valueOf(this.yearReport);
     return year
       ? averageCaption(
           year.monthlyData.map((month) => month.month),
@@ -128,12 +133,12 @@ export class DashboardComponent {
   });
 
   readonly topCategory = computed(() => {
-    const month = this.monthReport.value();
+    const month = valueOf(this.monthReport);
     return month ? (categoryShares(month)[0] ?? null) : null;
   });
 
   readonly budgetSummary = computed(() => {
-    const items = this.budgets.value()?.items;
+    const items = valueOf(this.budgets)?.items;
     if (!items) return null;
     const over = budgetsOverLimit(items);
     return { total: items.length, over };

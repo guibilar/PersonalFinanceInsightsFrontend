@@ -111,9 +111,9 @@
               }
             }
           </div>
-          @if (!preview.isLoading() && preview.value()?.examples?.length) {
+          @if (!preview.isLoading() && previewValue()?.examples?.length) {
             <ul class="small text-body-secondary mb-0 mt-1 ps-3 examples">
-              @for (example of preview.value()!.examples; track example) {
+              @for (example of previewValue()!.examples; track example) {
                 <li class="text-truncate">{{ example }}</li>
               }
             </ul>

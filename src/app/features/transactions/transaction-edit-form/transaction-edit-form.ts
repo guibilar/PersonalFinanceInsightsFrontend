@@ -21,6 +21,7 @@ import { CategoryReference } from '../../../core/models/outputs/category-output-
 import { TEXT_LIMITS } from '../../../core/models/text-limits';
 import { suggestRuleKeyword } from '../../../shared/utils/suggest-rule-keyword';
 import { FLOW_DESCRIPTIONS, FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
+import { valueOf } from '../../../shared/utils/resource-value';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -113,6 +114,9 @@ export class TransactionEditForm implements OnInit {
     stream: ({ params }) =>
       this.ruleRepository.preview({ ...params, excludeTransactionId: this.transaction().id }),
   });
+
+  /** The preview, or nothing while it loads or when it failed (reading a failed one would break the panel). */
+  readonly previewValue = computed(() => valueOf(this.preview));
 
   ngOnInit(): void {
     const { description, category, flow } = this.transaction();

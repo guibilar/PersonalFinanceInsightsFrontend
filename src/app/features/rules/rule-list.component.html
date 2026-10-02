@@ -137,7 +137,7 @@
                   class="btn btn-icon"
                   [attr.aria-label]="'Move ' + rule.keyword + ' up'"
                   title="Move up"
-                  [disabled]="moving() || rule.position === 0"
+                  [disabled]="moving() || movePosition(rule, -1) === null"
                   (click)="move(rule, -1)"
                 >
                   <app-icon name="arrow-up" [size]="16" />
@@ -147,7 +147,7 @@
                   class="btn btn-icon"
                   [attr.aria-label]="'Move ' + rule.keyword + ' down'"
                   title="Move down"
-                  [disabled]="moving() || rule.position === total() - 1"
+                  [disabled]="moving() || movePosition(rule, 1) === null"
                   (click)="move(rule, 1)"
                 >
                   <app-icon name="arrow-down" [size]="16" />
