@@ -271,6 +271,31 @@ describe('BudgetFormComponent', () => {
       expect(message()).toBe('');
     });
 
+    it('says nothing while a year is typed, and asks for the full year if it is saved half-typed', () => {
+      const root = () => fixture.nativeElement as HTMLElement;
+      const message = () => root().querySelector('[role=alert]')?.textContent ?? '';
+      create();
+      fill({ period: BudgetPeriod.Custom, startDate: '2026-07-01' });
+      component.form.controls.startDate.markAsTouched();
+
+      for (const day of ['0002-07-31', '0020-07-31', '0202-07-31']) {
+        component.form.controls.endDate.setValue(day);
+        fixture.detectChanges();
+        expect(component.form.invalid).toBe(true);
+        expect(message()).toBe('');
+      }
+
+      component.onSubmit();
+      fixture.detectChanges();
+      expect(submitted).toEqual([]);
+      expect(message()).toContain('Enter the full year');
+
+      component.form.controls.endDate.setValue('2026-07-31');
+      fixture.detectChanges();
+      expect(component.form.valid).toBe(true);
+      expect(message()).toBe('');
+    });
+
     it('sends the days of a custom period and a trimmed merchant, and only those', () => {
       create();
       fill({

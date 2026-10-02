@@ -23,6 +23,7 @@ import {
   DatePresetId,
   describeRange,
   matchDatePreset,
+  yearStillTyped,
 } from '../../../shared/utils/date-presets';
 
 /** The criteria this toolbar controls; paging and sorting stay with the page. */
@@ -144,6 +145,8 @@ export class TransactionToolbarComponent {
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
       .subscribe(() => {
         const criteria = this.criteria();
+        // Halfway through typing a year: nothing to apply or warn about yet.
+        if (yearStillTyped(criteria.startDate) || yearStillTyped(criteria.endDate)) return;
         // Typed the wrong way round: say so, and keep the list as it is until the range makes sense.
         const backwards =
           !!criteria.startDate && !!criteria.endDate && criteria.startDate > criteria.endDate;

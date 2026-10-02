@@ -82,3 +82,11 @@ export function describeRange(range: DateRange): string {
   const sameYear = range.startDate.slice(0, 4) === range.endDate.slice(0, 4);
   return `${day(range.startDate, !sameYear)} – ${day(range.endDate, true)}`;
 }
+
+/**
+ * A day whose year is still being typed. A date field takes its year digit by digit, so on the way to 2026 its value
+ * is 0002-…, 0020-… and 0202-…: real days, but not the one meant. No transaction is that old.
+ */
+export function yearStillTyped(day: string | null | undefined): boolean {
+  return !!day && Number(day.slice(0, 4)) < 1900;
+}
