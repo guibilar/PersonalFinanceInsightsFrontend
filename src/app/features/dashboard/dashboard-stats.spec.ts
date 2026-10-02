@@ -91,6 +91,17 @@ describe('dashboard stats', () => {
     ]);
   });
 
+  it('leaves a category that was mostly returned out of the shares, so they add up to 100%', () => {
+    const shares = categoryShares(
+      report([{ month: 'Sep 2026', values: { Dining: 100, Shopping: -50, Groceries: 300 } }]),
+    );
+
+    expect(shares.map((s) => [s.category, s.percent])).toEqual([
+      ['Groceries', 75],
+      ['Dining', 25],
+    ]);
+  });
+
   it('averages each category over the finished months, next to this month so far', () => {
     const year: CategorizedReportOutputDto = {
       categories: categoryRefs('Dining', 'Groceries', 'Pet'),

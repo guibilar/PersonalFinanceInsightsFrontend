@@ -104,12 +104,16 @@ export function percentChange(current: number, previous: number | null): number 
   return ((current - previous) / previous) * 100;
 }
 
-/** Categories of the month, largest first, with their share of the total. */
+/**
+ * Categories of the month, largest first, with their share of what was spent in them. A category whose refunds
+ * outweigh its spending (a return) is left out of the total as well as the list, or the others would add up to more
+ * than 100%.
+ */
 export function categoryShares(currentMonth: CategorizedReportOutputDto): CategoryShare[] {
   const values = currentMonth.monthlyData[0]?.categoryValues ?? {};
-  const total = Object.values(values).reduce((sum, value) => sum + value, 0);
-  return Object.entries(values)
-    .filter(([, amount]) => amount > 0)
+  const spent = Object.entries(values).filter(([, amount]) => amount > 0);
+  const total = spent.reduce((sum, [, amount]) => sum + amount, 0);
+  return spent
     .map(([category, amount]) => ({
       category,
       amount,
