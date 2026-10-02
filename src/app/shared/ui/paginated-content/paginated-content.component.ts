@@ -3,8 +3,10 @@ import {
   Component,
   TemplateRef,
   computed,
+  effect,
   input,
   output,
+  untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { PaginatedResult } from '../../../core/models/outputs/paginated-result-output-dto';
@@ -56,6 +58,17 @@ export class PaginatedContentComponent<T> {
 
     return pages;
   });
+
+  constructor() {
+    // A page past the end, as after deleting the only item on the last page: go to the last page there is,
+    // rather than showing an empty page as if there were nothing at all.
+    effect(() => {
+      const data = this.data();
+      if (data && data.items.length === 0 && data.page > 1) {
+        untracked(() => this.pageChange.emit(Math.max(1, data.totalPages)));
+      }
+    });
+  }
 
   onPageChange(page: number): void {
     const data = this.data();

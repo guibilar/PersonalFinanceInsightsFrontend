@@ -81,4 +81,19 @@ describe('PaginatedContentComponent', () => {
 
     expect(fixture.componentInstance.pages).toEqual([2]);
   });
+
+  it('goes to the last page there is when a page comes back empty, as after deleting its only item', async () => {
+    // Page 9 of 9 had one item; it was deleted, so there are 8 pages now and page 9 is empty.
+    const { fixture } = render({ ...page(9, 8, 80), items: [], hasNextPage: false });
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.pages).toEqual([8]);
+  });
+
+  it('leaves an empty first page alone: there is nothing to show', async () => {
+    const { fixture } = render({ ...page(1, 0, 0), items: [] });
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.pages).toEqual([]);
+  });
 });

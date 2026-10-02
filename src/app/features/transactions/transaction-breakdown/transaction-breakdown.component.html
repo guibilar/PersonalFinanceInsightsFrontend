@@ -72,7 +72,8 @@
         }
       </div>
 
-      @if (breakdown()?.periods?.length === 0) {
+      <!-- Dates with nothing in them still have their periods: they would only be a row of empty bars. -->
+      @if (breakdown()?.count === 0) {
         <p class="text-body-secondary text-center py-4 mb-0">
           No transactions match these filters.
         </p>

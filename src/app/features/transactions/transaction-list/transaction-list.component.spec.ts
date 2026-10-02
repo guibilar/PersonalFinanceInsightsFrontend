@@ -2,7 +2,9 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { provideLocationMocks } from '@angular/common/testing';
 import { TransactionListComponent } from './transaction-list.component';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { AccountType } from '../../../core/models/enums/account-type';
@@ -528,38 +530,86 @@ describe('TransactionListComponent', () => {
   });
 });
 
-describe('TransactionListComponent, opened from a link', () => {
-  it('starts on the linked category and interval, with its chart open', () => {
+describe('TransactionListComponent, in the address bar', () => {
+  let harness: RouterTestingHarness;
+  let http: HttpTestingController;
+  let router: Router;
+
+  const page = {
+    items: [],
+    page: 1,
+    pageSize: 25,
+    totalCount: 0,
+    totalPages: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
+
+  /** Answers what the page asked for; the totals in the interval they were asked in. */
+  function answer(): { filter?: Record<string, unknown>; breakdown?: Record<string, unknown> } {
+    TestBed.tick();
+    http.match('/api/Budget/Filter').forEach((r) => r.flush(page));
+    http.match('/api/Accounts').forEach((r) => r.flush([]));
+    http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
+    const filters = http.match('/api/Transaction/Filter').filter((r) => !r.cancelled);
+    filters.forEach((r) => r.flush(page));
+    const breakdowns = http.match('/api/Reports/breakdown').filter((r) => !r.cancelled);
+    breakdowns.forEach((r) =>
+      r.flush({
+        interval: r.request.body.interval,
+        count: 0,
+        spending: 0,
+        refunds: 0,
+        income: 0,
+        averageSpending: 0,
+        averageIncome: 0,
+        averagedPeriods: 0,
+        periods: [],
+        topMerchants: [],
+        merchantCount: 0,
+      }),
+    );
+    return { filter: filters.at(-1)?.request.body, breakdown: breakdowns.at(-1)?.request.body };
+  }
+
+  /**
+   * Lets the page's own address update finish, answering what it asks for on the way (whenStable would wait for
+   * those requests forever).
+   */
+  async function settle(): Promise<void> {
+    for (let turn = 0; turn < 3; turn++) {
+      answer();
+      await new Promise((resolve) => setTimeout(resolve));
+    }
+  }
+
+  beforeEach(async () => {
     TestBed.configureTestingModule({
-      imports: [TransactionListComponent],
       providers: [
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              queryParamMap: convertToParamMap({
-                categoryId: 'c-dining',
-                startDate: '2026-09-01',
-                endDate: '2026-09-30',
-                interval: 'Week',
-                overTime: '1',
-              }),
-            },
-          },
-        },
+        provideRouter([{ path: 'transactions', component: TransactionListComponent }]),
+        provideLocationMocks(),
       ],
     });
-    const fixture = TestBed.createComponent(TransactionListComponent);
-    const http = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
-    TestBed.tick();
+    http = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    harness = await RouterTestingHarness.create();
+  });
 
-    const filter = http.expectOne('/api/Transaction/Filter').request.body;
-    const breakdown = http.expectOne('/api/Reports/breakdown').request.body;
+  afterEach(() => {
+    answer();
+    http.verify();
+  });
+
+  it('starts on the linked category and interval, with its chart open', async () => {
+    const list = await harness.navigateByUrl(
+      '/transactions?categoryId=c-dining&startDate=2026-09-01&endDate=2026-09-30&interval=Week&overTime=1',
+      TransactionListComponent,
+    );
+
+    const { filter, breakdown } = answer();
 
     expect(filter).toEqual(
       expect.objectContaining({
@@ -571,6 +621,70 @@ describe('TransactionListComponent, opened from a link', () => {
     expect(breakdown).toEqual(
       expect.objectContaining({ categoryId: 'c-dining', interval: 'Week' }),
     );
-    expect(fixture.componentInstance.breakdownOpen()).toBe(true);
+    expect(list.breakdownOpen()).toBe(true);
+  });
+
+  it('keeps the address up to date, so a refresh shows the same list', async () => {
+    const list = await harness.navigateByUrl('/transactions', TransactionListComponent);
+    answer();
+
+    list.onCriteriaChange({ description: 'no frills', startDate: '2026-08-01' });
+    await settle();
+    expect(router.url).toBe('/transactions?description=no%20frills&startDate=2026-08-01');
+
+    list.breakdownOpen.set(true);
+    list.breakdownInterval.set('Week');
+    await settle();
+    expect(router.url).toBe(
+      '/transactions?description=no%20frills&startDate=2026-08-01&overTime=1&interval=Week',
+    );
+
+    list.clearCriteria();
+    list.breakdownOpen.set(false);
+    await settle();
+    expect(router.url).toBe('/transactions');
+  });
+
+  it('applies a link to the page while it is open, as the menu’s plain one', async () => {
+    const list = await harness.navigateByUrl(
+      '/transactions?categoryId=c-dining&overTime=1',
+      TransactionListComponent,
+    );
+    answer();
+
+    // The menu: the same page, without criteria.
+    await harness.navigateByUrl('/transactions');
+    const { filter } = answer();
+
+    expect(filter).not.toHaveProperty('categoryId', 'c-dining');
+    expect(list.filter().categoryId).toBeUndefined();
+    expect(list.breakdownOpen()).toBe(false);
+  });
+
+  it('shows the interval the totals were charted in, when the asked one has too many periods', async () => {
+    const list = await harness.navigateByUrl(
+      '/transactions?startDate=2010-01-01&overTime=1&interval=Week',
+      TransactionListComponent,
+    );
+    TestBed.tick();
+    http.match('/api/Reports/breakdown').forEach((r) =>
+      r.flush({
+        interval: 'Month',
+        count: 0,
+        spending: 0,
+        refunds: 0,
+        income: 0,
+        averageSpending: 0,
+        averageIncome: 0,
+        averagedPeriods: 0,
+        periods: [],
+        topMerchants: [],
+        merchantCount: 0,
+      }),
+    );
+    await settle();
+
+    expect(list.breakdownInterval()).toBe('Month');
+    expect(router.url).toBe('/transactions?startDate=2010-01-01&overTime=1');
   });
 });
