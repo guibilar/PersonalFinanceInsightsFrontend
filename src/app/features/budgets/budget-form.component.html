@@ -105,6 +105,8 @@
         <div class="text-danger small" role="alert">
           @if (form.hasError('daysOrder')) {
             The last day can’t be before the first.
+          } @else if (form.hasError('daysYear')) {
+            Enter the full year.
           } @else {
             Choose the first and the last day.
           }

@@ -281,6 +281,24 @@ describe('TransactionToolbarComponent', () => {
     expect(root.querySelector('[role=alert]')).toBeNull();
   });
 
+  it('waits while a year is typed digit by digit, then applies the day', () => {
+    create({ page: 1, pageSize: 10, startDate: '2026-09-01' });
+    const root = fixture.nativeElement as HTMLElement;
+
+    for (const day of ['0002-09-15', '0020-09-15', '0202-09-15']) {
+      component.form.controls.endDate.setValue(day);
+      fixture.detectChanges();
+      expect(component.rangeBackwards()).toBe(false);
+      expect(root.querySelector('[role=alert]')).toBeNull();
+    }
+    expect(emitted).toEqual([]);
+
+    component.form.controls.endDate.setValue('2026-09-15');
+    expect(emitted).toEqual([
+      expect.objectContaining({ startDate: '2026-09-01', endDate: '2026-09-15' }),
+    ]);
+  });
+
   it('clears everything', () => {
     create({ page: 1, pageSize: 10, description: 'rent' });
 

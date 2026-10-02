@@ -7,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -23,6 +24,7 @@ import { CategoryReference } from '../../core/models/outputs/category-output-dto
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { TEXT_LIMITS } from '../../core/models/text-limits';
 import { cents } from '../../shared/utils/cents';
+import { yearStillTyped } from '../../shared/utils/date-presets';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -31,6 +33,8 @@ const CUSTOM_DAYS: ValidatorFn = (group): ValidationErrors | null => {
   const { period, startDate, endDate } = group.getRawValue();
   if (period !== BudgetPeriod.Custom) return null;
   if (!startDate || !endDate) return { daysMissing: true };
+  // A year still being typed (0202-…) isn't the day meant, so it isn't out of order yet; it can't be saved either.
+  if (yearStillTyped(startDate) || yearStillTyped(endDate)) return { daysYear: true };
   return startDate > endDate ? { daysOrder: true } : null;
 };
 
@@ -56,6 +60,8 @@ export class BudgetFormComponent implements OnInit {
   readonly cancelled = output<void>();
 
   readonly isEditing = computed(() => this.budget() !== null);
+  /** Save was pressed: a year left half-typed is pointed out then, not while it is being typed. */
+  private readonly submitted = signal(false);
 
   readonly statusOptions = [
     { value: Status.Active, label: 'Active' },
@@ -175,6 +181,7 @@ export class BudgetFormComponent implements OnInit {
   /** The custom days are wrong and the person has been to them. */
   daysInvalid(): boolean {
     const { startDate, endDate } = this.form.controls;
+    if (this.form.hasError('daysYear')) return this.submitted();
     return this.form.hasError('daysMissing') || this.form.hasError('daysOrder')
       ? startDate.touched || endDate.touched
       : false;
@@ -183,6 +190,7 @@ export class BudgetFormComponent implements OnInit {
   onSubmit(): void {
     if (this.saving()) return;
     if (this.form.invalid) {
+      this.submitted.set(true);
       this.form.markAllAsTouched();
       return;
     }

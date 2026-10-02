@@ -1,4 +1,10 @@
-import { DATE_PRESETS, describeRange, isoDay, matchDatePreset } from './date-presets';
+import {
+  DATE_PRESETS,
+  describeRange,
+  isoDay,
+  matchDatePreset,
+  yearStillTyped,
+} from './date-presets';
 
 describe('date presets', () => {
   // Late on September 15th: the day must not slip to UTC's.
@@ -43,5 +49,11 @@ describe('date presets', () => {
 
   it('writes local days', () => {
     expect(isoDay(today)).toBe('2026-09-15');
+  });
+
+  it('tells a year still being typed from a whole one', () => {
+    expect(
+      ['0002-09-15', '0202-09-15', '2026-09-15', '', null, undefined].map(yearStillTyped),
+    ).toEqual([true, true, false, false, false, false]);
   });
 });
