@@ -313,6 +313,26 @@ describe('TransactionListComponent', () => {
       expect(component.savingEdit()).toBe(false);
     });
 
+    it('says why a transaction could not be linked to a budget', () => {
+      component.linkingTransaction.set(coffee);
+
+      component.onLinkSubmit({ transactionId: 't1', budgetId: 'b1' });
+      http.expectOne({ method: 'POST', url: '/api/Transaction/LinkTransaction' }).flush(
+        {
+          status: 409,
+          detail: "Budget 'Trip' is inactive; activate it before linking transactions.",
+        },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+      expect(component.savingLink()).toBe(false);
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(["Budget 'Trip' is inactive; activate it before linking transactions."]);
+    });
+
     it('deletes only after confirming, then closes the panel and reloads', () => {
       const toasts = TestBed.inject(ToastService);
       component.editingTransaction.set(coffee);
@@ -465,6 +485,24 @@ describe('TransactionListComponent', () => {
           .toasts()
           .map((t) => t.message),
       ).toEqual(['Could not add the transaction.']);
+    });
+
+    it('says why the API refused it', () => {
+      component.openAdd();
+      component.onAddSubmit(input);
+      http
+        .expectOne({ method: 'POST', url: '/api/Transaction' })
+        .flush(
+          { status: 400, errors: { categoryId: ["That category doesn't exist."] } },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(component.showAdd()).toBe(true);
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(["That category doesn't exist."]);
     });
   });
 

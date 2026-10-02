@@ -190,6 +190,33 @@ describe('DashboardComponent', () => {
     expect(card.querySelector('canvas')).not.toBeNull();
   });
 
+  it('keeps the page working when a report fails, saying so where it would be', async () => {
+    const fixture = TestBed.createComponent(DashboardComponent);
+    TestBed.tick();
+    http
+      .expectOne('/api/Reports/monthly-categorized-graph')
+      .flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/Reports/current-month-categorized-graph').flush(currentMonth(300));
+    http.expectOne('/api/Reports/cash-flow').flush(emptyCashFlow);
+    http.expectOne('/api/Budget/Filter').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/Transaction/Filter').flush(emptyPage);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+
+    // innerText: the tile's label, value and hint are separate blocks.
+    const tiles = Array.from(root.querySelectorAll<HTMLElement>('app-stat-card')).map((tile) =>
+      tile.innerText.replace(/\s+/g, ' ').trim(),
+    );
+    expect(tiles).toEqual([
+      expect.stringContaining('Spent this month $300.00'),
+      expect.stringContaining('Monthly average — Could not load this'),
+      expect.stringContaining('Top category Dining'),
+      expect.stringContaining('Budgets — Could not load this'),
+    ]);
+    expect(root.textContent).toContain('Could not load the averages.');
+    expect(root.textContent).toContain('Could not load budgets.');
+  });
+
   it('says when nothing is recorded this year', async () => {
     const { root } = await load(currentMonth(300));
 

@@ -66,12 +66,31 @@
       <div class="d-flex flex-wrap gap-2 flex-grow-1 flex-md-grow-0">
         <div class="d-flex align-items-center gap-2 flex-grow-1">
           <label for="tx-from" class="small text-body-secondary">From</label>
-          <input type="date" id="tx-from" class="form-control" formControlName="startDate" />
+          <input
+            type="date"
+            id="tx-from"
+            class="form-control"
+            formControlName="startDate"
+            [class.is-invalid]="rangeBackwards()"
+            [attr.aria-describedby]="rangeBackwards() ? 'tx-range-error' : null"
+          />
         </div>
         <div class="d-flex align-items-center gap-2 flex-grow-1">
           <label for="tx-to" class="small text-body-secondary">To</label>
-          <input type="date" id="tx-to" class="form-control" formControlName="endDate" />
+          <input
+            type="date"
+            id="tx-to"
+            class="form-control"
+            formControlName="endDate"
+            [class.is-invalid]="rangeBackwards()"
+            [attr.aria-describedby]="rangeBackwards() ? 'tx-range-error' : null"
+          />
         </div>
+        @if (rangeBackwards()) {
+          <div id="tx-range-error" class="w-100 small text-danger" role="alert">
+            The range ends before it starts. The list shows the last range that made sense.
+          </div>
+        }
       </div>
     }
   </form>

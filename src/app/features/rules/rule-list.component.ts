@@ -21,6 +21,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RuleFormComponent } from './rule-form.component';
 import { FlowRuleListComponent } from './flow-rule-list.component';
+import { valueOf } from '../../shared/utils/resource-value';
 
 type RulesTab = 'categories' | 'flows';
 
@@ -69,7 +70,7 @@ export class RuleListComponent {
   private readonly categoriesResource = rxResource({
     stream: () => this.categoryRepository.getAll(),
   });
-  readonly categories = computed(() => this.categoriesResource.value() ?? []);
+  readonly categories = computed(() => valueOf(this.categoriesResource) ?? []);
 
   readonly search = new FormControl('', { nonNullable: true });
   private readonly searchText = toSignal(this.search.valueChanges, { initialValue: '' });
@@ -77,14 +78,14 @@ export class RuleListComponent {
 
   /** A few hundred rules at most, so the search is instant and needs no request. */
   readonly visibleRules = computed(() => {
-    const rules = this.rules.value() ?? [];
+    const rules = valueOf(this.rules) ?? [];
     const query = this.query();
     if (!query) return rules;
     return rules.filter(
       (rule) => rule.keyword.includes(query) || rule.category.name.toUpperCase().includes(query),
     );
   });
-  readonly total = computed(() => this.rules.value()?.length ?? 0);
+  readonly total = computed(() => valueOf(this.rules)?.length ?? 0);
 
   /** undefined: panel closed; null: adding; a rule: editing it. */
   readonly editing = signal<CategoryRuleOutputDto | null | undefined>(undefined);
@@ -151,10 +152,19 @@ export class RuleListComponent {
     });
   }
 
-  /** Up is -1 (checked earlier), down is +1. */
+  /**
+   * Where a rule moves to: the place of the rule shown above it (-1, checked earlier) or below it (+1), so a move
+   * while searching passes the rule you can see rather than one the search hides. Null at either end of the list.
+   */
+  movePosition(rule: CategoryRuleOutputDto, offset: -1 | 1): number | null {
+    const visible = this.visibleRules();
+    const neighbour = visible[visible.findIndex((r) => r.id === rule.id) + offset];
+    return neighbour?.position ?? null;
+  }
+
   move(rule: CategoryRuleOutputDto, offset: -1 | 1): void {
-    const position = rule.position + offset;
-    if (this.moving() || position < 0 || position >= this.total()) return;
+    const position = this.movePosition(rule, offset);
+    if (this.moving() || position === null) return;
     this.moving.set(true);
     this.ruleRepository.move(rule.id, position).subscribe({
       next: (rules) => {

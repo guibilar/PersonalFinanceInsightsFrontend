@@ -22,6 +22,7 @@ import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { CategoryReference } from '../../core/models/outputs/category-output-dto';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { TEXT_LIMITS } from '../../core/models/text-limits';
+import { cents } from '../../shared/utils/cents';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -91,7 +92,7 @@ export class BudgetFormComponent implements OnInit {
         '',
         [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.budgetDescription)],
       ],
-      amount: [0, [Validators.required, Validators.min(0.01)]],
+      amount: [0, [Validators.required, Validators.min(0.01), cents]],
       status: [Status.Active, Validators.required],
       period: [BudgetPeriod.Total, Validators.required],
       startDate: '',

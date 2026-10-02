@@ -19,6 +19,7 @@ import { CategoryReference } from '../../../core/models/outputs/category-output-
 import { TEXT_LIMITS } from '../../../core/models/text-limits';
 import { accountLabel } from '../../../shared/utils/account-labels';
 import { FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
+import { cents } from '../../../shared/utils/cents';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -68,7 +69,11 @@ export class TransactionAddForm implements OnInit {
       '',
       [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.transactionDescription)],
     ],
-    amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    amount: this.fb.control<number | null>(null, [
+      Validators.required,
+      Validators.min(0.01),
+      cents,
+    ]),
     transactionType: [TransactionType.Debit],
     // null: let the rules decide.
     categoryId: this.fb.control<string | null>(null),

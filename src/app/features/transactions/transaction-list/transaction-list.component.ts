@@ -43,7 +43,7 @@ import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { conflictDetail } from '../../../shared/utils/problem-detail';
+import { conflictDetail, validationDetail } from '../../../shared/utils/problem-detail';
 import {
   APPLY_RULES_CONFIRMATION,
   describeRulesResult,
@@ -60,6 +60,7 @@ import {
 import { TransactionAddForm } from '../transaction-add-form/transaction-add-form';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
 import { TransactionBreakdownComponent } from '../transaction-breakdown/transaction-breakdown.component';
+import { valueOf } from '../../../shared/utils/resource-value';
 
 /** The next interval down, for looking inside a period. */
 const CLOSER: Record<BreakdownInterval, BreakdownInterval> = {
@@ -228,6 +229,8 @@ export class TransactionListComponent {
     params: () => this.breakdownParams(),
     stream: ({ params }) => this.reportsRepository.getBreakdown(params),
   });
+  /** The totals, or nothing while they load or when they failed (the strip then offers a retry). */
+  readonly breakdownValue = computed(() => valueOf(this.breakdown));
   /** The filtered category's colour, for the chart's bars. */
   readonly breakdownColor = computed(() => {
     const categoryId = this.filter().categoryId;
@@ -243,19 +246,19 @@ export class TransactionListComponent {
   private readonly activeBudgetsResource = rxResource({
     stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 }),
   });
-  readonly activeBudgets = computed(() => this.activeBudgetsResource.value()?.items ?? []);
+  readonly activeBudgets = computed(() => valueOf(this.activeBudgetsResource)?.items ?? []);
 
   // For the account filter.
   private readonly accountsResource = rxResource({
     stream: () => this.accountRepository.getAll(),
   });
-  readonly accounts = computed(() => this.accountsResource.value() ?? []);
+  readonly accounts = computed(() => valueOf(this.accountsResource) ?? []);
 
   // For the category filter and the add and edit forms.
   private readonly categoriesResource = rxResource({
     stream: () => this.categoryRepository.getAll(),
   });
-  readonly categories = computed(() => this.categoriesResource.value() ?? []);
+  readonly categories = computed(() => valueOf(this.categoriesResource) ?? []);
 
   /** The address the page should have: its criteria, and the chart when it is open. */
   private readonly urlQuery = computed<Params>(() => {
@@ -297,7 +300,7 @@ export class TransactionListComponent {
     // Years of weeks are charted by month (or longer) instead: the buttons and the address say what is shown.
     effect(() => {
       if (this.breakdown.isLoading() || !this.breakdown.hasValue()) return;
-      const used = this.breakdown.value()?.interval;
+      const used = valueOf(this.breakdown)?.interval;
       if (used && used !== untracked(this.breakdownInterval)) this.breakdownInterval.set(used);
     });
   }
@@ -422,7 +425,7 @@ export class TransactionListComponent {
         if (detail) {
           this.addDuplicate.set(detail);
         } else {
-          this.toasts.error('Could not add the transaction.');
+          this.toasts.error(validationDetail(error, 'Could not add the transaction.'));
         }
       },
     });
@@ -439,9 +442,10 @@ export class TransactionListComponent {
         this.reload();
         this.toasts.success(budget ? `Linked to “${budget.name}”` : 'Transaction linked');
       },
-      error: () => {
+      error: (error: unknown) => {
         this.savingLink.set(false);
-        this.toasts.error('Could not link the transaction.');
+        // A 409 says why: the budget was deactivated meanwhile, or the transaction linked elsewhere.
+        this.toasts.error(conflictDetail(error, 'Could not link the transaction.'));
       },
     });
   }

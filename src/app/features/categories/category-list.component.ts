@@ -11,6 +11,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { CategoryFormComponent } from './category-form.component';
 import { CategoryDeleteFormComponent } from './category-delete-form.component';
+import { valueOf } from '../../shared/utils/resource-value';
 
 /** The categories spending is grouped by: add, rename, recolour, and delete (moving what used it elsewhere). */
 @Component({
@@ -32,7 +33,7 @@ export class CategoryListComponent {
   private readonly toasts = inject(ToastService);
 
   readonly categories = rxResource({ stream: () => this.categoryRepository.getAll() });
-  readonly list = computed(() => this.categories.value() ?? []);
+  readonly list = computed(() => valueOf(this.categories) ?? []);
 
   /** undefined: dialog closed; null: adding; a category: editing it. */
   readonly editing = signal<CategoryOutputDto | null | undefined>(undefined);

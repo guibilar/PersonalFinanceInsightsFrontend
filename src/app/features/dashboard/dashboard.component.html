@@ -15,6 +15,13 @@
         [hintIcon]="spentHint() ? (spentHint()!.up ? 'trending-up' : 'trending-down') : null"
         [tone]="spentHint()?.tone ?? 'neutral'"
       />
+    } @else if (monthReport.error()) {
+      <app-stat-card
+        label="Spent this month"
+        icon="calendar"
+        value="—"
+        hint="Could not load this"
+      />
     } @else {
       <div class="card h-100">
         <div class="card-body"><app-skeleton [lines]="3" /></div>
@@ -22,13 +29,20 @@
     }
   </div>
   <div class="col">
-    @if (yearReport.value(); as year) {
+    @if (yearValue(); as year) {
       <app-stat-card
         label="Monthly average"
         icon="trending-up"
         [value]="format(year.averageMonthlyTotal)"
         [hint]="averageHint()"
       />
+    } @else if (yearReport.error()) {
+      <app-stat-card
+        label="Monthly average"
+        icon="trending-up"
+        value="—"
+        hint="Could not load this"
+      />
     } @else {
       <div class="card h-100">
         <div class="card-body"><app-skeleton [lines]="3" /></div>
@@ -36,13 +50,15 @@
     }
   </div>
   <div class="col">
-    @if (monthReport.value()) {
+    @if (monthValue()) {
       <app-stat-card
         label="Top category"
         icon="tag"
         [value]="topCategory()?.category ?? '—'"
         [hint]="topCategory() ? format(topCategory()!.amount) + ' this month' : 'No spending yet'"
       />
+    } @else if (monthReport.error()) {
+      <app-stat-card label="Top category" icon="tag" value="—" hint="Could not load this" />
     } @else {
       <div class="card h-100">
         <div class="card-body"><app-skeleton [lines]="3" /></div>
@@ -64,6 +80,8 @@
         "
         [tone]="summary.total === 0 ? 'neutral' : summary.over === 0 ? 'good' : 'bad'"
       />
+    } @else if (budgets.error()) {
+      <app-stat-card label="Budgets" icon="budgets" value="—" hint="Could not load this" />
     } @else {
       <div class="card h-100">
         <div class="card-body"><app-skeleton [lines]="3" /></div>
