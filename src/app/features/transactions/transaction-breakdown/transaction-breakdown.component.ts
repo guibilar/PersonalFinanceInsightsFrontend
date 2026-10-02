@@ -120,7 +120,8 @@ export class TransactionBreakdownComponent {
 
   readonly average = computed(() => {
     const breakdown = this.breakdown();
-    if (!breakdown || breakdown.periods.length === 0) return null;
+    // Nothing matched: an average of nothing over empty periods says nothing.
+    if (!breakdown || breakdown.periods.length === 0 || breakdown.count === 0) return null;
     const amount =
       this.measure() === 'income' ? breakdown.averageIncome : breakdown.averageSpending;
     const [one, many] = this.unit();

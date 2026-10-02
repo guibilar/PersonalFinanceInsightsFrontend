@@ -20,7 +20,11 @@
 }
 
 .description-cell {
-  max-width: 22rem;
+  // Takes the width the other columns leave, and truncates within it: a table cell's max-width alone doesn't stop
+  // a long description from widening the table past its card, hiding the row's buttons off to the right.
+  width: 100%;
+  max-width: 0;
+  min-width: 10rem;
 }
 
 .btn-icon {
@@ -48,9 +52,9 @@
     }
   }
 
-  // Scales with the screen so description, budget and amount fit side by side without scrolling.
+  // Phones: description, budget and amount side by side without scrolling.
   .description-cell {
-    max-width: 38vw;
+    min-width: 0;
   }
 }
 

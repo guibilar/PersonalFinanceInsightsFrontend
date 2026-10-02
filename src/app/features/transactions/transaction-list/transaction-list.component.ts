@@ -1,7 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ActivatedRoute, ParamMap } from '@angular/router';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, ParamMap, Params, Router } from '@angular/router';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { switchMap, tap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
@@ -61,20 +69,51 @@ const CLOSER: Record<BreakdownInterval, BreakdownInterval> = {
   Week: 'Week',
 };
 
+const CRITERIA_KEYS = [
+  'description',
+  'categoryId',
+  'accountId',
+  'flow',
+  'startDate',
+  'endDate',
+] as const;
+
 /** The criteria a link can open the list with: ?categoryId=…&description=…&startDate=…&endDate=…&accountId=… */
 function criteriaFromQuery(query: ParamMap): TransactionCriteria {
   const criteria: TransactionCriteria = {};
-  for (const key of ['description', 'categoryId', 'accountId', 'startDate', 'endDate'] as const) {
+  for (const key of CRITERIA_KEYS) {
     const value = query.get(key);
-    if (value) criteria[key] = value;
+    if (!value) continue;
+    if (key === 'flow') {
+      if (Object.values(Flow).includes(value as Flow)) criteria.flow = value as Flow;
+    } else {
+      criteria[key] = value;
+    }
   }
   return criteria;
+}
+
+/** The criteria that are set, as a query string would carry them. */
+function definedCriteria(criteria: TransactionCriteria): Record<string, string> {
+  const defined: Record<string, string> = {};
+  for (const key of CRITERIA_KEYS) {
+    const value = criteria[key];
+    if (value) defined[key] = value;
+  }
+  return defined;
+}
+
+function sameCriteria(a: TransactionCriteria, b: TransactionCriteria): boolean {
+  return JSON.stringify(definedCriteria(a)) === JSON.stringify(definedCriteria(b));
 }
 
 function intervalFromQuery(query: ParamMap): BreakdownInterval | null {
   const value = query.get('interval');
   return value && value in CLOSER ? (value as BreakdownInterval) : null;
 }
+
+/** Marks the navigations the list makes itself to keep the address up to date, so it doesn't apply them back. */
+const OWN_NAVIGATION = 'transactionListFilters';
 
 interface SortableColumn {
   field: TransactionSortField;
@@ -119,6 +158,7 @@ export class TransactionListComponent {
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly reportsRepository = inject(ReportsRepository);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly toasts = inject(ToastService);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
@@ -216,6 +256,51 @@ export class TransactionListComponent {
     stream: () => this.categoryRepository.getAll(),
   });
   readonly categories = computed(() => this.categoriesResource.value() ?? []);
+
+  /** The address the page should have: its criteria, and the chart when it is open. */
+  private readonly urlQuery = computed<Params>(() => {
+    const query: Params = definedCriteria(this.filter());
+    if (this.breakdownOpen()) {
+      query['overTime'] = '1';
+      // Month is what the chart opens on, so it goes without saying.
+      if (this.breakdownInterval() !== 'Month') query['interval'] = this.breakdownInterval();
+    }
+    return query;
+  });
+
+  constructor() {
+    // The address follows the criteria, so a refresh, the back button or a copied link shows the same list...
+    effect(() => {
+      const queryParams = this.urlQuery();
+      untracked(() => {
+        const current = this.route.snapshot.queryParamMap;
+        const same =
+          current.keys.length === Object.keys(queryParams).length &&
+          Object.entries(queryParams).every(([key, value]) => current.get(key) === value);
+        if (same) return;
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams,
+          replaceUrl: true,
+          state: { [OWN_NAVIGATION]: true },
+        });
+      });
+    });
+    // ...and a link to the page while it is open (the menu's, or the dashboard's) applies its criteria.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((query) => {
+      if (this.router.lastSuccessfulNavigation()?.extras.state?.[OWN_NAVIGATION]) return;
+      const criteria = criteriaFromQuery(query);
+      if (!sameCriteria(criteria, this.filter())) this.onCriteriaChange(criteria);
+      this.breakdownOpen.set(query.get('overTime') === '1');
+      this.breakdownInterval.set(intervalFromQuery(query) ?? 'Month');
+    });
+    // Years of weeks are charted by month (or longer) instead: the buttons and the address say what is shown.
+    effect(() => {
+      if (this.breakdown.isLoading() || !this.breakdown.hasValue()) return;
+      const used = this.breakdown.value()?.interval;
+      if (used && used !== untracked(this.breakdownInterval)) this.breakdownInterval.set(used);
+    });
+  }
 
   protected readonly TransactionType = TransactionType;
   protected readonly Flow = Flow;

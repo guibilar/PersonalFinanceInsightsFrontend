@@ -110,6 +110,22 @@ describe('TransactionBreakdownComponent', () => {
     expect(root().querySelector('canvas')).toBeNull();
   });
 
+  it('says so too for dates with nothing in them, rather than charting their empty periods', async () => {
+    const empty = TEST_BREAKDOWN.periods.map((p) => ({
+      ...p,
+      count: 0,
+      spending: 0,
+      income: 0,
+      cumulativeSpending: 0,
+      cumulativeIncome: 0,
+    }));
+    await create({ ...TEST_BREAKDOWN, count: 0, spending: 0, refunds: 0, periods: empty }, true);
+
+    expect(root().textContent).toContain('No transactions match these filters.');
+    expect(root().querySelector('canvas')).toBeNull();
+    expect(root().textContent).not.toContain('Average');
+  });
+
   it('offers a retry when the totals could not be loaded', async () => {
     await create();
     fixture.componentRef.setInput('breakdown', undefined);
