@@ -1,7 +1,6 @@
 import { ChartEvent } from 'chart.js';
 import { breakdownChart, breakdownMeasure } from './breakdown-chart';
 import { CHART_THEMES } from '../../dashboard/chart-helper';
-import { BreakdownPeriodDto } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { TEST_BREAKDOWN } from '../../../testing/test-breakdown';
 
 const theme = CHART_THEMES.light;
@@ -86,21 +85,23 @@ describe('breakdownChart', () => {
   });
 
   it('names the period and counts its transactions in the tooltip', () => {
-    const { periods } = breakdownChart(TEST_BREAKDOWN, { theme, onPick: () => undefined });
+    const { periods } = breakdownChart(TEST_BREAKDOWN, { theme, onSelect: () => undefined });
     const callbacks = periods.options!.plugins!.tooltip!.callbacks as unknown as {
       title: (items: unknown[]) => string;
       footer: (items: unknown[]) => string;
     };
 
     expect(callbacks.title([{ dataIndex: 2 }])).toBe('Sep 2026');
-    expect(callbacks.footer([{ dataIndex: 2 }])).toMatch(/transactions? · click to list them$/);
+    expect(callbacks.footer([{ dataIndex: 2 }])).toMatch(
+      /transactions? · click for where it went$/,
+    );
   });
 
-  it('hands the clicked bar’s period on', () => {
-    const picked: BreakdownPeriodDto[] = [];
+  it('hands the clicked bar’s index on', () => {
+    const selected: number[] = [];
     const { periods } = breakdownChart(TEST_BREAKDOWN, {
       theme,
-      onPick: (period) => picked.push(period),
+      onSelect: (index) => selected.push(index),
     });
 
     const onClick = periods.options!.onClick as (
@@ -110,6 +111,15 @@ describe('breakdownChart', () => {
     onClick({} as ChartEvent, [{ index: 2 }]);
     onClick({} as ChartEvent, []);
 
-    expect(picked.map((p) => p.label)).toEqual(['Sep 2026']);
+    expect(selected).toEqual([2]);
+  });
+
+  it('keeps the selected bar’s colour and fades the others', () => {
+    const { periods } = breakdownChart(TEST_BREAKDOWN, { theme, color: '#1F76B5', selected: 2 });
+    const colors = periods.data.datasets[0].backgroundColor as string[];
+
+    expect(colors[2]).toBe('#1F76B5');
+    expect(colors[0]).toBe('rgba(31, 118, 181, 0.35)');
+    expect(colors[1]).toBe('rgba(31, 118, 181, 0.35)');
   });
 });

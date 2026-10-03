@@ -89,9 +89,28 @@
             type="bar"
           ></canvas>
         </div>
-        <p class="small text-body-secondary mt-1 mb-2">
-          Click a bar to list that {{ unit()[0] }}'s transactions.
-        </p>
+        @if (period(); as period) {
+          <div class="d-flex flex-wrap align-items-center gap-2 mt-2 mb-2" aria-live="polite">
+            <div class="flex-grow-1 small">
+              <strong>{{ period.label }}</strong>
+              <span class="text-body-secondary">
+                · {{ (measure() === 'income' ? period.income : period.spending) | currency }} ·
+                {{ period.count }} {{ period.count === 1 ? 'transaction' : 'transactions' }}</span
+              >
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              (click)="periodPicked.emit(period)"
+            >
+              Show these
+            </button>
+          </div>
+        } @else {
+          <p class="small text-body-secondary mt-1 mb-2">
+            Click a bar to see that {{ unit()[0] }}.
+          </p>
+        }
         <p class="small fw-medium text-body-secondary mb-1">Running total</p>
         <div class="chart-container chart-running">
           <canvas
@@ -103,8 +122,36 @@
         </div>
       }
 
+      @if (period(); as period) {
+        @if (measure() === 'spending' && merchants().length === 0) {
+          <!-- The selected bar's merchants are on their way, failed, or there are none. -->
+          <h3 class="h6 mt-4 mb-2">Where it went in {{ period.label }}</h3>
+          @if (loadingMore()) {
+            <p class="small text-body-secondary mb-0">Loading…</p>
+          } @else if (moreFailed()) {
+            <p class="small mb-0" role="alert">
+              <span class="text-danger">Could not load where it went in {{ period.label }}.</span>
+              <button
+                type="button"
+                class="btn btn-link btn-sm p-0 align-baseline"
+                (click)="loadMoreMerchants()"
+              >
+                Retry
+              </button>
+            </p>
+          } @else {
+            <p class="small text-body-secondary mb-0">No spending in {{ period.label }}.</p>
+          }
+        }
+      }
       @if (merchants().length > 0) {
-        <h3 class="h6 mt-4 mb-2">Where it went</h3>
+        <h3 class="h6 mt-4 mb-2">
+          @if (period(); as period) {
+            Where it went in {{ period.label }}
+          } @else {
+            Where it went
+          }
+        </h3>
         <ul class="list-unstyled mb-0 row row-cols-1 row-cols-lg-2 gx-5">
           @for (merchant of merchants(); track merchant.name) {
             <li class="col mb-2">
@@ -127,7 +174,7 @@
             </li>
           }
         </ul>
-        @if (merchantsLeft() || merchants().length > (breakdown()?.topMerchants?.length ?? 0)) {
+        @if (merchantsLeft() || canShowFewer() || moreFailed()) {
           <div class="d-flex flex-wrap align-items-center gap-3 mt-2 small">
             @if (merchantsLeft(); as left) {
               <span class="text-body-secondary"
@@ -146,7 +193,7 @@
                 }
               </button>
             }
-            @if (merchants().length > (breakdown()?.topMerchants?.length ?? 0)) {
+            @if (canShowFewer()) {
               <button type="button" class="btn btn-link btn-sm p-0" (click)="showFewerMerchants()">
                 Show fewer
               </button>
