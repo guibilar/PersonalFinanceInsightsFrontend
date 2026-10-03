@@ -313,6 +313,23 @@ describe('TransactionListComponent', () => {
       expect(component.savingEdit()).toBe(false);
     });
 
+    it('says why the API refused the edit', () => {
+      component.editingTransaction.set(coffee);
+
+      component.onEditSubmit({ update: { description: 'Coffee', categoryId: 'gone' } });
+      http
+        .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
+        .flush(
+          { status: 400, errors: { categoryId: ["That category doesn't exist."] } },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(component.editingTransaction()).toEqual(coffee);
+      expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
+        expect.objectContaining({ kind: 'error', message: "That category doesn't exist." }),
+      );
+    });
+
     it('says why a transaction could not be linked to a budget', () => {
       component.linkingTransaction.set(coffee);
 
