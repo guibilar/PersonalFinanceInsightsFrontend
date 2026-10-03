@@ -463,9 +463,10 @@ export class TransactionListComponent {
           this.toasts.success('Transaction updated');
         }
       },
-      error: () => {
+      error: (error: unknown) => {
         this.savingEdit.set(false);
-        this.toasts.error('Could not update the transaction.');
+        // The API's reason when it refused the change (a category deleted meanwhile, say), as on Android.
+        this.toasts.error(validationDetail(error, 'Could not update the transaction.'));
       },
     });
   }
