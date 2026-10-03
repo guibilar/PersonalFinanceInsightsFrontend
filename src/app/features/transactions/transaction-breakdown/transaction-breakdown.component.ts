@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import {
@@ -65,7 +66,7 @@ const UNITS: Record<BreakdownInterval, [string, string]> = {
 /**
  * Totals for the transactions the list's filters pick, and, when opened, how they spread over weeks, months, quarters
  * or years: bars per period with the running total, the average and the biggest period, and the merchants the
- * spending went to. The page loads the numbers; more merchants load here, a page at a time.
+ * spending went to (a clicked bar's, or the whole range's). The page loads the numbers; more merchants load here, a page at a time.
  */
 @Component({
   selector: 'app-transaction-breakdown',
@@ -105,7 +106,7 @@ export class TransactionBreakdownComponent {
 
   readonly openChange = output<boolean>();
   readonly intervalChange = output<BreakdownInterval>();
-  /** A bar was clicked: list that period's transactions. */
+  /** "Show these" under a selected bar: list that period's transactions. */
   readonly periodPicked = output<BreakdownPeriodDto>();
   readonly retry = output<void>();
 
@@ -143,6 +144,19 @@ export class TransactionBreakdownComponent {
     return top && amount(top) > 0 ? { label: top.label, amount: amount(top) } : null;
   });
 
+  /**
+   * The bar clicked (an index into the periods): "Where it went" is then that period's. Clicked again, it clears; a
+   * new breakdown has new periods, so it clears too.
+   */
+  readonly selected = linkedSignal<TransactionBreakdownOutputDto | undefined, number | null>({
+    source: this.breakdown,
+    computation: () => null,
+  });
+  readonly period = computed(() => {
+    const index = this.selected();
+    return index === null ? null : (this.breakdown()?.periods[index] ?? null);
+  });
+
   /** Merchants loaded after the top ones; a new breakdown starts over. */
   private readonly moreMerchants = linkedSignal<
     TransactionBreakdownOutputDto | undefined,
@@ -151,47 +165,87 @@ export class TransactionBreakdownComponent {
     source: this.breakdown,
     computation: () => [],
   });
+  /** The selected period's merchants, a page at a time, and how many it has; another period starts over. */
+  private readonly periodMerchants = linkedSignal<BreakdownPeriodDto | null, MerchantTotalDto[]>({
+    source: this.period,
+    computation: () => [],
+  });
+  private readonly periodMerchantCount = linkedSignal<BreakdownPeriodDto | null, number>({
+    source: this.period,
+    computation: () => 0,
+  });
   readonly loadingMore = signal(false);
   readonly moreFailed = signal(false);
+  private request?: Subscription;
 
-  /** Where the spending went, when it went to more than one place. */
+  /** Where the spending went: the selected period's, or, when it went to more than one place, the whole range's. */
   readonly merchants = computed(() => {
-    const merchants = [...(this.breakdown()?.topMerchants ?? []), ...this.moreMerchants()];
+    const period = this.period();
+    const merchants = period
+      ? this.periodMerchants()
+      : [...(this.breakdown()?.topMerchants ?? []), ...this.moreMerchants()];
     // Largest first, so the bars are relative to the top one.
     const max = Math.max(0, ...merchants.map((m) => m.spending));
-    return merchants.length > 1
+    return period || merchants.length > 1
       ? merchants.map((m) => ({ ...m, percent: max > 0 ? (m.spending / max) * 100 : 0 }))
       : [];
   });
 
   /** How many merchants there are, and how many the next page adds. */
   readonly merchantsLeft = computed(() => {
-    const total = this.breakdown()?.merchantCount ?? 0;
+    const total = this.period()
+      ? this.periodMerchantCount()
+      : (this.breakdown()?.merchantCount ?? 0);
     const shown = this.merchants().length;
     return shown > 0 && shown < total
       ? { shown, total, next: Math.min(MERCHANTS_PAGE_SIZE, total - shown) }
       : null;
   });
 
+  /** More than the first page is shown: it can go back to that. */
+  readonly canShowFewer = computed(() =>
+    this.period()
+      ? this.periodMerchants().length > MERCHANTS_PAGE_SIZE
+      : this.moreMerchants().length > 0,
+  );
+
+  /** A bar clicked: that period's merchants, or (the same bar again) back to the whole range's. */
+  select(index: number): void {
+    this.request?.unsubscribe();
+    this.loadingMore.set(false);
+    this.moreFailed.set(false);
+    this.selected.set(this.selected() === index ? null : index);
+    // Money in only, there is no spending to say where it went.
+    if (this.period() && this.measure() === 'spending') this.loadMoreMerchants();
+  }
+
   loadMoreMerchants(): void {
     const criteria = this.criteria();
     if (!criteria || this.loadingMore()) return;
     const breakdown = this.breakdown();
+    const period = this.period();
+    const shown = period ? this.periodMerchants().length : this.merchants().length;
     this.loadingMore.set(true);
     this.moreFailed.set(false);
-    this.reports
+    this.request = this.reports
       .getMerchants({
         ...criteria,
-        page: this.merchants().length / MERCHANTS_PAGE_SIZE + 1,
+        ...(period && { startDate: period.start.slice(0, 10), endDate: period.end.slice(0, 10) }),
+        page: shown / MERCHANTS_PAGE_SIZE + 1,
         pageSize: MERCHANTS_PAGE_SIZE,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => {
           this.loadingMore.set(false);
-          // The filters changed while it loaded: these are another list's.
-          if (this.breakdown() !== breakdown) return;
-          this.moreMerchants.update((more) => [...more, ...page.items]);
+          // The filters or the selected bar changed while it loaded: these are another list's.
+          if (this.breakdown() !== breakdown || this.period() !== period) return;
+          if (period) {
+            this.periodMerchants.update((merchants) => [...merchants, ...page.items]);
+            this.periodMerchantCount.set(page.totalCount);
+          } else {
+            this.moreMerchants.update((more) => [...more, ...page.items]);
+          }
         },
         error: () => {
           this.loadingMore.set(false);
@@ -202,6 +256,7 @@ export class TransactionBreakdownComponent {
 
   showFewerMerchants(): void {
     this.moreMerchants.set([]);
+    this.periodMerchants.update((merchants) => merchants.slice(0, MERCHANTS_PAGE_SIZE));
     this.moreFailed.set(false);
   }
 
@@ -211,7 +266,8 @@ export class TransactionBreakdownComponent {
       ? breakdownChart(breakdown, {
           theme: CHART_THEMES[this.theme.theme()],
           color: this.color(),
-          onPick: (period) => this.periodPicked.emit(period),
+          selected: this.selected(),
+          onSelect: (index) => this.select(index),
         })
       : null;
   });

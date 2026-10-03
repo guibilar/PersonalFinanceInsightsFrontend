@@ -34,7 +34,7 @@ function withAlpha(hex: string, alpha: number): string {
  * Two charts that share their periods, one above the other: bars for each period's amount, and under them the
  * running total. They are two because the total climbs to many times any one period: on one plot the bars would
  * sit in the corner, and a second scale for the line would invent a relation between the two. The tooltips show the
- * period, and clicking a bar hands its period to `onPick`.
+ * period. Clicking a bar hands its index to `onSelect`; the selected one keeps its colour and the others fade.
  */
 export function breakdownChart(
   breakdown: TransactionBreakdownOutputDto,
@@ -42,13 +42,16 @@ export function breakdownChart(
     theme: ChartTheme;
     /** The colour of both: the filtered category's, say. */
     color?: string | null;
-    onPick?: (period: BreakdownPeriodDto) => void;
+    /** The selected bar's index, if any. */
+    selected?: number | null;
+    onSelect?: (index: number) => void;
   },
 ): {
   periods: { data: ChartData<'bar'>; options: ChartConfiguration<'bar'>['options'] };
   running: { data: ChartData<'line'>; options: ChartConfiguration<'line'>['options'] };
 } {
-  const { theme, onPick } = options;
+  const { theme, onSelect } = options;
+  const selected = options.selected ?? null;
   const measure = breakdownMeasure(breakdown);
   const color = options.color ?? (measure === 'income' ? theme.series.aqua : theme.series.blue);
   const periods = breakdown.periods;
@@ -67,7 +70,10 @@ export function breakdownChart(
           {
             label: measure === 'income' ? 'Received' : 'Spent',
             data: periods.map(amount),
-            backgroundColor: color,
+            backgroundColor:
+              selected === null
+                ? color
+                : periods.map((_, i) => (i === selected ? color : withAlpha(color, 0.35))),
             ...BAR_MARKS,
             categoryPercentage: 0.8,
             barPercentage: 0.8,
@@ -96,20 +102,20 @@ export function breakdownChart(
                 const period = periods[items[0]?.dataIndex ?? -1];
                 if (!period) return '';
                 const noun = period.count === 1 ? 'transaction' : 'transactions';
-                return onPick
-                  ? `${period.count} ${noun} · click to list them`
+                return onSelect
+                  ? `${period.count} ${noun} · click for where it went`
                   : `${period.count} ${noun}`;
               },
             },
           },
         },
         onClick: (_event, elements) => {
-          const period = periods[elements[0]?.index ?? -1];
-          if (period && onPick) onPick(period);
+          const index = elements[0]?.index ?? -1;
+          if (periods[index] && onSelect) onSelect(index);
         },
         onHover: (event, elements) => {
           const target = event.native?.target as HTMLElement | undefined;
-          if (target) target.style.cursor = elements.length > 0 && onPick ? 'pointer' : 'default';
+          if (target) target.style.cursor = elements.length > 0 && onSelect ? 'pointer' : 'default';
         },
       },
     },

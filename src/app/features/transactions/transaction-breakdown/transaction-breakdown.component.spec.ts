@@ -222,4 +222,109 @@ describe('TransactionBreakdownComponent', () => {
       expect(root().textContent).not.toContain('merchants');
     });
   });
+
+  describe('a selected bar', () => {
+    let http: HttpTestingController;
+    const heading = () =>
+      root().querySelector<HTMLElement>('#breakdown-panel h3')?.textContent?.trim();
+    const names = () =>
+      Array.from(root().querySelectorAll<HTMLElement>('#breakdown-panel li span[title]')).map(
+        (s) => s.title,
+      );
+    const button = (label: string) =>
+      Array.from(root().querySelectorAll<HTMLButtonElement>('#breakdown-panel button')).find(
+        (b) => b.textContent!.trim() === label,
+      );
+
+    beforeEach(async () => {
+      await create(TEST_BREAKDOWN, true);
+      fixture.componentRef.setInput('criteria', { categoryId: 'groceries' });
+      http = TestBed.inject(HttpTestingController);
+      await fixture.whenStable();
+    });
+
+    afterEach(() => http.verify());
+
+    it('narrows where it went to that period, and lists its transactions on demand', async () => {
+      expect(text('#breakdown-panel')).toContain('Click a bar to see that month.');
+      fixture.componentInstance.select(2);
+      await fixture.whenStable();
+      expect(heading()).toBe('Where it went in Sep 2026');
+      expect(text('#breakdown-panel')).toContain('Loading…');
+
+      const request = http.expectOne({ method: 'POST', url: '/api/Reports/merchants' });
+      expect(request.request.body).toEqual({
+        categoryId: 'groceries',
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+        page: 1,
+        pageSize: 8,
+      });
+      request.flush({ items: [{ name: 'NO FRILLS', count: 2, spending: 70 }], totalCount: 1 });
+      await fixture.whenStable();
+
+      expect(names()).toEqual(['NO FRILLS']);
+      expect(text('#breakdown-panel')).toContain('Sep 2026 · $70.00 · 2 transactions');
+      button('Show these')!.click();
+      expect(picked.map((p) => p.label)).toEqual(['Sep 2026']);
+    });
+
+    it('clicked again, goes back to the whole range', async () => {
+      fixture.componentInstance.select(2);
+      http.expectOne('/api/Reports/merchants').flush({ items: [], totalCount: 0 });
+      fixture.componentInstance.select(2);
+      await fixture.whenStable();
+
+      expect(heading()).toBe('Where it went');
+      expect(names()).toEqual(['NO FRILLS', 'SAFEWAY']);
+      expect(button('Show these')).toBeUndefined();
+    });
+
+    it('says when the period had no spending, and offers a retry when loading failed', async () => {
+      fixture.componentInstance.select(1);
+      http.expectOne('/api/Reports/merchants').flush({ items: [], totalCount: 0 });
+      await fixture.whenStable();
+      expect(text('#breakdown-panel')).toContain('No spending in Aug 2026.');
+
+      fixture.componentInstance.select(2);
+      http.expectOne('/api/Reports/merchants').flush(null, { status: 500, statusText: 'Error' });
+      await fixture.whenStable();
+      expect(text('#breakdown-panel [role=alert]')).toContain(
+        'Could not load where it went in Sep 2026.',
+      );
+
+      button('Retry')!.click();
+      http.expectOne('/api/Reports/merchants').flush({
+        items: [{ name: 'SAFEWAY', count: 1, spending: 70 }],
+        totalCount: 1,
+      });
+      await fixture.whenStable();
+      expect(names()).toEqual(['SAFEWAY']);
+    });
+
+    it('ignores a period’s merchants that arrive after another bar was picked', async () => {
+      fixture.componentInstance.select(0);
+      const first = http.expectOne('/api/Reports/merchants');
+      fixture.componentInstance.select(2);
+      expect(first.cancelled).toBe(true);
+      http.expectOne('/api/Reports/merchants').flush({
+        items: [{ name: 'SAFEWAY', count: 1, spending: 70 }],
+        totalCount: 1,
+      });
+      await fixture.whenStable();
+
+      expect(heading()).toBe('Where it went in Sep 2026');
+      expect(names()).toEqual(['SAFEWAY']);
+    });
+
+    it('clears with a new breakdown, whose periods are other ones', async () => {
+      fixture.componentInstance.select(2);
+      http.expectOne('/api/Reports/merchants').flush({ items: [], totalCount: 0 });
+      fixture.componentRef.setInput('breakdown', { ...TEST_BREAKDOWN });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.selected()).toBeNull();
+      expect(heading()).toBe('Where it went');
+    });
+  });
 });
