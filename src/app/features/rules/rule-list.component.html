@@ -43,6 +43,7 @@
   </div>
 } @else {
   <div id="rules-panel-categories" role="tabpanel" aria-labelledby="rules-tab-categories">
+    <app-unsorted-merchants [categories]="categories()" (ruleAdded)="rules.reload()" />
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
       <p class="text-body-secondary mb-0">
         The first rule whose keyword is in a description sets the transaction's category

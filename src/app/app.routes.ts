@@ -36,6 +36,20 @@ export const routes: Routes = [
           import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
       },
       {
+        path: 'subscriptions',
+        title: 'Subscriptions · Personal Finances',
+        loadComponent: () =>
+          import('./features/recurring/recurring-list.component').then(
+            (m) => m.RecurringListComponent,
+          ),
+      },
+      {
+        path: 'review',
+        title: 'Review · Personal Finances',
+        loadComponent: () =>
+          import('./features/review/review.component').then((m) => m.ReviewComponent),
+      },
+      {
         path: 'rules',
         title: 'Rules · Personal Finances',
         loadComponent: () =>

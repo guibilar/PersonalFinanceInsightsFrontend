@@ -22,6 +22,7 @@ import { ToastService } from '../../shared/ui/toast/toast.service';
 import { RuleFormComponent } from './rule-form.component';
 import { FlowRuleListComponent } from './flow-rule-list.component';
 import { valueOf } from '../../shared/utils/resource-value';
+import { UnsortedMerchantsComponent } from './unsorted-merchants.component';
 
 type RulesTab = 'categories' | 'flows';
 
@@ -32,6 +33,7 @@ type RulesTab = 'categories' | 'flows';
 @Component({
   selector: 'app-rule-list',
   imports: [
+    UnsortedMerchantsComponent,
     ReactiveFormsModule,
     RuleFormComponent,
     FlowRuleListComponent,

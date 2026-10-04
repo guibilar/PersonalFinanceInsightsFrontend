@@ -90,6 +90,42 @@
   </div>
 </div>
 
+@if (unsortedCount() > 0) {
+  <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2 mb-3" role="status">
+    <app-icon name="tag" [size]="16" />
+    <span class="flex-grow-1">
+      {{ unsortedCount() }} {{ unsortedCount() === 1 ? 'transaction is' : 'transactions are' }} in
+      Other because no rule names {{ unsortedCount() === 1 ? 'its merchant' : 'their merchants' }}.
+    </span>
+    <a routerLink="/rules" fragment="unsorted" class="alert-link text-nowrap">Sort them</a>
+  </div>
+}
+
+<!-- Where the month is heading -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <app-card-wrapper
+      headerTitle="Where the month is heading"
+      [subtitle]="'If ' + monthName + ' goes as usual'"
+    >
+      <a
+        card-actions
+        routerLink="/review"
+        class="small text-decoration-none d-inline-flex align-items-center gap-1"
+      >
+        Last month's review <app-icon name="arrow-right" [size]="14" />
+      </a>
+      @if (forecast.error()) {
+        <app-error-state message="Could not work out the forecast." (retry)="forecast.reload()" />
+      } @else if (forecast.value(); as value) {
+        <app-month-forecast [forecast]="value" />
+      } @else {
+        <app-skeleton [lines]="4" />
+      }
+    </app-card-wrapper>
+  </div>
+</div>
+
 <!-- Charts -->
 <div class="row g-3 mb-3">
   <div class="col-12 col-xl-8">

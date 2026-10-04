@@ -1,0 +1,249 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Review</h1>
+    <p class="text-body-secondary mb-0">A month or a year looked back on, against the one before</p>
+  </div>
+  @if (value(); as review) {
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <div class="btn-group btn-group-sm" role="group" aria-label="Review a">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [class.active]="!isYear()"
+          [attr.aria-pressed]="!isYear()"
+          (click)="switchTo('month')"
+        >
+          Month
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [class.active]="isYear()"
+          [attr.aria-pressed]="isYear()"
+          (click)="switchTo('year')"
+        >
+          Year
+        </button>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <button
+          type="button"
+          class="btn btn-icon"
+          [disabled]="!previous()"
+          [attr.aria-label]="'Previous ' + (isYear() ? 'year' : 'month')"
+          (click)="go(previous())"
+        >
+          <span class="d-inline-block" style="transform: rotate(180deg)"
+            ><app-icon name="arrow-right" [size]="16"
+          /></span>
+        </button>
+        <span class="fw-semibold text-nowrap px-1" aria-live="polite">{{ review.label }}</span>
+        <button
+          type="button"
+          class="btn btn-icon"
+          [disabled]="!next()"
+          [attr.aria-label]="'Next ' + (isYear() ? 'year' : 'month')"
+          (click)="go(next())"
+        >
+          <app-icon name="arrow-right" [size]="16" />
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (review.error()) {
+  <div class="card">
+    <div class="card-body">
+      <app-error-state message="Could not load the review." (retry)="review.reload()" />
+    </div>
+  </div>
+} @else if (value(); as review) {
+  @if (!review.complete) {
+    <p class="small text-body-secondary">
+      {{ review.label }} isn't over yet: these are its figures so far.
+    </p>
+  }
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-3">
+    <div class="col">
+      <app-stat-card
+        label="Spent"
+        icon="calendar"
+        [value]="format(review.spending)"
+        [hint]="spendingChange() ? compare(spendingChange()!, review.previousLabel) : null"
+        [hintIcon]="
+          spendingChange() ? (spendingChange()!.up ? 'trending-up' : 'trending-down') : null
+        "
+        [tone]="spendingChange() ? (spendingChange()!.up ? 'bad' : 'good') : 'neutral'"
+      />
+    </div>
+    <div class="col">
+      <app-stat-card
+        label="Came in"
+        icon="trending-up"
+        [value]="format(review.income)"
+        [hint]="leftOver(review.income - review.spending)"
+        [tone]="review.income - review.spending >= 0 ? 'good' : 'bad'"
+      />
+    </div>
+    <div class="col">
+      <app-stat-card
+        label="Purchases"
+        icon="transactions"
+        [value]="review.purchases + ''"
+        [hint]="review.noSpendDays + (review.noSpendDays === 1 ? ' day' : ' days') + ' without one'"
+      />
+    </div>
+    <div class="col">
+      <app-stat-card
+        label="Recurring payments"
+        icon="refresh"
+        [value]="format(review.recurringMonthlyTotal) + '/mo'"
+        [hint]="review.recurringCount + ' still coming, as of today'"
+      />
+    </div>
+  </div>
+
+  @if (isYear() && review.months.length > 0) {
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Spent each month</h2>
+        <div class="d-flex gap-2 align-items-end">
+          @for (month of review.months; track month.label) {
+            <div
+              class="flex-fill text-center small"
+              [title]="month.label + ': ' + format(month.spending)"
+            >
+              <div class="month-bar">
+                <div [style.height.%]="(month.spending / monthMax()) * 100"></div>
+              </div>
+              <div class="text-body-secondary mt-1">{{ month.label }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="row g-3">
+    <div class="col-12 col-xl-7">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h6 mb-1">By category</h2>
+          <p class="small text-body-secondary">
+            {{ review.label }}, with {{ review.previousLabel }} below each
+          </p>
+          @if (review.categories.length === 0) {
+            <p class="text-body-secondary text-center py-4 mb-0">No spending in either.</p>
+          } @else {
+            <ul class="list-unstyled mb-0">
+              @for (item of review.categories; track item.category.id) {
+                <li class="mb-3">
+                  <div class="d-flex justify-content-between small">
+                    <span
+                      ><span
+                        class="category-dot"
+                        [style.background-color]="item.category.color"
+                      ></span
+                      >{{ item.category.name }}</span
+                    >
+                    <span class="text-nowrap">
+                      <strong>{{ item.spending | currency }}</strong>
+                      <span class="text-body-secondary">
+                        · was {{ item.previousSpending | currency }}</span
+                      >
+                    </span>
+                  </div>
+                  <div class="bar-track mt-1">
+                    <div
+                      class="bar"
+                      [style.width.%]="(item.spending / categoryMax()) * 100"
+                      [style.background-color]="item.category.color"
+                    ></div>
+                  </div>
+                  <div class="bar-track mt-1 opacity-50">
+                    <div
+                      class="bar"
+                      [style.width.%]="(item.previousSpending / categoryMax()) * 100"
+                      [style.background-color]="item.category.color"
+                    ></div>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-5 d-flex flex-column gap-3">
+      @if (movers().up.length > 0 || movers().down.length > 0) {
+        <div class="card">
+          <div class="card-body">
+            <h2 class="h6 mb-3">What changed most</h2>
+            <ul class="list-unstyled mb-0 small">
+              @for (item of movers().up; track item.category.id) {
+                <li class="d-flex justify-content-between mb-1">
+                  <span>{{ item.category.name }}</span>
+                  <span class="text-danger text-nowrap">+{{ item.change | currency }}</span>
+                </li>
+              }
+              @for (item of movers().down; track item.category.id) {
+                <li class="d-flex justify-content-between mb-1">
+                  <span>{{ item.category.name }}</span>
+                  <span class="text-success text-nowrap">−{{ -item.change | currency }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+      <div class="card">
+        <div class="card-body">
+          <h2 class="h6 mb-3">Where the most went</h2>
+          @if (review.topMerchants.length === 0) {
+            <p class="small text-body-secondary mb-0">No spending.</p>
+          } @else {
+            <ol class="small mb-0 ps-3">
+              @for (merchant of review.topMerchants; track merchant.name) {
+                <li class="mb-1">
+                  <div class="d-flex justify-content-between gap-2">
+                    <span class="text-truncate">{{ merchant.name }}</span>
+                    <span class="text-nowrap"
+                      ><strong>{{ merchant.spending | currency }}</strong>
+                      <span class="text-body-secondary">
+                        · {{ merchant.count }} {{ merchant.count === 1 ? 'time' : 'times' }}</span
+                      ></span
+                    >
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </div>
+      </div>
+      @if (review.biggestPurchase; as purchase) {
+        <div class="card">
+          <div class="card-body">
+            <h2 class="h6 mb-2">Biggest purchase</h2>
+            <p class="mb-0">
+              <strong>{{ purchase.amount | currency }}</strong> at {{ purchase.description }}
+            </p>
+            <p class="small text-body-secondary mb-0">
+              {{ day(purchase.date) }}
+              @if (purchase.category; as category) {
+                · {{ category.name }}
+              }
+            </p>
+          </div>
+        </div>
+      }
+      <a routerLink="/subscriptions" class="small text-decoration-none"
+        >See the recurring payments →</a
+      >
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <div class="card-body"><app-skeleton [lines]="8" height="2rem" /></div>
+  </div>
+}

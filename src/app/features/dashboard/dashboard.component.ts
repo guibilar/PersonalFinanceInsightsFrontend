@@ -29,6 +29,7 @@ import { BudgetOverviewComponent } from './budget-overview/budget-overview.compo
 import { RecentTransactionsComponent } from './recent-transactions/recent-transactions.component';
 import { CategoryAveragesComponent } from './category-averages/category-averages.component';
 import { CashFlowComponent } from './cash-flow/cash-flow.component';
+import { MonthForecastComponent } from './month-forecast/month-forecast.component';
 import {
   averageCaption,
   budgetsOverLimit,
@@ -69,6 +70,7 @@ const RECENT_TRANSACTIONS = 6;
     BudgetOverviewComponent,
     RecentTransactionsComponent,
     CashFlowComponent,
+    MonthForecastComponent,
   ],
   templateUrl: './dashboard.component.html',
   providers: [CurrencyPipe],
@@ -95,6 +97,15 @@ export class DashboardComponent {
   readonly budgets = rxResource({
     stream: () => this.budgetRepository.filter({ status: Status.Active, page: 1, pageSize: 1000 }),
   });
+  readonly forecast = rxResource({
+    stream: () => this.reportsRepository.getForecast(),
+  });
+  readonly uncategorised = rxResource({
+    stream: () => this.reportsRepository.getUncategorised(),
+  });
+  /** Transactions left in Other that a rule could sort; 0 while unknown. */
+  readonly unsortedCount = computed(() => valueOf(this.uncategorised)?.transactionCount ?? 0);
+
   readonly recent = rxResource({
     stream: () => this.transactionRepository.filter({ page: 1, pageSize: RECENT_TRANSACTIONS }),
   });

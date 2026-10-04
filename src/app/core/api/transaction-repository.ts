@@ -10,6 +10,10 @@ import { ImportResultOutputDto } from '../models/outputs/import-result-output-dt
 import { TransactionInputDto } from '../models/inputs/transaction-input-dto';
 import { TransactionUpdateInputDto } from '../models/inputs/transaction-update-input-dto';
 import { ApplyRulesResultOutputDto } from '../models/outputs/apply-rules-result-output-dto';
+import {
+  BulkUpdateResultDto,
+  TransactionBulkUpdateInputDto,
+} from '../models/inputs/transaction-bulk-update-input-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -55,6 +59,11 @@ export class TransactionRepository {
    * Re-runs the current category and flow rules over the stored transactions. Categories and flows picked by
    * hand, and the categories of savings transactions, are left alone.
    */
+  /** One change (category, flow, budget) for many transactions at once. */
+  bulkUpdate(input: TransactionBulkUpdateInputDto): Observable<BulkUpdateResultDto> {
+    return this.http.post<BulkUpdateResultDto>(`${this.baseUrl}/Bulk`, input);
+  }
+
   applyRules(): Observable<ApplyRulesResultOutputDto> {
     return this.http.post<ApplyRulesResultOutputDto>(`${this.baseUrl}/ApplyRules`, null);
   }

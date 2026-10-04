@@ -7,6 +7,16 @@ import { DashboardComponent } from './dashboard.component';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { categoryRefs } from '../../testing/test-categories';
+import {
+  SpendingForecastDto,
+  UncategorisedReportDto,
+} from '../../core/models/outputs/insights-output-dto';
+import {
+  EMPTY_FORECAST,
+  EMPTY_UNCATEGORISED,
+  TEST_FORECAST,
+  TEST_UNCATEGORISED,
+} from '../../testing/test-insights';
 
 const emptyPage = {
   items: [],
@@ -60,6 +70,9 @@ describe('DashboardComponent', () => {
   });
 
   afterEach(() => {
+    // Answered in load(); a test that loads the reports itself leaves these to here.
+    http.match('/api/Reports/forecast').forEach((r) => r.flush(EMPTY_FORECAST));
+    http.match('/api/Reports/uncategorised').forEach((r) => r.flush(EMPTY_UNCATEGORISED));
     http.verify();
     vi.useRealTimers();
   });
@@ -67,6 +80,8 @@ describe('DashboardComponent', () => {
   async function load(
     month: CategorizedReportOutputDto,
     cashFlow: CashFlowReportOutputDto = emptyCashFlow,
+    forecast: SpendingForecastDto = EMPTY_FORECAST,
+    uncategorised: UncategorisedReportDto = EMPTY_UNCATEGORISED,
   ): Promise<{ dashboard: DashboardComponent; root: HTMLElement }> {
     const fixture = TestBed.createComponent(DashboardComponent);
     TestBed.tick();
@@ -80,6 +95,8 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Reports/cash-flow').flush(cashFlow);
     http.expectOne('/api/Budget/Filter').flush(emptyPage);
     http.expectOne('/api/Transaction/Filter').flush(emptyPage);
+    http.expectOne('/api/Reports/forecast').flush(forecast);
+    http.expectOne('/api/Reports/uncategorised').flush(uncategorised);
     await fixture.whenStable();
     return { dashboard: fixture.componentInstance, root: fixture.nativeElement as HTMLElement };
   }
@@ -200,6 +217,9 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Reports/cash-flow').flush(emptyCashFlow);
     http.expectOne('/api/Budget/Filter').flush(null, { status: 500, statusText: 'Error' });
     http.expectOne('/api/Transaction/Filter').flush(emptyPage);
+    http.expectOne('/api/Reports/forecast').flush(null, { status: 500, statusText: 'Error' });
+    // Unknown, the nudge to sort what is in Other just doesn't show.
+    http.expectOne('/api/Reports/uncategorised').flush(null, { status: 500, statusText: 'Error' });
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
 
@@ -215,6 +235,8 @@ describe('DashboardComponent', () => {
     ]);
     expect(root.textContent).toContain('Could not load the averages.');
     expect(root.textContent).toContain('Could not load budgets.');
+    expect(root.textContent).toContain('Could not work out the forecast.');
+    expect(root.querySelector('.alert[role=status]')).toBeNull();
   });
 
   it('says when nothing is recorded this year', async () => {
@@ -222,5 +244,41 @@ describe('DashboardComponent', () => {
 
     expect(root.querySelector('app-cash-flow')).toBeNull();
     expect(root.textContent).toContain('Nothing recorded this year yet.');
+  });
+
+  it('says where the month is heading: spent, still due and the usual day-to-day', async () => {
+    const { root } = await load(currentMonth(55), emptyCashFlow, TEST_FORECAST);
+
+    // innerText: the figures are separate blocks.
+    const card = root
+      .querySelector<HTMLElement>('app-month-forecast')!
+      .innerText.replace(/\s+/g, ' ');
+    expect(card).toContain('$1,215.00 by the end of the month');
+    expect(card).toContain('8% less than usual ($1,321.67, the average of the last 3 months)');
+    expect(card).toContain('Recurring still due $1,000.00');
+    expect(card).toContain('Day-to-day, 16 days at $10.00 $160.00');
+    expect(card).toContain('LANDLORD · Oct 20 $1,000.00');
+    expect(card).toContain('Food $460.00 of $400.00 (115%)');
+  });
+
+  it('points to the rules when transactions are left in Other', async () => {
+    const { root } = await load(
+      currentMonth(55),
+      emptyCashFlow,
+      EMPTY_FORECAST,
+      TEST_UNCATEGORISED,
+    );
+
+    const alert = root.querySelector('.alert[role=status]')!;
+    expect(alert.textContent!.replace(/\s+/g, ' ')).toContain(
+      '4 transactions are in Other because no rule names their merchants.',
+    );
+    expect(alert.querySelector('a')!.getAttribute('href')).toBe('/rules#unsorted');
+  });
+
+  it('says nothing about Other when every transaction is sorted', async () => {
+    const { root } = await load(currentMonth(55));
+
+    expect(root.querySelector('.alert[role=status]')).toBeNull();
   });
 });

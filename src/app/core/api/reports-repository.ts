@@ -13,6 +13,12 @@ import {
   TransactionBreakdownOutputDto,
 } from '../models/outputs/transaction-breakdown-output-dto';
 import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
+import {
+  RecurringReportDto,
+  ReviewReportDto,
+  SpendingForecastDto,
+  UncategorisedReportDto,
+} from '../models/outputs/insights-output-dto';
 
 @Injectable({
   providedIn: 'root',
@@ -44,5 +50,28 @@ export class ReportsRepository {
   /** A page of the merchants the list's criteria spent at, largest first; page 1 is the breakdown's top ones. */
   getMerchants(input: MerchantsInputDto): Observable<PaginatedResult<MerchantTotalDto>> {
     return this.http.post<PaginatedResult<MerchantTotalDto>>(`${this.baseUrl}/merchants`, input);
+  }
+
+  /** Subscriptions, bills and rent: payments that come again and again. */
+  getRecurring(): Observable<RecurringReportDto> {
+    return this.http.get<RecurringReportDto>(`${this.baseUrl}/recurring`);
+  }
+
+  /** Where this month's spending is heading, and each monthly and yearly budget. */
+  getForecast(): Observable<SpendingForecastDto> {
+    return this.http.get<SpendingForecastDto>(`${this.baseUrl}/forecast`);
+  }
+
+  /** Merchants left in Other because no rule names them. */
+  getUncategorised(): Observable<UncategorisedReportDto> {
+    return this.http.get<UncategorisedReportDto>(`${this.baseUrl}/uncategorised`);
+  }
+
+  /** A month, or a year without `month`; the last complete month without either. */
+  getReview(year?: number, month?: number): Observable<ReviewReportDto> {
+    const params: Record<string, number> = {};
+    if (year !== undefined) params['year'] = year;
+    if (month !== undefined) params['month'] = month;
+    return this.http.get<ReviewReportDto>(`${this.baseUrl}/review`, { params });
   }
 }
