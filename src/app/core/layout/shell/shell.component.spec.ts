@@ -41,6 +41,7 @@ describe('ShellComponent', () => {
       'Review',
       'Rules',
       'Categories',
+      'Tags',
       'Accounts',
     ]);
   });

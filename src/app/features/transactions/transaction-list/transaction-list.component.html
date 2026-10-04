@@ -49,6 +49,7 @@
   [filter]="filter()"
   [accounts]="accounts()"
   [categories]="categories()"
+  [tags]="tags()"
   (criteriaChange)="onCriteriaChange($event)"
 />
 
@@ -173,6 +174,27 @@
           }
           <option value="unlink">Unlink from budgets</option>
         </select>
+        @if (tags().length > 0) {
+          <label class="visually-hidden" for="bulk-tag">Add or remove a tag</label>
+          <select
+            id="bulk-tag"
+            class="form-select form-select-sm w-auto"
+            [disabled]="bulkSaving()"
+            (change)="bulkTag($any($event.target).value); $any($event.target).value = ''"
+          >
+            <option value="" selected>Tag…</option>
+            <optgroup label="Add">
+              @for (tag of tags(); track tag.id) {
+                <option [value]="'add:' + tag.id">Add #{{ tag.name }}</option>
+              }
+            </optgroup>
+            <optgroup label="Remove">
+              @for (tag of tags(); track tag.id) {
+                <option [value]="'remove:' + tag.id">Remove #{{ tag.name }}</option>
+              }
+            </optgroup>
+          </select>
+        }
         <button type="button" class="btn btn-link btn-sm ms-auto" (click)="clearSelection()">
           Clear
         </button>
@@ -269,6 +291,12 @@
                       }
                     </span>
                   }
+                  @if (transaction.note) {
+                    <span class="note-icon flex-shrink-0" [title]="transaction.note">
+                      <app-icon name="note" [size]="12" />
+                      <span class="visually-hidden">Note: {{ transaction.note }}</span>
+                    </span>
+                  }
                   <!-- Phones: no room for an actions column, so edit sits next to the name. -->
                   <button
                     type="button"
@@ -281,6 +309,20 @@
                     <app-icon name="pencil" [size]="14" />
                   </button>
                 </div>
+                @if (transaction.tags?.length) {
+                  <div class="d-flex flex-wrap gap-1 mt-1">
+                    @for (tag of transaction.tags; track tag.id) {
+                      <button
+                        type="button"
+                        class="tag-chip"
+                        [attr.aria-label]="'Show transactions tagged ' + tag.name"
+                        (click)="filterByTag(tag.id)"
+                      >
+                        #{{ tag.name }}
+                      </button>
+                    }
+                  </div>
+                }
                 <!-- Narrower screens have no room for the account column: it goes under the description. -->
                 <div class="small text-body-secondary d-none d-md-block d-xl-none">
                   {{ transaction.accountName }}
@@ -405,6 +447,7 @@
     <app-transaction-edit-form
       [transaction]="transaction"
       [categories]="categories()"
+      [tags]="tags()"
       [saving]="savingEdit()"
       (submitUpdate)="onEditSubmit($event)"
       (cancelled)="editingTransaction.set(null)"

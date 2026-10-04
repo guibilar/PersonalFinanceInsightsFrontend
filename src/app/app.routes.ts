@@ -64,6 +64,12 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'tags',
+        title: 'Tags · Personal Finances',
+        loadComponent: () =>
+          import('./features/tags/tag-list.component').then((m) => m.TagListComponent),
+      },
+      {
         // The bank accounts statements are imported into; features/account is the user's own account.
         path: 'accounts',
         title: 'Accounts · Personal Finances',

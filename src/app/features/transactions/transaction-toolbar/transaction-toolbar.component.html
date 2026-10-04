@@ -5,7 +5,7 @@
     (submit)="$event.preventDefault()"
   >
     <div class="flex-grow-1" style="min-width: 14rem">
-      <label for="tx-search" class="visually-hidden">Search descriptions</label>
+      <label for="tx-search" class="visually-hidden">Search descriptions and notes</label>
       <div class="input-group">
         <span class="input-group-text bg-transparent text-body-secondary"
           ><app-icon name="search" [size]="16"
@@ -14,7 +14,7 @@
           type="search"
           id="tx-search"
           class="form-control border-start-0"
-          placeholder="Search descriptions"
+          placeholder="Search descriptions and notes"
           formControlName="description"
           autocomplete="off"
         />
@@ -30,6 +30,19 @@
         }
       </select>
     </div>
+
+    <!-- The filtered tag stays offered while the tags load, so the field doesn't go blank. -->
+    @if (tags().length > 0 || filter().tagId) {
+      <div class="flex-grow-1 flex-md-grow-0">
+        <label for="tx-tag" class="visually-hidden">Tag</label>
+        <select id="tx-tag" class="form-select" formControlName="tagId">
+          <option [ngValue]="null">All tags</option>
+          @for (tag of tags(); track tag.id) {
+            <option [ngValue]="tag.id">{{ tag.name }}</option>
+          }
+        </select>
+      </div>
+    }
 
     <div class="flex-grow-1 flex-md-grow-0">
       <label for="tx-account" class="visually-hidden">Account</label>

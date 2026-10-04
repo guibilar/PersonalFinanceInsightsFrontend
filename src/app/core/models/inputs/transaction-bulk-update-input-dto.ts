@@ -8,6 +8,8 @@ export interface TransactionBulkUpdateInputDto {
   /** Links them to this active budget, moving any linked to another. */
   budgetId?: string;
   unlinkBudget?: boolean;
+  addTagId?: string;
+  removeTagId?: string;
 }
 
 export interface BulkUpdateResultDto {

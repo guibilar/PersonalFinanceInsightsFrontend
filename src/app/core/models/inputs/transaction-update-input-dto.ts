@@ -6,4 +6,8 @@ export interface TransactionUpdateInputDto {
   categoryId: string;
   /** Omitted: unchanged. A new flow is then kept when the rules are re-applied. */
   flow?: Flow;
+  /** Omitted: unchanged. Empty: cleared. */
+  note?: string;
+  /** The full set of tags. Omitted: unchanged. */
+  tagIds?: string[];
 }

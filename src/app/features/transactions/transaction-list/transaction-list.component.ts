@@ -17,6 +17,7 @@ import { BudgetRepository } from '../../../core/api/budget-repository';
 import { AccountRepository } from '../../../core/api/account-repository';
 import { CategoryRepository } from '../../../core/api/category-repository';
 import { ReportsRepository } from '../../../core/api/reports-repository';
+import { TagRepository } from '../../../core/api/tag-repository';
 import {
   SortDirection,
   TransactionFilterInputDto,
@@ -74,13 +75,14 @@ const CLOSER: Record<BreakdownInterval, BreakdownInterval> = {
 const CRITERIA_KEYS = [
   'description',
   'categoryId',
+  'tagId',
   'accountId',
   'flow',
   'startDate',
   'endDate',
 ] as const;
 
-/** The criteria a link can open the list with: ?categoryId=…&description=…&startDate=…&endDate=…&accountId=… */
+/** The criteria a link can open the list with: ?categoryId=…&tagId=…&description=…&startDate=…&endDate=…&accountId=… */
 function criteriaFromQuery(query: ParamMap): TransactionCriteria {
   const criteria: TransactionCriteria = {};
   for (const key of CRITERIA_KEYS) {
@@ -159,6 +161,7 @@ export class TransactionListComponent {
   private readonly accountRepository = inject(AccountRepository);
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly reportsRepository = inject(ReportsRepository);
+  private readonly tagRepository = inject(TagRepository);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastService);
@@ -216,12 +219,13 @@ export class TransactionListComponent {
   // Only the criteria and the interval: paging and sorting the list doesn't change the totals.
   readonly breakdownParams = computed(
     () => {
-      const { description, categoryId, accountId, flow, startDate, endDate, hidden } =
+      const { description, categoryId, tagId, accountId, flow, startDate, endDate, hidden } =
         this.filter();
       if (hidden) return undefined;
       return {
         description,
         categoryId,
+        tagId,
         accountId,
         flow,
         startDate,
@@ -244,8 +248,8 @@ export class TransactionListComponent {
   });
 
   readonly hasCriteria = computed(() => {
-    const { description, categoryId, accountId, flow, startDate, endDate } = this.filter();
-    return !!(description || categoryId || accountId || flow || startDate || endDate);
+    const { description, categoryId, tagId, accountId, flow, startDate, endDate } = this.filter();
+    return !!(description || categoryId || tagId || accountId || flow || startDate || endDate);
   });
 
   // Link dropdown needs every active budget, not just the first page.
@@ -265,6 +269,12 @@ export class TransactionListComponent {
     stream: () => this.categoryRepository.getAll(),
   });
   readonly categories = computed(() => valueOf(this.categoriesResource) ?? []);
+
+  // For the tag filter, the edit form and the bulk bar; reloaded after a change, for tags added meanwhile.
+  private readonly tagsResource = rxResource({
+    stream: () => this.tagRepository.getAll(),
+  });
+  readonly tags = computed(() => valueOf(this.tagsResource) ?? []);
 
   /** The address the page should have: its criteria, and the chart when it is open. */
   private readonly urlQuery = computed<Params>(() => {
@@ -324,6 +334,7 @@ export class TransactionListComponent {
   private reload(): void {
     this.transactions.reload();
     this.breakdown.reload();
+    this.tagsResource.reload();
   }
 
   /** A bar of the chart: list that period, and look at it a step closer (a month by week, say). */
@@ -346,6 +357,12 @@ export class TransactionListComponent {
       hidden,
       page: 1,
     }));
+  }
+
+  /** A tag on a row: the transactions with it, within the other criteria. */
+  filterByTag(tagId: string): void {
+    const { description, categoryId, accountId, flow, startDate, endDate } = this.filter();
+    this.onCriteriaChange({ description, categoryId, accountId, flow, startDate, endDate, tagId });
   }
 
   /** Switches between the transactions and the deleted ones, keeping search and sort. */
@@ -601,6 +618,13 @@ export class TransactionListComponent {
     if (this.selected().size > 0) this.selected.set(new Set());
   }
 
+  /** "add:<id>" or "remove:<id>", from the bulk bar's tag menu. */
+  bulkTag(value: string): void {
+    const [action, id] = value.split(':');
+    if (!id) return;
+    this.bulkApply(action === 'remove' ? { removeTagId: id } : { addTagId: id });
+  }
+
   bulkBudget(value: string): void {
     if (value === 'unlink') this.bulkApply({ unlinkBudget: true });
     else if (value) this.bulkApply({ budgetId: value });
@@ -610,7 +634,15 @@ export class TransactionListComponent {
   bulkApply(change: Omit<TransactionBulkUpdateInputDto, 'transactionIds'>): void {
     const ids = [...this.selected()];
     if (ids.length === 0 || this.bulkSaving()) return;
-    if (!change.categoryId && !change.flow && !change.budgetId && !change.unlinkBudget) return;
+    if (
+      !change.categoryId &&
+      !change.flow &&
+      !change.budgetId &&
+      !change.unlinkBudget &&
+      !change.addTagId &&
+      !change.removeTagId
+    )
+      return;
     this.bulkSaving.set(true);
     this.transactionRepository.bulkUpdate({ transactionIds: ids, ...change }).subscribe({
       next: ({ updated, notes }) => {

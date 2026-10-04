@@ -3,6 +3,7 @@ import { TransactionType } from '../enums/transaction-type';
 import { AccountType } from '../enums/account-type';
 import { Flow } from '../enums/flow';
 import { BudgetOutputDto } from './budget-output-dto';
+import { TagReference } from './tag-output-dto';
 
 export interface TransactionOutputDto {
   id: string;
@@ -24,4 +25,8 @@ export interface TransactionOutputDto {
   flowLocked: boolean;
   budgetId: string;
   budget?: BudgetOutputDto | null;
+  /** A note of one's own, up to 500 characters. */
+  note?: string | null;
+  /** By name. */
+  tags?: TagReference[];
 }

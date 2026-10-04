@@ -1,0 +1,127 @@
+<div class="mb-3">
+  <h1 class="h3 mb-1">Tags</h1>
+  <p class="text-body-secondary mb-0">
+    Your own labels across categories, like a trip or what's tax deductible
+  </p>
+</div>
+
+<form class="d-flex gap-2 mb-3" (submit)="$event.preventDefault(); add()">
+  <label for="new-tag" class="visually-hidden">New tag</label>
+  <input
+    type="text"
+    id="new-tag"
+    class="form-control"
+    placeholder="New tag, e.g. Vacation 2026"
+    autocomplete="off"
+    [formControl]="addName"
+    [maxlength]="maxName"
+  />
+  <button
+    type="submit"
+    class="btn btn-primary d-inline-flex align-items-center gap-2 text-nowrap"
+    [disabled]="addName.invalid || saving()"
+  >
+    <app-icon name="plus" [size]="16" /> Add tag
+  </button>
+</form>
+
+@if (tags.error()) {
+  <app-error-state message="Could not load the tags." (retry)="tags.reload()" />
+} @else if (tags.isLoading() && !tags.hasValue()) {
+  <div class="card">
+    <div class="card-body"><app-skeleton [lines]="4" height="1.75rem" /></div>
+  </div>
+} @else if (list().length === 0) {
+  <div class="card">
+    <div class="card-body text-center text-body-secondary py-5">
+      <p class="mb-1">No tags yet.</p>
+      <p class="small mb-0">
+        Add one here, or while editing a transaction. You can also tag many at once by ticking them
+        in Transactions.
+      </p>
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <ul class="tag-list" aria-label="Tags" [class.is-reloading]="tags.isLoading()">
+      @for (tag of list(); track tag.id) {
+        <li class="tag-row d-flex align-items-center gap-2 gap-sm-3">
+          <app-icon name="hash" [size]="16" class="text-body-secondary flex-shrink-0" />
+          @if (renaming()?.id === tag.id) {
+            <form
+              class="d-flex flex-grow-1 gap-2"
+              (submit)="$event.preventDefault(); rename()"
+              (keydown.escape)="renaming.set(null)"
+            >
+              <label [for]="'rename-' + tag.id" class="visually-hidden">Name</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                autocomplete="off"
+                [id]="'rename-' + tag.id"
+                [formControl]="renameName"
+                [maxlength]="maxName"
+              />
+              <button
+                type="submit"
+                class="btn btn-sm btn-primary"
+                [disabled]="renameName.invalid || saving()"
+              >
+                Save
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" (click)="renaming.set(null)">
+                Cancel
+              </button>
+            </form>
+          } @else {
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-medium text-truncate" [title]="tag.name">{{ tag.name }}</div>
+              <a
+                class="small"
+                routerLink="/transactions"
+                [queryParams]="{ tagId: tag.id }"
+                [attr.aria-label]="'Show the ' + usage(tag) + ' tagged ' + tag.name"
+                >{{ usage(tag) }}</a
+              >
+            </div>
+            <div class="d-flex flex-shrink-0">
+              <button
+                type="button"
+                class="btn btn-icon"
+                [attr.aria-label]="'Rename ' + tag.name"
+                title="Rename"
+                (click)="startRename(tag)"
+              >
+                <app-icon name="pencil" [size]="16" />
+              </button>
+              <button
+                type="button"
+                class="btn btn-icon btn-icon-danger"
+                [attr.aria-label]="'Delete ' + tag.name"
+                title="Delete"
+                (click)="deleting.set(tag)"
+              >
+                <app-icon name="trash" [size]="16" />
+              </button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+@if (deleting(); as tag) {
+  <app-confirm-dialog
+    [title]="'Delete “' + tag.name + '”?'"
+    [message]="
+      tag.transactionCount > 0
+        ? 'It comes off the ' + usage(tag) + ' that have it. The transactions stay as they are.'
+        : 'No transaction has it.'
+    "
+    [confirmLabel]="saving() ? 'Deleting…' : 'Delete'"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="deleting.set(null)"
+  />
+}

@@ -16,6 +16,7 @@ import { Flow } from '../../../core/models/enums/flow';
 import { TransactionFilterInputDto } from '../../../core/models/inputs/transaction-filter-input-dto';
 import { AccountOutputDto } from '../../../core/models/outputs/account-output-dto';
 import { CategoryReference } from '../../../core/models/outputs/category-output-dto';
+import { TagReference } from '../../../core/models/outputs/tag-output-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { FLOW_LABELS } from '../../../shared/utils/flow-helper';
 import {
@@ -29,7 +30,7 @@ import {
 /** The criteria this toolbar controls; paging and sorting stay with the page. */
 export type TransactionCriteria = Pick<
   TransactionFilterInputDto,
-  'description' | 'categoryId' | 'accountId' | 'flow' | 'startDate' | 'endDate'
+  'description' | 'categoryId' | 'tagId' | 'accountId' | 'flow' | 'startDate' | 'endDate'
 >;
 
 type CriteriaKey = keyof TransactionCriteria;
@@ -46,7 +47,7 @@ interface Chip {
 export const SEARCH_DEBOUNCE_MS = 300;
 
 /**
- * Search, category, account, flow and date filters that apply as you type, with removable chips for active
+ * Search, category, tag, account, flow and date filters that apply as you type, with removable chips for active
  * filters. Dates are picked from presets ("Last 3 months"), or typed in for a custom range.
  */
 @Component({
@@ -63,6 +64,8 @@ export class TransactionToolbarComponent {
   readonly accounts = input<AccountOutputDto[]>([]);
   /** For the category filter; the page loads them. */
   readonly categories = input<CategoryReference[]>([]);
+  /** For the tag filter, shown once there are tags; the page loads them. */
+  readonly tags = input<TagReference[]>([]);
   readonly criteriaChange = output<TransactionCriteria>();
 
   readonly flows = Object.values(Flow);
@@ -77,6 +80,7 @@ export class TransactionToolbarComponent {
   readonly form = this.fb.group({
     description: '',
     categoryId: this.fb.control<string | null>(null),
+    tagId: this.fb.control<string | null>(null),
     accountId: this.fb.control<string | null>(null),
     flow: this.fb.control<Flow | null>(null),
     period: this.fb.control<PeriodChoice>('all'),
@@ -91,6 +95,10 @@ export class TransactionToolbarComponent {
     if (filter.categoryId) {
       const category = this.categories().find((c) => c.id === filter.categoryId);
       chips.push({ key: 'categoryId', label: category?.name ?? 'Category' });
+    }
+    if (filter.tagId) {
+      const tag = this.tags().find((t) => t.id === filter.tagId);
+      chips.push({ key: 'tagId', label: `#${tag?.name ?? 'Tag'}` });
     }
     if (filter.accountId) {
       const account = this.accounts().find((a) => a.id === filter.accountId);
@@ -118,6 +126,7 @@ export class TransactionToolbarComponent {
         {
           description: filter.description ?? '',
           categoryId: filter.categoryId ?? null,
+          tagId: filter.tagId ?? null,
           accountId: filter.accountId ?? null,
           flow: filter.flow ?? null,
           period,
@@ -137,6 +146,7 @@ export class TransactionToolbarComponent {
         filter((value) => (value.trim() || undefined) !== this.filter().description),
       ),
       controls.categoryId.valueChanges,
+      controls.tagId.valueChanges,
       controls.accountId.valueChanges,
       controls.flow.valueChanges,
       controls.startDate.valueChanges,
@@ -188,6 +198,7 @@ export class TransactionToolbarComponent {
     return {
       description: value.description.trim() || undefined,
       categoryId: value.categoryId ?? undefined,
+      tagId: value.tagId ?? undefined,
       accountId: value.accountId ?? undefined,
       flow: value.flow ?? undefined,
       startDate: value.startDate || undefined,

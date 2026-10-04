@@ -117,6 +117,20 @@
     </div>
   </div>
 
+  <div class="mb-3">
+    <label for="add-note" class="form-label">Note</label>
+    <textarea
+      id="add-note"
+      class="form-control"
+      rows="2"
+      formControlName="note"
+      placeholder="Optional"
+      [maxlength]="maxNote"
+      [class.is-invalid]="form.controls.note.invalid"
+    ></textarea>
+    <div class="invalid-feedback">At most {{ maxNote }} characters.</div>
+  </div>
+
   @if (duplicate(); as message) {
     <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 py-2" role="alert">
       <span>{{ message }}</span>

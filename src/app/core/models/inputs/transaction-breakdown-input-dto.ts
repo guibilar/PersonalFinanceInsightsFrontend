@@ -5,6 +5,7 @@ import { BreakdownInterval } from '../outputs/transaction-breakdown-output-dto';
 export interface TransactionCriteriaInputDto {
   description?: string;
   categoryId?: string;
+  tagId?: string;
   accountId?: string;
   flow?: Flow;
   /** Inclusive, `yyyy-MM-dd`. */

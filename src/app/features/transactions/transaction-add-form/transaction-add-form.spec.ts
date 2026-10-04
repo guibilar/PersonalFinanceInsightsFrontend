@@ -79,6 +79,19 @@ describe('TransactionAddForm', () => {
     ]);
   });
 
+  it('sends a note, trimmed, when there is one', () => {
+    component.form.patchValue({
+      date: '2026-09-10',
+      description: 'Market',
+      amount: 20,
+      note: '  Cash, for the farm stand ',
+    });
+
+    component.onSubmit();
+
+    expect(submitted[0].note).toBe('Cash, for the farm stand');
+  });
+
   it('sends a picked category and flow, and only flows that fit the direction', () => {
     component.form.patchValue({
       description: 'Refund',
