@@ -24,7 +24,8 @@ const SHOWN = 6;
 
 /**
  * The merchants whose spending is left in Other because no rule names them, most transactions first: pick a category
- * and a rule is added for the keyword (editable) and the rules applied, sorting them all at once.
+ * and a rule is added for the keyword (editable) and the rules applied, sorting them all at once. Keeping one in Other
+ * adds a rule into Other, which says it belongs there: it isn't listed again.
  */
 @Component({
   selector: 'app-unsorted-merchants',
@@ -39,7 +40,7 @@ const SHOWN = 6;
             {{ report()!.transactionCount === 1 ? 'transaction is' : 'transactions are' }} in Other
             because no rule names
             {{ report()!.transactionCount === 1 ? 'its merchant' : 'their merchants' }}. Pick a
-            category: a rule is added and applied to all of them.
+            category, or keep it in Other: a rule is added and applied to all of them.
           </p>
           <ul class="list-group list-group-flush">
             @for (merchant of shown(); track merchant.keyword) {
@@ -78,6 +79,10 @@ const SHOWN = 6;
                   <option value="" selected>Categorise as…</option>
                   @for (category of choices(); track category.id) {
                     <option [value]="category.id">{{ category.name }}</option>
+                  }
+                  @if (other(); as other) {
+                    <option disabled>──────────</option>
+                    <option [value]="other.id">Keep in {{ other.name }}</option>
                   }
                 </select>
               </li>
@@ -121,8 +126,9 @@ export class UnsortedMerchantsComponent {
   /** The merchant whose rule is being added. */
   readonly busy = signal<string | null>(null);
 
-  /** Other is what they are in already. */
+  /** The other categories; Other, which they are in already, is offered apart, to keep them there. */
   readonly choices = computed(() => this.categories().filter((c) => !c.isFallback));
+  readonly other = computed(() => this.categories().find((c) => c.isFallback) ?? null);
 
   setKeyword(merchant: UncategorisedMerchantDto, keyword: string): void {
     this.keywords.set({ ...this.keywords(), [merchant.keyword]: keyword });
@@ -144,7 +150,9 @@ export class UnsortedMerchantsComponent {
         next: ({ updated }) => {
           this.busy.set(null);
           this.toasts.success(
-            `Rule “${keyword}” added: ${updated} ${updated === 1 ? 'transaction' : 'transactions'} now in ${category?.name ?? 'that category'}`,
+            category?.isFallback
+              ? `Rule “${keyword}” added: it stays in ${category.name} and isn't listed here any more`
+              : `Rule “${keyword}” added: ${updated} ${updated === 1 ? 'transaction' : 'transactions'} now in ${category?.name ?? 'that category'}`,
           );
           this.uncategorised.reload();
           this.ruleAdded.emit();
