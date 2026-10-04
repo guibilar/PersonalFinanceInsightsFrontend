@@ -61,6 +61,7 @@ export class TransactionAddForm implements OnInit {
   protected readonly TransactionType = TransactionType;
   readonly flowLabels = FLOW_LABELS;
   readonly maxDescription = TEXT_LIMITS.transactionDescription;
+  readonly maxNote = TEXT_LIMITS.transactionNote;
 
   readonly form = this.fb.group({
     accountId: this.fb.control<string | null>(null, Validators.required),
@@ -78,6 +79,7 @@ export class TransactionAddForm implements OnInit {
     // null: let the rules decide.
     categoryId: this.fb.control<string | null>(null),
     flow: this.fb.control<Flow | null>(null),
+    note: ['', Validators.maxLength(TEXT_LIMITS.transactionNote)],
   });
 
   private readonly direction = toSignal(this.form.controls.transactionType.valueChanges, {
@@ -125,6 +127,7 @@ export class TransactionAddForm implements OnInit {
       accountId,
       ...(value.categoryId ? { categoryId: value.categoryId } : {}),
       ...(value.flow ? { flow: value.flow } : {}),
+      ...(value.note.trim() ? { note: value.note.trim() } : {}),
       ...(allowDuplicate ? { allowDuplicate } : {}),
     });
   }

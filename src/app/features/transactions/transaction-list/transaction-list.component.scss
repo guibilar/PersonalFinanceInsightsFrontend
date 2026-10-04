@@ -44,6 +44,26 @@
   vertical-align: -0.125em;
 }
 
+.note-icon {
+  display: inline-flex;
+  color: var(--bs-secondary-color);
+}
+
+.tag-chip {
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  padding: 0 0.5rem;
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    border-color: var(--bs-secondary-color);
+  }
+}
+
 @media (max-width: 575.98px) {
   .tx-table {
     th,

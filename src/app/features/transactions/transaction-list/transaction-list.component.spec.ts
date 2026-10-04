@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { TransactionListComponent } from './transaction-list.component';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
+import { TEST_TAGS } from '../../../testing/test-tags';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { Flow } from '../../../core/models/enums/flow';
@@ -82,12 +83,16 @@ describe('TransactionListComponent', () => {
     http.verify();
   });
 
-  /** The totals over the list's criteria, which reload with it; tested on their own below. */
+  /** The totals over the list's criteria, and the tags, which reload with it; tested on their own below. */
   function flushBreakdowns() {
     http
       .match('/api/Reports/breakdown')
       .filter((r) => !r.cancelled)
       .forEach((r) => r.flush(emptyBreakdown));
+    http
+      .match('/api/Tags')
+      .filter((r) => !r.cancelled)
+      .forEach((r) => r.flush(TEST_TAGS));
   }
 
   function lastFilterRequest() {
@@ -279,6 +284,94 @@ describe('TransactionListComponent', () => {
       component.onPageChange(2);
       TestBed.tick();
       expect(component.selectedCount()).toBe(0);
+      lastFilterRequest();
+    });
+  });
+
+  describe('notes and tags', () => {
+    const tagged: TransactionOutputDto = {
+      id: 't1',
+      date: '2026-09-10',
+      amount: 4,
+      description: 'COFFEE',
+      category: TEST_CATEGORIES.other,
+      categoryLocked: false,
+      accountId: 'a2',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flow: Flow.Spending,
+      flowLocked: false,
+      budgetId: '',
+      note: 'With Sam',
+      tags: [{ id: 'g-trip', name: 'Vacation 2026' }],
+    };
+    const root = () => fixture.nativeElement as HTMLElement;
+
+    beforeEach(async () => {
+      TestBed.tick();
+      flushBreakdowns();
+      http
+        .match('/api/Transaction/Filter')
+        .filter((r) => !r.cancelled)
+        .forEach((r) => r.flush({ ...emptyPage, items: [tagged], totalCount: 1, totalPages: 1 }));
+      await fixture.whenStable();
+    });
+
+    it('shows the note and the tags, and a tag lists what has it within the other criteria', async () => {
+      const row = () => root().querySelector('tbody tr')!;
+      expect(row().querySelector('.note-icon')!.getAttribute('title')).toBe('With Sam');
+      expect(row().querySelector('.tag-chip')!.textContent?.trim()).toBe('#Vacation 2026');
+
+      component.onCriteriaChange({ accountId: 'a2' });
+      TestBed.tick();
+      flushBreakdowns();
+      http
+        .expectOne('/api/Transaction/Filter')
+        .flush({ ...emptyPage, items: [tagged], totalCount: 1, totalPages: 1 });
+      await fixture.whenStable();
+      row().querySelector<HTMLButtonElement>('.tag-chip')!.click();
+
+      expect(lastFilterRequest()).toEqual(
+        expect.objectContaining({ accountId: 'a2', tagId: 'g-trip', page: 1 }),
+      );
+      expect(component.hasCriteria()).toBe(true);
+    });
+
+    it('filters the totals by tag too', () => {
+      component.onCriteriaChange({ tagId: 'g-tax' });
+      TestBed.tick();
+
+      expect(http.expectOne('/api/Reports/breakdown').request.body).toEqual(
+        expect.objectContaining({ tagId: 'g-tax' }),
+      );
+      lastFilterRequest();
+    });
+
+    it('adds and removes a tag on the ticked transactions', async () => {
+      component.toggle('t1');
+      await fixture.whenStable();
+      const select = root().querySelector<HTMLSelectElement>('#bulk-tag')!;
+      expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+        'Tag…',
+        'Add #Tax deductible',
+        'Add #Vacation 2026',
+        'Remove #Tax deductible',
+        'Remove #Vacation 2026',
+      ]);
+
+      select.value = 'add:g-tax';
+      select.dispatchEvent(new Event('change'));
+      const add = http.expectOne('/api/Transaction/Bulk');
+      expect(add.request.body).toEqual({ transactionIds: ['t1'], addTagId: 'g-tax' });
+      add.flush({ updated: 1, skipped: 0, notes: [] });
+      lastFilterRequest();
+      await fixture.whenStable();
+
+      component.toggle('t1');
+      component.bulkTag('remove:g-trip');
+      const remove = http.expectOne('/api/Transaction/Bulk');
+      expect(remove.request.body).toEqual({ transactionIds: ['t1'], removeTagId: 'g-trip' });
+      remove.flush({ updated: 1, skipped: 0, notes: [] });
       lastFilterRequest();
     });
   });
@@ -698,6 +791,7 @@ describe('TransactionListComponent, in the address bar', () => {
     http.match('/api/Budget/Filter').forEach((r) => r.flush(page));
     http.match('/api/Accounts').forEach((r) => r.flush([]));
     http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
+    http.match('/api/Tags').forEach((r) => r.flush([]));
     const filters = http.match('/api/Transaction/Filter').filter((r) => !r.cancelled);
     filters.forEach((r) => r.flush(page));
     const breakdowns = http.match('/api/Reports/breakdown').filter((r) => !r.cancelled);

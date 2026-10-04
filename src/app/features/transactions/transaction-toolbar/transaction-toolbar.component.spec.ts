@@ -6,6 +6,7 @@ import {
   TransactionToolbarComponent,
 } from './transaction-toolbar.component';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
+import { TEST_TAGS } from '../../../testing/test-tags';
 import { Flow } from '../../../core/models/enums/flow';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
@@ -136,6 +137,7 @@ describe('TransactionToolbarComponent', () => {
     expect(component.form.getRawValue()).toEqual({
       description: 'rent',
       categoryId: null,
+      tagId: null,
       accountId: null,
       flow: null,
       period: 'custom',
@@ -143,6 +145,21 @@ describe('TransactionToolbarComponent', () => {
       endDate: '',
     });
     expect(emitted).toEqual([]);
+  });
+
+  it('filters by tag once there are tags, with the tag on its chip', () => {
+    create({ page: 1, pageSize: 10 });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('#tx-tag')).toBeNull();
+
+    fixture.componentRef.setInput('tags', TEST_TAGS);
+    fixture.detectChanges();
+    component.form.controls.tagId.setValue('g-trip');
+    expect(emitted.at(-1)).toEqual(expect.objectContaining({ tagId: 'g-trip' }));
+
+    fixture.componentRef.setInput('filter', { page: 1, pageSize: 10, tagId: 'g-trip' });
+    fixture.detectChanges();
+    expect(component.chips()).toEqual([{ key: 'tagId', label: '#Vacation 2026' }]);
   });
 
   it('filters by account and flow, with the account name on its chip', () => {

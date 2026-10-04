@@ -12,6 +12,7 @@ import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categ
 import { Flow } from '../../../core/models/enums/flow';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { TEST_TAGS } from '../../../testing/test-tags';
 
 const cornerStore: TransactionOutputDto = {
   id: 't1',
@@ -105,6 +106,55 @@ describe('TransactionEditForm', () => {
         flow: Flow.Transfer,
       },
     ]);
+  });
+
+  describe('note and tags', () => {
+    const tagged: TransactionOutputDto = {
+      ...cornerStore,
+      note: 'Snacks for the road',
+      tags: [{ id: 'g-trip', name: 'Vacation 2026' }],
+    };
+
+    it('prefills them, and leaves them out of the update when unchanged', () => {
+      TestBed.resetTestingModule();
+      create(tagged);
+      fixture.componentRef.setInput('tags', TEST_TAGS);
+      fixture.detectChanges();
+
+      expect(component.form.controls.note.value).toBe('Snacks for the road');
+      expect(component.tagIds()).toEqual(['g-trip']);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('#Vacation 2026');
+
+      component.onSubmit();
+
+      expect(submitted[0].update).toEqual({
+        description: 'SQ *CORNER STORE #12 TORONTO',
+        categoryId: TEST_CATEGORIES.other.id,
+      });
+    });
+
+    it('sends a changed note trimmed, an emptied one as empty, and the full set of tags', () => {
+      TestBed.resetTestingModule();
+      create(tagged);
+      component.form.controls.note.setValue('  Road trip snacks ');
+      component.tagIds.set(['g-trip', 'g-tax']);
+      component.onSubmit();
+      component.form.controls.note.setValue('   ');
+      component.tagIds.set([]);
+      component.onSubmit();
+
+      expect(submitted.map((s) => s.update)).toEqual([
+        expect.objectContaining({ note: 'Road trip snacks', tagIds: ['g-trip', 'g-tax'] }),
+        expect.objectContaining({ note: '', tagIds: [] }),
+      ]);
+    });
+
+    it('limits the note to 500 characters, like the API', () => {
+      component.form.controls.note.setValue('x'.repeat(501));
+      component.onSubmit();
+
+      expect(submitted).toEqual([]);
+    });
   });
 
   it('emits the trimmed description and chosen category', () => {

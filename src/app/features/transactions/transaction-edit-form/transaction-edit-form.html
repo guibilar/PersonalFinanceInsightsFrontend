@@ -55,6 +55,25 @@
     </div>
   </div>
 
+  <div class="mb-3">
+    <label for="edit-tags" class="form-label">Tags</label>
+    <app-tag-picker inputId="edit-tags" [tags]="tagOptions()" [(selected)]="tagIds" />
+  </div>
+
+  <div class="mb-3">
+    <label for="edit-note" class="form-label">Note</label>
+    <textarea
+      id="edit-note"
+      class="form-control"
+      rows="2"
+      formControlName="note"
+      placeholder="Anything to remember about it"
+      [maxlength]="maxNote"
+      [class.is-invalid]="form.controls.note.invalid"
+    ></textarea>
+    <div class="invalid-feedback">At most {{ maxNote }} characters.</div>
+  </div>
+
   @if (categoryChanged()) {
     <div class="rounded border p-3 mb-3">
       <div class="form-check mb-0">

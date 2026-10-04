@@ -14,6 +14,7 @@ export interface TransactionInputDto {
   categoryId?: string;
   /** Omitted: the flow rules decide. Given: kept when the rules are re-applied. */
   flow?: Flow;
+  note?: string;
   /** Add it although an identical transaction exists (the API answers 409 otherwise). */
   allowDuplicate?: boolean;
 }
