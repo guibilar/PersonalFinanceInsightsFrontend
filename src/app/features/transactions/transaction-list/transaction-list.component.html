@@ -127,6 +127,57 @@
       }
     </div>
   } @else {
+    @if (selectedCount() > 0) {
+      <div
+        class="bulk-bar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-primary-subtle"
+        role="region"
+        aria-label="Change the selected transactions"
+      >
+        <span class="fw-medium me-1" aria-live="polite">{{ selectedCount() }} selected</span>
+        <label class="visually-hidden" for="bulk-category">Set the category</label>
+        <select
+          id="bulk-category"
+          class="form-select form-select-sm w-auto"
+          [disabled]="bulkSaving()"
+          (change)="
+            bulkApply({ categoryId: $any($event.target).value }); $any($event.target).value = ''
+          "
+        >
+          <option value="" selected>Set category…</option>
+          @for (category of categories(); track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+          }
+        </select>
+        <label class="visually-hidden" for="bulk-flow">Set what they count as</label>
+        <select
+          id="bulk-flow"
+          class="form-select form-select-sm w-auto"
+          [disabled]="bulkSaving()"
+          (change)="bulkApply({ flow: $any($event.target).value }); $any($event.target).value = ''"
+        >
+          <option value="" selected>Counts as…</option>
+          @for (flow of flows; track flow) {
+            <option [value]="flow">{{ flowLabel(flow) }}</option>
+          }
+        </select>
+        <label class="visually-hidden" for="bulk-budget">Link to a budget</label>
+        <select
+          id="bulk-budget"
+          class="form-select form-select-sm w-auto"
+          [disabled]="bulkSaving()"
+          (change)="bulkBudget($any($event.target).value); $any($event.target).value = ''"
+        >
+          <option value="" selected>Budget…</option>
+          @for (budget of activeBudgets(); track budget.id) {
+            <option [value]="budget.id">Link to {{ budget.name }}</option>
+          }
+          <option value="unlink">Unlink from budgets</option>
+        </select>
+        <button type="button" class="btn btn-link btn-sm ms-auto" (click)="clearSelection()">
+          Clear
+        </button>
+      </div>
+    }
     <div class="table-responsive">
       <table
         class="table table-hover align-middle mb-0 tx-table"
@@ -134,6 +185,18 @@
       >
         <thead>
           <tr>
+            @if (!showDeleted()) {
+              <th scope="col" class="select-col">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  aria-label="Select every transaction on this page"
+                  [checked]="allSelected(items)"
+                  [indeterminate]="selectedCount() > 0 && !allSelected(items)"
+                  (change)="toggleAll(items, $any($event.target).checked)"
+                />
+              </th>
+            }
             @for (
               column of [columns.date, columns.description, columns.category];
               track column.field
@@ -169,7 +232,18 @@
         </thead>
         <tbody>
           @for (transaction of items; track transaction.id) {
-            <tr>
+            <tr [class.table-active]="isSelected(transaction.id)">
+              @if (!showDeleted()) {
+                <td class="select-col">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [attr.aria-label]="'Select ' + transaction.description"
+                    [checked]="isSelected(transaction.id)"
+                    (change)="toggle(transaction.id)"
+                  />
+                </td>
+              }
               <td class="d-none d-md-table-cell text-nowrap text-body-secondary small">
                 {{ transaction.date | date: 'mediumDate' : 'UTC' }}
               </td>

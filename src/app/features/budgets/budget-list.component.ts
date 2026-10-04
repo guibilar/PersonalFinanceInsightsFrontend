@@ -19,6 +19,7 @@ import { conflictDetail } from '../../shared/utils/problem-detail';
 import { periodName, periodSuffix } from '../../shared/utils/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { valueOf } from '../../shared/utils/resource-value';
+import { ReportsRepository } from '../../core/api/reports-repository';
 
 export type BudgetHealth = 'ok' | 'warning' | 'over';
 
@@ -54,6 +55,7 @@ export class BudgetListComponent {
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly toasts = inject(ToastService);
+  private readonly reportsRepository = inject(ReportsRepository);
 
   readonly filter = signal<BudgetFilterInputDto>({ page: 1, pageSize: PAGE_SIZE });
   readonly criteria = computed<BudgetCriteria>(() => ({
@@ -72,6 +74,12 @@ export class BudgetListComponent {
     stream: () => this.categoryRepository.getAll(),
   });
   readonly categories = computed(() => valueOf(this.categoriesResource) ?? []);
+
+  /** Where each monthly and yearly budget should end at its usual pace, by id. */
+  readonly forecast = rxResource({ stream: () => this.reportsRepository.getForecast() });
+  readonly projections = computed(
+    () => new Map((valueOf(this.forecast)?.budgets ?? []).map((b) => [b.budgetId, b])),
+  );
 
   readonly budgets = rxResource({
     params: () => this.filter(),
@@ -106,6 +114,7 @@ export class BudgetListComponent {
         this.saving.set(false);
         this.editing.set(undefined);
         this.budgets.reload();
+        this.forecast.reload();
         this.toasts.success(editing ? `Saved “${budget.name}”` : `Created “${budget.name}”`);
       },
       error: (error: unknown) => {
@@ -127,6 +136,7 @@ export class BudgetListComponent {
     this.budgetRepository.delete(budget.id).subscribe({
       next: () => {
         this.budgets.reload();
+        this.forecast.reload();
         this.toasts.success(`Deleted “${budget.name}”`);
       },
       error: () => this.toasts.error(`Could not delete “${budget.name}”.`),

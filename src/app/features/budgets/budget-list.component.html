@@ -175,6 +175,21 @@
                     {{ budget.percentageUsed | number: '1.0-0' }}%
                   </span>
                 </div>
+                @if (projections().get(budget.id); as projection) {
+                  <p
+                    class="small mb-0 mt-1"
+                    [class.text-body-secondary]="projection.projectedPercentage <= 90"
+                    [class.text-warning-emphasis]="
+                      projection.projectedPercentage > 90 && projection.projectedPercentage <= 100
+                    "
+                    [class.text-danger]="projection.projectedPercentage > 100"
+                  >
+                    At this pace, {{ projection.projected | currency }} ({{
+                      projection.projectedPercentage | number: '1.0-0'
+                    }}%) by the end of the
+                    {{ projection.period === 'Yearly' ? 'year' : 'month' }}
+                  </p>
+                }
               </div>
             </div>
           </article>

@@ -191,6 +191,98 @@ describe('TransactionListComponent', () => {
     expect(badge.getAttribute('title')).toBe('Picked by hand: kept when rules are re-applied');
   });
 
+  describe('bulk changes', () => {
+    const tx = (id: string, description: string): TransactionOutputDto => ({
+      id,
+      date: '2026-09-10',
+      amount: 4,
+      description,
+      category: TEST_CATEGORIES.other,
+      categoryLocked: false,
+      accountId: 'a2',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flow: Flow.Spending,
+      flowLocked: false,
+      budgetId: '',
+    });
+    const items = [tx('t1', 'COFFEE'), tx('t2', 'LUNCH'), tx('t3', 'BUS')];
+
+    beforeEach(async () => {
+      TestBed.tick();
+      flushBreakdowns();
+      http
+        .match('/api/Transaction/Filter')
+        .filter((r) => !r.cancelled)
+        .forEach((r) => r.flush({ ...emptyPage, items, totalCount: 3, totalPages: 1 }));
+      await fixture.whenStable();
+    });
+
+    const root = () => fixture.nativeElement as HTMLElement;
+    const rowBoxes = () =>
+      Array.from(root().querySelectorAll<HTMLInputElement>('tbody input[type=checkbox]'));
+
+    it('changes the category of the ticked transactions at once', async () => {
+      rowBoxes()[0].click();
+      rowBoxes()[2].click();
+      await fixture.whenStable();
+      expect(root().querySelector('.bulk-bar')!.textContent).toContain('2 selected');
+
+      const select = root().querySelector<HTMLSelectElement>('#bulk-category')!;
+      select.value = TEST_CATEGORIES.dining.id;
+      select.dispatchEvent(new Event('change'));
+      const request = http.expectOne({ method: 'POST', url: '/api/Transaction/Bulk' });
+      expect(request.request.body).toEqual({
+        transactionIds: ['t1', 't3'],
+        categoryId: TEST_CATEGORIES.dining.id,
+      });
+      request.flush({ updated: 2, skipped: 0, notes: [] });
+
+      expect(component.selectedCount()).toBe(0);
+      lastFilterRequest();
+      expect(
+        TestBed.inject(ToastService)
+          .toasts()
+          .map((t) => t.message),
+      ).toEqual(['Updated 2 transactions']);
+    });
+
+    it('says what the API skipped', () => {
+      component.toggleAll(items, true);
+      component.bulkApply({ flow: Flow.Income });
+
+      http.expectOne('/api/Transaction/Bulk').flush({
+        updated: 0,
+        skipped: 3,
+        notes: ['3 kept their flow: money out can be spending, a transfer or ignored.'],
+      });
+      lastFilterRequest();
+      expect(TestBed.inject(ToastService).toasts()[0].message).toBe(
+        'Updated 0 transactions. 3 kept their flow: money out can be spending, a transfer or ignored.',
+      );
+    });
+
+    it('unlinks from budgets, and forgets the ticks when the list changes', async () => {
+      component.toggleAll(items, true);
+      component.bulkBudget('unlink');
+      const request = http.expectOne('/api/Transaction/Bulk');
+      expect(request.request.body).toEqual({
+        transactionIds: ['t1', 't2', 't3'],
+        unlinkBudget: true,
+      });
+      request.flush({ updated: 3, skipped: 0, notes: [] });
+      lastFilterRequest();
+      await fixture.whenStable();
+
+      component.toggle('t1');
+      expect(component.selectedCount()).toBe(1);
+      component.onPageChange(2);
+      TestBed.tick();
+      expect(component.selectedCount()).toBe(0);
+      lastFilterRequest();
+    });
+  });
+
   describe('editing and rules', () => {
     const coffee: TransactionOutputDto = {
       id: 't1',

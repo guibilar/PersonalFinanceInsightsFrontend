@@ -78,3 +78,14 @@
     border-radius: 2px;
   }
 }
+
+.select-col {
+  width: 2.5rem;
+  padding-left: 1rem;
+}
+
+.bulk-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}

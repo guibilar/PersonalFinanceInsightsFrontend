@@ -8,6 +8,7 @@ import { RuleListComponent } from './rule-list.component';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../testing/test-categories';
 import { CategoryRuleOutputDto } from '../../core/models/outputs/category-rule-output-dto';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { EMPTY_UNCATEGORISED } from '../../testing/test-insights';
 
 const rules: CategoryRuleOutputDto[] = [
   { id: 'r1', keyword: 'METRO', category: TEST_CATEGORIES.groceries, position: 0 },
@@ -31,6 +32,8 @@ describe('RuleListComponent', () => {
     http.expectOne({ method: 'GET', url: '/api/CategoryRules' }).flush(list);
     // The flow rules tab has its own tests.
     http.match({ method: 'GET', url: '/api/FlowRules' }).forEach((r) => r.flush([]));
+    // What is left in Other has its own tests.
+    http.match('/api/Reports/uncategorised').forEach((r) => r.flush(EMPTY_UNCATEGORISED));
     // Let the load settle: reload() is ignored while a load is still in progress.
     await fixture.whenStable();
   }
@@ -63,7 +66,11 @@ describe('RuleListComponent', () => {
     http.expectOne({ method: 'GET', url: '/api/Categories' }).flush(TEST_CATEGORY_LIST);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Answered in load(); a test that loads the rules itself leaves it to here.
+    http.match('/api/Reports/uncategorised').forEach((r) => r.flush(EMPTY_UNCATEGORISED));
+    http.verify();
+  });
 
   it('lists the rules in order, with their category', async () => {
     await load();
@@ -99,6 +106,7 @@ describe('RuleListComponent', () => {
   it('offers a retry when loading fails', async () => {
     TestBed.tick();
     http.expectOne('/api/CategoryRules').flush(null, { status: 500, statusText: 'Error' });
+    http.match('/api/Reports/uncategorised').forEach((r) => r.flush(EMPTY_UNCATEGORISED));
     await fixture.whenStable();
 
     expect(root().querySelector('[role=alert]')!.textContent).toContain(
@@ -214,6 +222,8 @@ describe('RuleListComponent', () => {
       await new Promise((resolve) => setTimeout(resolve));
       TestBed.tick();
       http.match({ method: 'GET', url: '/api/FlowRules' }).forEach((r) => r.flush([]));
+      // Back on the categories, what is left in Other loads again.
+      http.match('/api/Reports/uncategorised').forEach((r) => r.flush(EMPTY_UNCATEGORISED));
       await fixture.whenStable();
     }
 

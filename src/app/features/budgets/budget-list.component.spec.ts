@@ -8,6 +8,7 @@ import { Status } from '../../core/models/enums/status';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../testing/test-categories';
 import { BudgetPeriod } from '../../core/models/enums/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { EMPTY_FORECAST, TEST_FORECAST } from '../../testing/test-insights';
 
 const food: BudgetOutputDto = {
   id: 'b1',
@@ -68,11 +69,30 @@ describe('BudgetListComponent', () => {
     http.expectOne('/api/Budget/Filter').flush(page);
     // For the budget form.
     http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
+    http.match('/api/Reports/forecast').forEach((r) => r.flush(EMPTY_FORECAST));
     // Let the first load settle: reload() is ignored while a load is still in progress.
     await fixture.whenStable();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Reloaded with the budgets after each change; its own test is below.
+    http.match('/api/Reports/forecast').forEach((r) => r.flush(EMPTY_FORECAST));
+    http.verify();
+  });
+
+  it('says where a monthly budget is heading at its usual pace', async () => {
+    component.forecast.reload();
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+    http.expectOne('/api/Reports/forecast').flush(TEST_FORECAST);
+    await fixture.whenStable();
+
+    const card = (fixture.nativeElement as HTMLElement).querySelector('article')!;
+    const line = card.querySelector('p.text-danger')!;
+    expect(line.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      'At this pace, $460.00 (115%) by the end of the month',
+    );
+  });
 
   it('deletes only after confirmation, then reloads and confirms with a toast', async () => {
     component.deleting.set(food);
@@ -88,6 +108,7 @@ describe('BudgetListComponent', () => {
     http.expectOne('/api/Budget/Filter').flush(page);
     // For the budget form.
     http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
+    http.match('/api/Reports/forecast').forEach((r) => r.flush(EMPTY_FORECAST));
 
     expect(component.deleting()).toBeNull();
     expect(toasts.toasts().map((t) => t.message)).toEqual(['Deleted “Food”']);

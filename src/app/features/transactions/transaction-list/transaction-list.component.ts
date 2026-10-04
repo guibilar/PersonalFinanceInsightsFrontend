@@ -26,6 +26,7 @@ import { TransactionInputDto } from '../../../core/models/inputs/transaction-inp
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
+import { TransactionBulkUpdateInputDto } from '../../../core/models/inputs/transaction-bulk-update-input-dto';
 import {
   BreakdownInterval,
   BreakdownPeriodDto,
@@ -194,6 +195,11 @@ export class TransactionListComponent {
   /** Asked to delete; the confirm dialog is showing. */
   readonly deletingTransaction = signal<TransactionOutputDto | null>(null);
   readonly removing = signal(false);
+  /** Ticked for a bulk change; cleared when the list shows other transactions. */
+  readonly selected = signal<ReadonlySet<string>>(new Set());
+  readonly selectedCount = computed(() => this.selected().size);
+  readonly bulkSaving = signal(false);
+  protected readonly flows = Object.values(Flow);
   /** Deleted transactions are listed instead of the others, each with a Restore button. */
   readonly showDeleted = computed(() => !!this.filter().hidden);
 
@@ -296,6 +302,11 @@ export class TransactionListComponent {
       if (!sameCriteria(criteria, this.filter())) this.onCriteriaChange(criteria);
       this.breakdownOpen.set(query.get('overTime') === '1');
       this.breakdownInterval.set(intervalFromQuery(query) ?? 'Month');
+    });
+    // Another page, other filters or the deleted view: what was ticked isn't on screen any more.
+    effect(() => {
+      this.filter();
+      untracked(() => this.clearSelection());
     });
     // Years of weeks are charted by month (or longer) instead: the buttons and the address say what is shown.
     effect(() => {
@@ -559,6 +570,62 @@ export class TransactionListComponent {
         this.toasts.success('Transaction unlinked');
       },
       error: () => this.toasts.error('Could not unlink the transaction.'),
+    });
+  }
+
+  isSelected(id: string): boolean {
+    return this.selected().has(id);
+  }
+
+  toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (!next.delete(id)) next.add(id);
+    this.selected.set(next);
+  }
+
+  allSelected(items: TransactionOutputDto[]): boolean {
+    return items.length > 0 && items.every((t) => this.selected().has(t.id));
+  }
+
+  /** Ticks (or unticks) every transaction on the page. */
+  toggleAll(items: TransactionOutputDto[], checked: boolean): void {
+    const next = new Set(this.selected());
+    for (const transaction of items) {
+      if (checked) next.add(transaction.id);
+      else next.delete(transaction.id);
+    }
+    this.selected.set(next);
+  }
+
+  clearSelection(): void {
+    if (this.selected().size > 0) this.selected.set(new Set());
+  }
+
+  bulkBudget(value: string): void {
+    if (value === 'unlink') this.bulkApply({ unlinkBudget: true });
+    else if (value) this.bulkApply({ budgetId: value });
+  }
+
+  /** One change for every ticked transaction; what the API skipped (a flow that doesn't fit, say) is said too. */
+  bulkApply(change: Omit<TransactionBulkUpdateInputDto, 'transactionIds'>): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0 || this.bulkSaving()) return;
+    if (!change.categoryId && !change.flow && !change.budgetId && !change.unlinkBudget) return;
+    this.bulkSaving.set(true);
+    this.transactionRepository.bulkUpdate({ transactionIds: ids, ...change }).subscribe({
+      next: ({ updated, notes }) => {
+        this.bulkSaving.set(false);
+        this.clearSelection();
+        this.reload();
+        const noun = updated === 1 ? 'transaction' : 'transactions';
+        this.toasts.success([`Updated ${updated} ${noun}`, ...notes].join('. '));
+      },
+      error: (error: unknown) => {
+        this.bulkSaving.set(false);
+        this.toasts.error(
+          conflictDetail(error, validationDetail(error, 'Could not change the transactions.')),
+        );
+      },
     });
   }
 }

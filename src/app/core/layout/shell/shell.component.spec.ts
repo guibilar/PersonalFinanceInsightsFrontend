@@ -37,6 +37,8 @@ describe('ShellComponent', () => {
       'Dashboard',
       'Transactions',
       'Budgets',
+      'Subscriptions',
+      'Review',
       'Rules',
       'Categories',
       'Accounts',
