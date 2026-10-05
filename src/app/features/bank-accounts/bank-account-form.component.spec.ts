@@ -48,7 +48,7 @@ describe('BankAccountFormComponent', () => {
 
     component.onSubmit();
 
-    expect(options).toEqual(['CIBC', 'Neo Financial', 'No files (add by hand)']);
+    expect(options).toEqual(['CIBC', 'Neo Financial', 'Wealthsimple', 'No files (add by hand)']);
     expect(submitted).toEqual([
       { name: 'Neo card', type: AccountType.CreditCard, format: StatementFormat.Neo },
     ]);

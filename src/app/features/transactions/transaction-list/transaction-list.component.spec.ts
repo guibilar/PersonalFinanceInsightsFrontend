@@ -196,6 +196,27 @@ describe('TransactionListComponent', () => {
     expect(badge.getAttribute('title')).toBe('Picked by hand: kept when rules are re-applied');
   });
 
+  it('says what an import added, and the balance a statement gave', () => {
+    lastFilterRequest();
+    component.onImported({ read: 2, added: 1, skipped: 1 });
+    component.onImported({
+      read: 1,
+      added: 0,
+      skipped: 1,
+      balance: 3845.03,
+      balanceDate: '2026-05-31T00:00:00Z',
+    });
+
+    expect(
+      TestBed.inject(ToastService)
+        .toasts()
+        .map((t) => t.message),
+    ).toEqual([
+      'Imported 1 new transaction (1 already imported)',
+      'Imported 0 new transactions (1 already imported); balance on May 31, 2026: $3,845.03',
+    ]);
+  });
+
   describe('bulk changes', () => {
     const tx = (id: string, description: string): TransactionOutputDto => ({
       id,
