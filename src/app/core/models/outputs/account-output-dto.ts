@@ -17,6 +17,8 @@ export interface AccountOutputDto {
   format: StatementFormat;
   /** Includes deleted (hidden) transactions: only an account with none can be deleted. */
   transactionCount: number;
+  /** The day of its latest transaction (deleted ones included), at midnight UTC; null without any. */
+  lastTransactionDate?: string | null;
   /** Savings and investment accounts only; None otherwise. Older APIs leave it out. */
   plan?: RegisteredPlan;
   /** The plan's contribution room for contributionRoomYear, as entered. */

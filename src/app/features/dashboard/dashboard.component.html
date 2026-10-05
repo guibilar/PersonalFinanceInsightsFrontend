@@ -1,19 +1,21 @@
 <div class="mb-4">
   <h1 class="h3 mb-1">Dashboard</h1>
-  <p class="text-body-secondary mb-0">Your spending in {{ monthName }}</p>
+  <p class="text-body-secondary mb-0">{{ monthName }} at a glance</p>
 </div>
 
 <!-- Headline numbers -->
 <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-3">
   <div class="col">
     @if (spent() !== null) {
+      <!-- Against a usual month; against last month so far until a month is finished. -->
+      @let hint = usualHint() ?? spentHint();
       <app-stat-card
         label="Spent this month"
         icon="calendar"
         [value]="format(spent()!)"
-        [hint]="spentHint()?.text"
-        [hintIcon]="spentHint() ? (spentHint()!.up ? 'trending-up' : 'trending-down') : null"
-        [tone]="spentHint()?.tone ?? 'neutral'"
+        [hint]="hint?.text"
+        [hintIcon]="hint ? (hint.up ? 'trending-up' : 'trending-down') : null"
+        [tone]="hint?.tone ?? 'neutral'"
       />
     } @else if (monthReport.error()) {
       <app-stat-card
@@ -29,17 +31,18 @@
     }
   </div>
   <div class="col">
-    @if (yearValue(); as year) {
+    @if (leftOver() !== undefined) {
       <app-stat-card
-        label="Monthly average"
-        icon="trending-up"
-        [value]="format(year.averageMonthlyTotal)"
-        [hint]="averageHint()"
+        label="Left over this month"
+        icon="wallet"
+        [value]="leftOver() === null ? '—' : format(leftOver()!.net)"
+        [hint]="leftOverHint().text"
+        [tone]="leftOverHint().tone"
       />
-    } @else if (yearReport.error()) {
+    } @else if (cashFlow.error()) {
       <app-stat-card
-        label="Monthly average"
-        icon="trending-up"
+        label="Left over this month"
+        icon="wallet"
         value="—"
         hint="Could not load this"
       />
@@ -50,15 +53,25 @@
     }
   </div>
   <div class="col">
-    @if (monthValue()) {
-      <app-stat-card
-        label="Top category"
-        icon="tag"
-        [value]="topCategory()?.category ?? '—'"
-        [hint]="topCategory() ? format(topCategory()!.amount) + ' this month' : 'No spending yet'"
-      />
-    } @else if (monthReport.error()) {
-      <app-stat-card label="Top category" icon="tag" value="—" hint="Could not load this" />
+    @if (netWorthValue(); as report) {
+      <a routerLink="/net-worth" class="stat-link">
+        <app-stat-card
+          label="Net worth"
+          icon="trending-up"
+          [value]="format(report.netWorth)"
+          [hint]="netWorthHint()?.text"
+          [hintIcon]="
+            netWorthHint() && netWorthHint()!.tone !== 'neutral'
+              ? netWorthHint()!.up
+                ? 'trending-up'
+                : 'trending-down'
+              : null
+          "
+          [tone]="netWorthHint()?.tone ?? 'neutral'"
+        />
+      </a>
+    } @else if (netWorth.error()) {
+      <app-stat-card label="Net worth" icon="trending-up" value="—" hint="Could not load this" />
     } @else {
       <div class="card h-100">
         <div class="card-body"><app-skeleton [lines]="3" /></div>
@@ -67,19 +80,23 @@
   </div>
   <div class="col">
     @if (budgetSummary(); as summary) {
-      <app-stat-card
-        label="Budgets"
-        icon="budgets"
-        [value]="summary.total === 0 ? 'None yet' : summary.over + ' of ' + summary.total + ' over'"
-        [hint]="
-          summary.total === 0
-            ? 'Create one to track a limit'
-            : summary.over === 0
-              ? 'All within limits'
-              : 'Review your budgets'
-        "
-        [tone]="summary.total === 0 ? 'neutral' : summary.over === 0 ? 'good' : 'bad'"
-      />
+      <a routerLink="/budgets" class="stat-link">
+        <app-stat-card
+          label="Budgets"
+          icon="budgets"
+          [value]="
+            summary.total === 0 ? 'None yet' : summary.over + ' of ' + summary.total + ' over'
+          "
+          [hint]="
+            summary.total === 0
+              ? 'Create one to track a limit'
+              : summary.over === 0
+                ? 'All within limits'
+                : 'Review your budgets'
+          "
+          [tone]="summary.total === 0 ? 'neutral' : summary.over === 0 ? 'good' : 'bad'"
+        />
+      </a>
     } @else if (budgets.error()) {
       <app-stat-card label="Budgets" icon="budgets" value="—" hint="Could not load this" />
     } @else {
@@ -90,15 +107,29 @@
   </div>
 </div>
 
-@if (unsortedCount() > 0) {
-  <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2 mb-3" role="status">
-    <app-icon name="tag" [size]="16" />
-    <span class="flex-grow-1">
-      {{ unsortedCount() }} {{ unsortedCount() === 1 ? 'transaction is' : 'transactions are' }} in
-      Other because no rule names {{ unsortedCount() === 1 ? 'its merchant' : 'their merchants' }}.
-    </span>
-    <a routerLink="/rules" fragment="unsorted" class="alert-link text-nowrap">Sort them</a>
-  </div>
+<!-- What needs a look: only when something does -->
+@if (attention().length > 0) {
+  <section class="card attention mb-3" aria-labelledby="attention-title">
+    <div class="card-body py-3">
+      <h2 id="attention-title" class="h6 mb-2">Needs attention</h2>
+      <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+        @for (item of attention(); track item.text) {
+          <li class="d-flex align-items-center gap-2">
+            <span class="attention-icon" [attr.data-kind]="item.kind">
+              <app-icon [name]="attentionIcons[item.kind]" [size]="14" />
+            </span>
+            <a
+              [routerLink]="item.link"
+              [fragment]="item.fragment"
+              class="attention-link flex-grow-1"
+              >{{ item.text }}</a
+            >
+            <app-icon name="arrow-right" [size]="14" class="text-body-secondary" />
+          </li>
+        }
+      </ul>
+    </div>
+  </section>
 }
 
 <!-- Where the month is heading -->
@@ -126,67 +157,86 @@
   </div>
 </div>
 
-<!-- Charts -->
+<!-- This month: by category, and the budgets -->
 <div class="row g-3 mb-3">
-  <div class="col-12 col-xl-8">
-    <app-card-wrapper headerTitle="Monthly spending" subtitle="By category, this year">
-      @if (yearReport.error()) {
-        <app-error-state message="Could not load monthly spending." (retry)="yearReport.reload()" />
-      } @else if (yearReport.value(); as report) {
-        @if (report.monthlyData.length > 0) {
-          <app-monthly-categorized-chart [report]="report" />
-        } @else {
-          <p class="text-body-secondary text-center py-5 mb-0">
-            No spending recorded this year yet.
-          </p>
-        }
-      } @else {
-        <app-skeleton [lines]="6" height="2.5rem" />
-      }
-    </app-card-wrapper>
-  </div>
-  <div class="col-12 col-xl-4">
-    <app-card-wrapper headerTitle="This month by category" [subtitle]="monthName">
-      @if (monthReport.error()) {
-        <app-error-state
-          message="Could not load this month's spending."
-          (retry)="monthReport.reload()"
-        />
-      } @else if (monthReport.value(); as report) {
-        @if (report.monthlyData.length > 0) {
-          <app-category-breakdown [report]="report" />
-        } @else {
-          <p class="text-body-secondary text-center py-5 mb-0">
-            No spending this month yet.<br />
-            <a routerLink="/transactions">Import a statement</a>
-          </p>
-        }
-      } @else {
-        <app-skeleton [lines]="6" />
-      }
-    </app-card-wrapper>
-  </div>
-</div>
-
-<!-- Typical month, by category -->
-<div class="row g-3 mb-3">
-  <div class="col-12">
+  <div class="col-12 col-xl-7">
     <app-card-wrapper
-      headerTitle="Average by category"
-      subtitle="A typical month, against this one"
+      headerTitle="By category"
+      [subtitle]="categoryView() === 'month' ? monthName : 'A typical month, against this one'"
     >
-      @if (yearReport.error()) {
-        <app-error-state message="Could not load the averages." (retry)="yearReport.reload()" />
-      } @else if (yearReport.value(); as report) {
-        @if (report.monthlyData.length > 0) {
-          <app-category-averages [report]="report" [today]="today" />
+      <div card-actions class="btn-group btn-group-sm" role="group" aria-label="Show">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [class.active]="categoryView() === 'month'"
+          [attr.aria-pressed]="categoryView() === 'month'"
+          (click)="categoryView.set('month')"
+        >
+          This month
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [class.active]="categoryView() === 'usual'"
+          [attr.aria-pressed]="categoryView() === 'usual'"
+          (click)="categoryView.set('usual')"
+        >
+          Against usual
+        </button>
+      </div>
+      @if (categoryView() === 'month') {
+        @if (monthReport.error()) {
+          <app-error-state
+            message="Could not load this month's spending."
+            (retry)="monthReport.reload()"
+          />
+        } @else if (monthReport.value(); as report) {
+          @if (report.monthlyData.length > 0) {
+            <app-category-breakdown [report]="report" />
+          } @else {
+            <p class="text-body-secondary text-center py-5 mb-0">No spending this month yet.</p>
+          }
         } @else {
-          <p class="text-body-secondary text-center py-5 mb-0">
-            No spending recorded this year yet.
+          <app-skeleton [lines]="6" />
+        }
+      } @else {
+        @if (yearReport.error()) {
+          <app-error-state message="Could not load the averages." (retry)="yearReport.reload()" />
+        } @else if (yearReport.value(); as report) {
+          @if (report.monthlyData.length > 0) {
+            <app-category-averages [report]="report" [today]="today" />
+          } @else {
+            <p class="text-body-secondary text-center py-5 mb-0">
+              No spending recorded this year yet.
+            </p>
+          }
+        } @else {
+          <app-skeleton [lines]="6" />
+        }
+      }
+    </app-card-wrapper>
+  </div>
+  <div class="col-12 col-xl-5">
+    <app-card-wrapper headerTitle="Budgets at a glance">
+      <a
+        card-actions
+        routerLink="/budgets"
+        class="small text-decoration-none d-inline-flex align-items-center gap-1"
+      >
+        Manage <app-icon name="arrow-right" [size]="14" />
+      </a>
+      @if (budgets.error()) {
+        <app-error-state message="Could not load budgets." (retry)="budgets.reload()" />
+      } @else if (budgets.value(); as page) {
+        @if (page.items.length > 0) {
+          <app-budget-overview [budgets]="page.items" />
+        } @else {
+          <p class="text-body-secondary text-center py-4 mb-0">
+            No active budgets. <a routerLink="/budgets">Create one</a>
           </p>
         }
       } @else {
-        <app-skeleton [lines]="6" />
+        <app-skeleton [lines]="4" />
       }
     </app-card-wrapper>
   </div>
@@ -214,33 +264,76 @@
   </div>
 </div>
 
-<!-- Budgets and latest activity -->
-<div class="row g-3">
-  <div class="col-12 col-xl-6">
-    <app-card-wrapper headerTitle="Budgets at a glance">
-      <a
-        card-actions
-        routerLink="/budgets"
-        class="small text-decoration-none d-inline-flex align-items-center gap-1"
-      >
-        Manage <app-icon name="arrow-right" [size]="14" />
-      </a>
-      @if (budgets.error()) {
-        <app-error-state message="Could not load budgets." (retry)="budgets.reload()" />
-      } @else if (budgets.value(); as page) {
-        @if (page.items.length > 0) {
-          <app-budget-overview [budgets]="page.items" />
+<!-- The year so far -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <app-card-wrapper headerTitle="Monthly spending" subtitle="By category, this year">
+      @if (yearReport.error()) {
+        <app-error-state message="Could not load monthly spending." (retry)="yearReport.reload()" />
+      } @else if (yearReport.value(); as report) {
+        @if (report.monthlyData.length > 0) {
+          <app-monthly-categorized-chart [report]="report" />
         } @else {
-          <p class="text-body-secondary text-center py-4 mb-0">
-            No active budgets. <a routerLink="/budgets">Create one</a>
+          <p class="text-body-secondary text-center py-5 mb-0">
+            No spending recorded this year yet.
           </p>
         }
       } @else {
-        <app-skeleton [lines]="4" />
+        <app-skeleton [lines]="6" height="2.5rem" />
       }
     </app-card-wrapper>
   </div>
-  <div class="col-12 col-xl-6">
+</div>
+
+<!-- Investments and latest activity -->
+<div class="row g-3">
+  @if (investments().length > 0) {
+    <div class="col-12 col-xl-5">
+      <app-card-wrapper headerTitle="Investments" subtitle="What they hold, and this year's room">
+        <a
+          card-actions
+          routerLink="/accounts"
+          class="small text-decoration-none d-inline-flex align-items-center gap-1"
+        >
+          Accounts <app-icon name="arrow-right" [size]="14" />
+        </a>
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-3">
+          @for (row of investments(); track row.id) {
+            <li class="investment">
+              <div class="d-flex align-items-baseline gap-2">
+                <span class="fw-semibold text-truncate">{{ row.name }}</span>
+                @if (row.plan !== 'None') {
+                  <span class="badge text-bg-light border">{{ planLabels[row.plan] }}</span>
+                }
+                <span class="ms-auto fw-semibold">{{
+                  row.balance === null ? '—' : format(row.balance)
+                }}</span>
+              </div>
+              <p class="small text-body-secondary mb-0">
+                @if (row.balanceDate) {
+                  Balance on {{ shortDate(row.balanceDate) }}
+                } @else {
+                  No balance yet
+                }
+                @if (row.plan !== 'None') {
+                  · {{ format(row.depositedThisYear) }} in this year
+                  @if (row.roomLeft !== null) {
+                    ·
+                    <span [class.text-danger]="row.roomLeft < 0">{{
+                      row.roomLeft < 0
+                        ? 'over by ' + format(-row.roomLeft)
+                        : format(row.roomLeft) + ' room left'
+                    }}</span>
+                  }
+                }
+              </p>
+            </li>
+          }
+        </ul>
+      </app-card-wrapper>
+    </div>
+  }
+  <div class="col-12" [class.col-xl-7]="investments().length > 0">
     <app-card-wrapper headerTitle="Recent transactions">
       <a
         card-actions
@@ -256,7 +349,7 @@
           <app-recent-transactions [transactions]="page.items" />
         } @else {
           <p class="text-body-secondary text-center py-4 mb-0">
-            No transactions yet. <a routerLink="/transactions">Import a statement</a>
+            No transactions yet. Import a statement to start.
           </p>
         }
       } @else {
