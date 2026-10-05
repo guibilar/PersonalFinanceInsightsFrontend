@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
+import { NetWorthReportDto } from '../models/outputs/net-worth-output-dto';
 import { CategorizedReportOutputDto } from '../models/outputs/categorized-report-output-dto';
 import { CashFlowReportOutputDto } from '../models/outputs/cash-flow-report-output-dto';
 import {
@@ -73,5 +74,10 @@ export class ReportsRepository {
     if (year !== undefined) params['year'] = year;
     if (month !== undefined) params['month'] = month;
     return this.http.get<ReviewReportDto>(`${this.baseUrl}/review`, { params });
+  }
+
+  /** What every account holds or owes today and at each of the last twelve month ends. */
+  getNetWorth(): Observable<NetWorthReportDto> {
+    return this.http.get<NetWorthReportDto>(`${this.baseUrl}/net-worth`);
   }
 }
