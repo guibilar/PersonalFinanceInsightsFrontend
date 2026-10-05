@@ -1,7 +1,7 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <p class="text-body-secondary small">
-    Upload a CSV export from the account's bank (CIBC or Neo Financial). Transactions that were
-    already imported are skipped, so overlapping statements are safe to upload.
+    Upload a statement from the account's bank (CIBC, Neo Financial or Wealthsimple). Transactions
+    that were already imported are skipped, so overlapping statements are safe to upload.
   </p>
 
   <div class="mb-3">
@@ -51,7 +51,7 @@
       <div class="invalid-feedback">{{ message }}</div>
     }
     <div id="import-file-hint" class="form-text">
-      The bank's CSV export, or for a Neo account one of its monthly PDF statements.
+      The bank's CSV export, or for a Neo or Wealthsimple account one of its monthly PDF statements.
     </div>
   </div>
 

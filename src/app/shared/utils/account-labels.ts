@@ -25,6 +25,7 @@ export function holdsSavings(type: AccountType): boolean {
 export const STATEMENT_FORMAT_LABELS: Record<StatementFormat, string> = {
   [StatementFormat.Cibc]: 'CIBC',
   [StatementFormat.Neo]: 'Neo Financial',
+  [StatementFormat.Wealthsimple]: 'Wealthsimple',
   [StatementFormat.Manual]: 'No files (add by hand)',
 };
 
