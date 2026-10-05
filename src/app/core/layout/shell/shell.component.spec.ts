@@ -6,6 +6,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ShellComponent } from './shell.component';
 import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { DataChangesService } from '../../data/data-changes.service';
 
 describe('ShellComponent', () => {
   beforeEach(() => {
@@ -26,25 +27,44 @@ describe('ShellComponent', () => {
 
   afterEach(() => localStorage.removeItem('sidebar-collapsed'));
 
-  it('renders a link per page', async () => {
+  it('renders a link per page, in groups', async () => {
     const fixture = TestBed.createComponent(ShellComponent);
     await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
 
-    const labels = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('.nav-list .label'),
-    ).map((el) => el.textContent?.trim());
-    expect(labels).toEqual([
-      'Dashboard',
-      'Transactions',
-      'Budgets',
-      'Subscriptions',
-      'Review',
-      'Net worth',
-      'Rules',
-      'Categories',
-      'Tags',
-      'Accounts',
+    const groups = Array.from(root.querySelectorAll('.nav-group')).map((group) => [
+      group.querySelector('.nav-group-label')!.textContent!.trim(),
+      Array.from(group.querySelectorAll('.nav-list .label')).map((el) => el.textContent!.trim()),
     ]);
+    expect(groups).toEqual([
+      ['Overview', ['Dashboard', 'Net worth', 'Review']],
+      ['Spending', ['Transactions', 'Budgets', 'Subscriptions']],
+      ['Setup', ['Accounts', 'Categories', 'Tags', 'Rules']],
+    ]);
+  });
+
+  it('imports statements from any page, and says so to the page showing them', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const changes = TestBed.inject(DataChangesService);
+    const before = changes.version();
+
+    root.querySelector<HTMLButtonElement>('.import-button')!.click();
+    TestBed.tick();
+    // The form's accounts: answered before waiting, or the page never settles.
+    TestBed.inject(HttpTestingController).expectOne('/api/Accounts').flush([]);
+    await fixture.whenStable();
+    expect(root.querySelector('app-statement-import')).not.toBeNull();
+
+    fixture.componentInstance.onImported({ files: 2, read: 5, added: 4, skipped: 1 });
+    await fixture.whenStable();
+
+    expect(root.querySelector('app-statement-import')).toBeNull();
+    expect(changes.version()).toBe(before + 1);
+    expect(TestBed.inject(ToastService).toasts()[0].message).toBe(
+      'Imported 4 new transactions from 2 files (1 already imported)',
+    );
   });
 
   it('remembers the collapsed state', () => {

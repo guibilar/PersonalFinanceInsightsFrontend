@@ -16,6 +16,7 @@ import { AccountRepository } from '../../../core/api/account-repository';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { accountLabel } from '../../../shared/utils/account-labels';
+import { formatCurrency } from '../../dashboard/chart-helper';
 
 /** Matches the API's upload limit. */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -151,6 +152,21 @@ export class StatementImportComponent {
       this.progressed.emit();
     }
   }
+}
+
+/** "Imported 4 new transactions from 2 files (1 already imported); balance on Jun 30, 2026: $1,000.00". */
+export function describeImport(result: ImportSummary): string {
+  const noun = result.added === 1 ? 'transaction' : 'transactions';
+  const balance =
+    result.balance != null && result.balanceDate
+      ? `; balance on ${new Date(result.balanceDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}: ${formatCurrency(result.balance)}`
+      : '';
+  return (
+    `Imported ${result.added} new ${noun}` +
+    (result.files > 1 ? ` from ${result.files} files` : '') +
+    (result.skipped > 0 ? ` (${result.skipped} already imported)` : '') +
+    balance
+  );
 }
 
 function summarize(results: ImportResultOutputDto[]): ImportSummary {

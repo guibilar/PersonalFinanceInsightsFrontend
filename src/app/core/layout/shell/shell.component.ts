@@ -9,6 +9,12 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { AuthService } from '../../auth/auth.service';
 import { ChangePasswordFormComponent } from '../../../features/account/change-password-form.component';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
+import {
+  ImportSummary,
+  StatementImportComponent,
+  describeImport,
+} from '../../../features/transactions/statement-import/statement-import.component';
+import { DataChangesService } from '../../data/data-changes.service';
 
 const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 
@@ -17,6 +23,13 @@ interface NavLink {
   label: string;
   icon: IconName;
   exact: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  links: NavLink[];
+  /** Setup pages: visited now and then, so they sit lower and quieter. */
+  quiet?: boolean;
 }
 
 /** Sidebar layout: collapsible to icons on desktop, a slide-out menu on small screens. */
@@ -30,6 +43,7 @@ interface NavLink {
     ModalComponent,
     ChangePasswordFormComponent,
     ConfirmDialogComponent,
+    StatementImportComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -40,23 +54,41 @@ export class ShellComponent {
   protected readonly auth = inject(AuthService);
   private readonly toasts = inject(ToastService);
 
-  readonly links: NavLink[] = [
-    { path: '/', label: 'Dashboard', icon: 'dashboard', exact: true },
-    { path: '/transactions', label: 'Transactions', icon: 'transactions', exact: false },
-    { path: '/budgets', label: 'Budgets', icon: 'budgets', exact: false },
-    { path: '/subscriptions', label: 'Subscriptions', icon: 'refresh', exact: false },
-    { path: '/review', label: 'Review', icon: 'calendar', exact: false },
-    { path: '/net-worth', label: 'Net worth', icon: 'trending-up', exact: false },
-    { path: '/rules', label: 'Rules', icon: 'rules', exact: false },
-    { path: '/categories', label: 'Categories', icon: 'tag', exact: false },
-    { path: '/tags', label: 'Tags', icon: 'hash', exact: false },
-    { path: '/accounts', label: 'Accounts', icon: 'bank', exact: false },
+  readonly groups: NavGroup[] = [
+    {
+      label: 'Overview',
+      links: [
+        { path: '/', label: 'Dashboard', icon: 'dashboard', exact: true },
+        { path: '/net-worth', label: 'Net worth', icon: 'trending-up', exact: false },
+        { path: '/review', label: 'Review', icon: 'calendar', exact: false },
+      ],
+    },
+    {
+      label: 'Spending',
+      links: [
+        { path: '/transactions', label: 'Transactions', icon: 'transactions', exact: false },
+        { path: '/budgets', label: 'Budgets', icon: 'budgets', exact: false },
+        { path: '/subscriptions', label: 'Subscriptions', icon: 'refresh', exact: false },
+      ],
+    },
+    {
+      label: 'Setup',
+      quiet: true,
+      links: [
+        { path: '/accounts', label: 'Accounts', icon: 'bank', exact: false },
+        { path: '/categories', label: 'Categories', icon: 'tag', exact: false },
+        { path: '/tags', label: 'Tags', icon: 'hash', exact: false },
+        { path: '/rules', label: 'Rules', icon: 'rules', exact: false },
+      ],
+    },
   ];
 
   readonly collapsed = signal(readFlag(COLLAPSED_STORAGE_KEY));
   readonly mobileOpen = signal(false);
   readonly changingPassword = signal(false);
   readonly confirmingSignOutOthers = signal(false);
+  readonly importing = signal(false);
+  protected readonly dataChanges = inject(DataChangesService);
 
   constructor() {
     // Close the slide-out menu after navigating.
@@ -66,6 +98,12 @@ export class ShellComponent {
         takeUntilDestroyed(),
       )
       .subscribe(() => this.mobileOpen.set(false));
+  }
+
+  onImported(summary: ImportSummary): void {
+    this.importing.set(false);
+    this.dataChanges.changed();
+    this.toasts.success(describeImport(summary));
   }
 
   onPasswordChanged(): void {

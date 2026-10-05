@@ -32,12 +32,12 @@ import {
   BreakdownInterval,
   BreakdownPeriodDto,
 } from '../../../core/models/outputs/transaction-breakdown-output-dto';
-import { ImportSummary } from '../statement-import/statement-import.component';
+import { ImportSummary, describeImport } from '../statement-import/statement-import.component';
+import { DataChangesService } from '../../../core/data/data-changes.service';
 import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { Flow } from '../../../core/models/enums/flow';
 import { FLOW_LABELS } from '../../../shared/utils/flow-helper';
-import { formatCurrency } from '../../dashboard/chart-helper';
 import { PAGE_SIZE_OPTIONS } from '../../../shared/utils/page-size-options';
 import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/paginated-content.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
@@ -289,6 +289,12 @@ export class TransactionListComponent {
   });
 
   constructor() {
+    // A statement imported from the sidebar while the list is open: show what it added.
+    const changes = inject(DataChangesService).version;
+    const seen = changes();
+    effect(() => {
+      if (changes() !== seen) untracked(() => this.reload());
+    });
     // The address follows the criteria, so a refresh, the back button or a copied link shows the same list...
     effect(() => {
       const queryParams = this.urlQuery();
@@ -424,17 +430,7 @@ export class TransactionListComponent {
   onImported(result: ImportSummary): void {
     this.showImport.set(false);
     this.reload();
-    const noun = result.added === 1 ? 'transaction' : 'transactions';
-    const balance =
-      result.balance != null && result.balanceDate
-        ? `; balance on ${new Date(result.balanceDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}: ${formatCurrency(result.balance)}`
-        : '';
-    this.toasts.success(
-      `Imported ${result.added} new ${noun}` +
-        (result.files > 1 ? ` from ${result.files} files` : '') +
-        (result.skipped > 0 ? ` (${result.skipped} already imported)` : '') +
-        balance,
-    );
+    this.toasts.success(describeImport(result));
   }
 
   openAdd(): void {

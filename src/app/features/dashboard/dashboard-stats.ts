@@ -1,5 +1,15 @@
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
+import {
+  CashFlowMonthDto,
+  CashFlowReportOutputDto,
+} from '../../core/models/outputs/cash-flow-report-output-dto';
+import { NetWorthMonthDto } from '../../core/models/outputs/net-worth-output-dto';
+import { RecurringReportDto } from '../../core/models/outputs/insights-output-dto';
+import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
+import { AccountType } from '../../core/models/enums/account-type';
+import { RegisteredPlan } from '../../core/models/enums/registered-plan';
+import { StatementFormat } from '../../core/models/enums/statement-format';
 
 export interface CategoryShare {
   category: string;
@@ -159,4 +169,161 @@ export function categoryAverages(year: CategorizedReportOutputDto, now: Date): C
 
 export function budgetsOverLimit(budgets: BudgetOutputDto[]): number {
   return budgets.filter((budget) => budget.percentageUsed >= 100).length;
+}
+
+/** "Oct 2026": how the reports label the month a day is in. */
+export function monthLabel(day: Date): string {
+  return `${MONTH_NAMES[day.getMonth()]} ${day.getFullYear()}`;
+}
+
+/** This month's income, spending and what was left over; null before anything is recorded this month. */
+export function leftOverThisMonth(
+  report: CashFlowReportOutputDto,
+  today: Date,
+): CashFlowMonthDto | null {
+  return report.months.find((m) => m.month === monthLabel(today)) ?? null;
+}
+
+/** What a usual month (its average) has cost by today, spread evenly over its days. */
+export function usualByNow(monthlyAverage: number, today: Date): number {
+  const days = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return (monthlyAverage * today.getDate()) / days;
+}
+
+/**
+ * How net worth moved since the end of last month; null when that month isn't known, or was known for fewer
+ * accounts than today (an account's history starting later would read as a jump).
+ */
+export function netWorthChange(months: NetWorthMonthDto[]): number | null {
+  if (months.length < 2) return null;
+  const [before, now] = months.slice(-2);
+  return before.accountsCounted < now.accountsCounted ? null : now.netWorth - before.netWorth;
+}
+
+export type AttentionKind = 'unsorted' | 'budget' | 'price' | 'statement';
+
+/** Something on the dashboard that needs a look, and where to deal with it. */
+export interface AttentionItem {
+  kind: AttentionKind;
+  text: string;
+  link: string;
+  fragment?: string;
+}
+
+/** Price changes this recent are worth a mention. */
+const PRICE_CHANGE_DAYS = 45;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/**
+ * The day an account's imported statements reach: its latest transaction or its latest balance (Wealthsimple
+ * statements record one for their last day, even in a month without activity). Null when it has neither.
+ */
+export function statementsReach(account: AccountOutputDto): string | null {
+  const days = [account.lastTransactionDate, account.balance?.date].filter((d): d is string => !!d);
+  return days.length === 0 ? null : days.reduce((a, b) => (a > b ? a : b));
+}
+
+/**
+ * Accounts whose statements stop before last month began: last month's statement is out and not imported yet.
+ * Accounts added by hand, and ones nothing was ever imported into, are left alone.
+ */
+export function accountsBehind(accounts: AccountOutputDto[], today: Date): AccountOutputDto[] {
+  const lastMonthStart = Date.UTC(today.getFullYear(), today.getMonth() - 1, 1);
+  return accounts.filter((account) => {
+    if (account.format === StatementFormat.Manual) return false;
+    const reach = statementsReach(account);
+    return reach !== null && Date.parse(reach) < lastMonthStart;
+  });
+}
+
+export interface AttentionInputs {
+  unsorted: number;
+  budgets: BudgetOutputDto[];
+  recurring: RecurringReportDto | null;
+  accounts: AccountOutputDto[];
+}
+
+/** What needs a look, most pressing first; empty when all is well. */
+export function attentionItems(inputs: AttentionInputs, today: Date): AttentionItem[] {
+  const items: AttentionItem[] = [];
+  for (const budget of inputs.budgets.filter((b) => b.percentageUsed >= 100)) {
+    items.push({
+      kind: 'budget',
+      text: `${budget.name} is over its limit (${Math.round(budget.percentageUsed)}% used)`,
+      link: '/budgets',
+    });
+  }
+  for (const account of accountsBehind(inputs.accounts, today)) {
+    items.push({
+      kind: 'statement',
+      text: `${account.name}: statements reach ${shortDate(statementsReach(account)!)}. Import last month's`,
+      link: '/transactions',
+    });
+  }
+  for (const payment of inputs.recurring?.payments ?? []) {
+    const change = payment.priceChange;
+    if (!change || payment.status === 'Stopped') continue;
+    if (today.getTime() - Date.parse(change.since) > PRICE_CHANGE_DAYS * DAY_MS) continue;
+    const verb = change.to > change.from ? 'went up' : 'went down';
+    items.push({
+      kind: 'price',
+      text: `${payment.name} ${verb} from ${money(change.from)} to ${money(change.to)}`,
+      link: '/subscriptions',
+    });
+  }
+  if (inputs.unsorted > 0) {
+    items.push({
+      kind: 'unsorted',
+      text: `${inputs.unsorted} ${inputs.unsorted === 1 ? 'transaction is' : 'transactions are'} in Other because no rule names ${inputs.unsorted === 1 ? 'its merchant' : 'their merchants'}`,
+      link: '/rules',
+      fragment: 'unsorted',
+    });
+  }
+  return items;
+}
+
+const moneyFormat = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
+function money(amount: number): string {
+  return moneyFormat.format(amount);
+}
+
+/** An investment or registered account on the dashboard: what it holds, and its plan's room this year. */
+export interface InvestmentRow {
+  id: string;
+  name: string;
+  plan: RegisteredPlan;
+  balance: number | null;
+  balanceDate: string | null;
+  depositedThisYear: number;
+  roomLeft: number | null;
+}
+
+/** Investment accounts, and savings held in a registered plan, by balance. */
+export function investments(accounts: AccountOutputDto[]): InvestmentRow[] {
+  return accounts
+    .filter(
+      (a) =>
+        a.type === AccountType.Investment ||
+        (a.plan !== undefined && a.plan !== RegisteredPlan.None),
+    )
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      plan: a.plan ?? RegisteredPlan.None,
+      balance: a.balance?.amount ?? null,
+      balanceDate: a.balance?.date ?? null,
+      depositedThisYear: a.depositedThisYear ?? 0,
+      roomLeft: a.roomLeft ?? null,
+    }))
+    .sort((a, b) => (b.balance ?? 0) - (a.balance ?? 0));
 }

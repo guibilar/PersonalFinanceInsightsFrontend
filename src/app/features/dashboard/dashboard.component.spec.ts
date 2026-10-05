@@ -11,6 +11,15 @@ import {
   SpendingForecastDto,
   UncategorisedReportDto,
 } from '../../core/models/outputs/insights-output-dto';
+import { NetWorthReportDto } from '../../core/models/outputs/net-worth-output-dto';
+import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
+import {
+  RecurringPaymentDto,
+  RecurringReportDto,
+} from '../../core/models/outputs/insights-output-dto';
+import { AccountType } from '../../core/models/enums/account-type';
+import { StatementFormat } from '../../core/models/enums/statement-format';
+import { RegisteredPlan } from '../../core/models/enums/registered-plan';
 import {
   EMPTY_FORECAST,
   EMPTY_UNCATEGORISED,
@@ -26,6 +35,58 @@ const emptyPage = {
   totalPages: 0,
   hasPreviousPage: false,
   hasNextPage: false,
+};
+
+const EMPTY_NET_WORTH: NetWorthReportDto = {
+  assets: 0,
+  liabilities: 0,
+  netWorth: 0,
+  accounts: [],
+  months: [],
+};
+
+const TEST_NET_WORTH: NetWorthReportDto = {
+  assets: 16000,
+  liabilities: 1000,
+  netWorth: 15000,
+  accounts: [],
+  months: [
+    {
+      month: 'Aug 2026',
+      date: '2026-08-31',
+      assets: 15200,
+      liabilities: 700,
+      netWorth: 14500,
+      accountsCounted: 2,
+    },
+    {
+      month: 'Sep 2026',
+      date: '2026-09-05',
+      assets: 16000,
+      liabilities: 1000,
+      netWorth: 15000,
+      accountsCounted: 2,
+    },
+  ],
+};
+
+const EMPTY_RECURRING: RecurringReportDto = { payments: [], monthlyTotal: 0, yearlyTotal: 0 };
+
+const TEST_RECURRING_PAYMENT: RecurringPaymentDto = {
+  name: 'SPOTIFY',
+  cadence: 'Monthly',
+  status: 'Active',
+  amount: 12.99,
+  variableAmount: false,
+  firstDate: '2025-01-10',
+  lastDate: '2026-08-20',
+  lastAmount: 12.99,
+  nextDate: '2026-09-20',
+  count: 20,
+  monthlyCost: 12.99,
+  yearlyCost: 155.88,
+  category: null,
+  priceChange: null,
 };
 
 const emptyCashFlow: CashFlowReportOutputDto = {
@@ -73,6 +134,9 @@ describe('DashboardComponent', () => {
     // Answered in load(); a test that loads the reports itself leaves these to here.
     http.match('/api/Reports/forecast').forEach((r) => r.flush(EMPTY_FORECAST));
     http.match('/api/Reports/uncategorised').forEach((r) => r.flush(EMPTY_UNCATEGORISED));
+    http.match('/api/Reports/net-worth').forEach((r) => r.flush(EMPTY_NET_WORTH));
+    http.match('/api/Accounts').forEach((r) => r.flush([]));
+    http.match('/api/Reports/recurring').forEach((r) => r.flush(EMPTY_RECURRING));
     http.verify();
     vi.useRealTimers();
   });
@@ -82,6 +146,11 @@ describe('DashboardComponent', () => {
     cashFlow: CashFlowReportOutputDto = emptyCashFlow,
     forecast: SpendingForecastDto = EMPTY_FORECAST,
     uncategorised: UncategorisedReportDto = EMPTY_UNCATEGORISED,
+    extra: {
+      netWorth?: NetWorthReportDto;
+      accounts?: AccountOutputDto[];
+      recurring?: RecurringReportDto;
+    } = {},
   ): Promise<{ dashboard: DashboardComponent; root: HTMLElement }> {
     const fixture = TestBed.createComponent(DashboardComponent);
     TestBed.tick();
@@ -97,6 +166,9 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Transaction/Filter').flush(emptyPage);
     http.expectOne('/api/Reports/forecast').flush(forecast);
     http.expectOne('/api/Reports/uncategorised').flush(uncategorised);
+    http.expectOne('/api/Reports/net-worth').flush(extra.netWorth ?? EMPTY_NET_WORTH);
+    http.expectOne('/api/Accounts').flush(extra.accounts ?? []);
+    http.expectOne('/api/Reports/recurring').flush(extra.recurring ?? EMPTY_RECURRING);
     await fixture.whenStable();
     return { dashboard: fixture.componentInstance, root: fixture.nativeElement as HTMLElement };
   }
@@ -107,10 +179,15 @@ describe('DashboardComponent', () => {
     expect(dashboard.spentHint()).toEqual({ text: '20% more than Aug 1–5', tone: 'bad', up: true });
   });
 
-  it('says the average covers finished months only', async () => {
+  it('puts this month against a usual one, the average of the finished months', async () => {
     const { dashboard } = await load(currentMonth(300, 250));
 
-    expect(dashboard.averageHint()).toBe('Over 1 finished month');
+    // September 5th: a usual $2,000 month has cost 5/30 of it, $333.33, by now.
+    expect(dashboard.usualHint()).toEqual({
+      text: '$33.33 under a usual month by now',
+      tone: 'good',
+      up: false,
+    });
   });
 
   it('shows no comparison without last month’s figure', async () => {
@@ -220,6 +297,9 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Reports/forecast').flush(null, { status: 500, statusText: 'Error' });
     // Unknown, the nudge to sort what is in Other just doesn't show.
     http.expectOne('/api/Reports/uncategorised').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/Reports/net-worth').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/Accounts').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/Reports/recurring').flush(null, { status: 500, statusText: 'Error' });
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
 
@@ -229,14 +309,14 @@ describe('DashboardComponent', () => {
     );
     expect(tiles).toEqual([
       expect.stringContaining('Spent this month $300.00'),
-      expect.stringContaining('Monthly average — Could not load this'),
-      expect.stringContaining('Top category Dining'),
+      expect.stringContaining('Left over this month — No income or spending yet'),
+      expect.stringContaining('Net worth — Could not load this'),
       expect.stringContaining('Budgets — Could not load this'),
     ]);
-    expect(root.textContent).toContain('Could not load the averages.');
+    expect(root.textContent).toContain('Could not load monthly spending.');
     expect(root.textContent).toContain('Could not load budgets.');
     expect(root.textContent).toContain('Could not work out the forecast.');
-    expect(root.querySelector('.alert[role=status]')).toBeNull();
+    expect(root.querySelector('.attention')).toBeNull();
   });
 
   it('says when nothing is recorded this year', async () => {
@@ -269,16 +349,142 @@ describe('DashboardComponent', () => {
       TEST_UNCATEGORISED,
     );
 
-    const alert = root.querySelector('.alert[role=status]')!;
-    expect(alert.textContent!.replace(/\s+/g, ' ')).toContain(
-      '4 transactions are in Other because no rule names their merchants.',
+    const attention = root.querySelector('.attention')!;
+    expect(attention.textContent!.replace(/\s+/g, ' ')).toContain(
+      '4 transactions are in Other because no rule names their merchants',
     );
-    expect(alert.querySelector('a')!.getAttribute('href')).toBe('/rules#unsorted');
+    expect(attention.querySelector('a')!.getAttribute('href')).toBe('/rules#unsorted');
   });
 
   it('says nothing about Other when every transaction is sorted', async () => {
     const { root } = await load(currentMonth(55));
 
-    expect(root.querySelector('.alert[role=status]')).toBeNull();
+    expect(root.querySelector('.attention')).toBeNull();
+  });
+
+  it('doesn’t warn about what is left over before any income this month', async () => {
+    const { root } = await load(currentMonth(300), {
+      ...emptyCashFlow,
+      months: [{ month: 'Sep 2026', income: 0, spending: 300, net: -300, savingsChange: 0 }],
+    });
+
+    const tile = root.querySelectorAll<HTMLElement>('app-stat-card')[1];
+    expect(tile.innerText.replace(/\s+/g, ' ').trim()).toBe(
+      'Left over this month -$300.00 No income yet this month',
+    );
+    expect(tile.querySelector('.text-danger')).toBeNull();
+  });
+
+  it('shows what was left over this month, and net worth with its change since last month', async () => {
+    const { root } = await load(
+      currentMonth(300),
+      {
+        ...emptyCashFlow,
+        months: [{ month: 'Sep 2026', income: 4000, spending: 2600, net: 1400, savingsChange: 0 }],
+      },
+      EMPTY_FORECAST,
+      EMPTY_UNCATEGORISED,
+      { netWorth: TEST_NET_WORTH },
+    );
+
+    const tiles = Array.from(root.querySelectorAll<HTMLElement>('app-stat-card')).map((tile) =>
+      tile.innerText.replace(/\s+/g, ' ').trim(),
+    );
+    expect(tiles[1]).toBe('Left over this month $1,400.00 Income less spending so far');
+    expect(tiles[2]).toContain('Net worth $15,000.00 +$500.00 since last month');
+    expect(root.querySelector('a.stat-link')!.getAttribute('href')).toBe('/net-worth');
+  });
+
+  it('lists what needs attention: budgets over, statements not imported, price changes', async () => {
+    const { root } = await load(
+      currentMonth(300),
+      emptyCashFlow,
+      EMPTY_FORECAST,
+      EMPTY_UNCATEGORISED,
+      {
+        accounts: [
+          {
+            id: 'a1',
+            name: 'Wealthsimple TFSA',
+            type: AccountType.Investment,
+            format: StatementFormat.Wealthsimple,
+            transactionCount: 3,
+            lastTransactionDate: '2026-06-16T00:00:00Z',
+            balance: { id: 'b1', date: '2026-06-30T00:00:00Z', amount: 4380.73 },
+          },
+          {
+            id: 'a2',
+            name: 'Chequing',
+            type: AccountType.Chequing,
+            format: StatementFormat.Cibc,
+            transactionCount: 40,
+            lastTransactionDate: '2026-09-02T00:00:00Z',
+          },
+        ],
+        recurring: {
+          monthlyTotal: 20,
+          yearlyTotal: 240,
+          payments: [
+            {
+              ...TEST_RECURRING_PAYMENT,
+              name: 'NETFLIX',
+              priceChange: { from: 16.49, to: 18.99, since: '2026-08-20' },
+            },
+          ],
+        },
+      },
+    );
+
+    const items = Array.from(root.querySelectorAll<HTMLElement>('.attention li')).map((li) =>
+      li.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(items).toEqual([
+      "Wealthsimple TFSA: statements reach Jun 30, 2026. Import last month's",
+      'NETFLIX went up from $16.49 to $18.99',
+    ]);
+  });
+
+  it('lists investments with their balance and this year’s room', async () => {
+    const { root } = await load(
+      currentMonth(300),
+      emptyCashFlow,
+      EMPTY_FORECAST,
+      EMPTY_UNCATEGORISED,
+      {
+        accounts: [
+          {
+            id: 'a1',
+            name: 'Wealthsimple TFSA',
+            type: AccountType.Investment,
+            format: StatementFormat.Wealthsimple,
+            transactionCount: 3,
+            plan: RegisteredPlan.Tfsa,
+            contributionRoom: 7000,
+            contributionRoomYear: 2026,
+            depositedThisYear: 5300,
+            roomLeft: 1700,
+            balance: { id: 'b1', date: '2026-08-31T00:00:00Z', amount: 4380.73 },
+          },
+        ],
+      },
+    );
+
+    const card = root.querySelector<HTMLElement>('.investment')!.innerText.replace(/\s+/g, ' ');
+    expect(card).toContain('Wealthsimple TFSA TFSA $4,380.73');
+    expect(card).toContain(
+      'Balance on Aug 31, 2026 · $5,300.00 in this year · $1,700.00 room left',
+    );
+  });
+
+  it('switches the category card between this month and a usual one', async () => {
+    const { dashboard, root } = await load(currentMonth(300));
+    expect(root.querySelector('app-category-breakdown')).not.toBeNull();
+
+    dashboard.categoryView.set('usual');
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+
+    expect(root.querySelector('app-category-breakdown')).toBeNull();
+    expect(root.querySelector('app-category-averages')).not.toBeNull();
   });
 });
