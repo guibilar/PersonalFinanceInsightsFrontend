@@ -198,8 +198,9 @@ describe('TransactionListComponent', () => {
 
   it('says what an import added, and the balance a statement gave', () => {
     lastFilterRequest();
-    component.onImported({ read: 2, added: 1, skipped: 1 });
+    component.onImported({ files: 1, read: 2, added: 1, skipped: 1 });
     component.onImported({
+      files: 3,
       read: 1,
       added: 0,
       skipped: 1,
@@ -213,7 +214,7 @@ describe('TransactionListComponent', () => {
         .map((t) => t.message),
     ).toEqual([
       'Imported 1 new transaction (1 already imported)',
-      'Imported 0 new transactions (1 already imported); balance on May 31, 2026: $3,845.03',
+      'Imported 0 new transactions from 3 files (1 already imported); balance on May 31, 2026: $3,845.03',
     ]);
   });
 

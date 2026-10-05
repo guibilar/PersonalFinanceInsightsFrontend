@@ -1,7 +1,8 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <p class="text-body-secondary small">
-    Upload a statement from the account's bank (CIBC, Neo Financial or Wealthsimple). Transactions
-    that were already imported are skipped, so overlapping statements are safe to upload.
+    Upload statements from the account's bank (CIBC, Neo Financial or Wealthsimple), one or several
+    at a time. Transactions that were already imported are skipped, so overlapping statements are
+    safe to upload.
   </p>
 
   <div class="mb-3">
@@ -36,53 +37,104 @@
   </div>
 
   <div class="mb-3">
-    <label for="import-file" class="form-label">Statement file (.csv or .pdf) *</label>
+    <label for="import-file" class="form-label">Statement files (.csv or .pdf) *</label>
     <input
       #fileInput
       type="file"
       id="import-file"
       class="form-control"
+      multiple
       accept=".csv,text/csv,.pdf,application/pdf"
       aria-describedby="import-file-hint"
       [class.is-invalid]="fileError()"
+      [disabled]="uploading()"
       (change)="onFileSelected(fileInput)"
     />
     @if (fileError(); as message) {
       <div class="invalid-feedback">{{ message }}</div>
     }
     <div id="import-file-hint" class="form-text">
-      The bank's CSV export, or for a Neo or Wealthsimple account one of its monthly PDF statements.
+      The bank's CSV export, or for a Neo or Wealthsimple account its monthly PDF statements. Pick
+      several to import them all into the account.
     </div>
   </div>
 
-  @if (mismatch(); as message) {
-    <div class="alert alert-warning py-2" role="alert">
-      <p class="mb-2">{{ message }}</p>
-      <button
-        type="button"
-        class="btn btn-sm btn-outline-secondary"
-        [disabled]="uploading()"
-        (click)="onSubmit(true)"
-      >
-        Import anyway
-      </button>
-    </div>
-  }
-
-  @if (error(); as message) {
-    <div class="alert alert-danger py-2" role="alert">{{ message }}</div>
+  @if (files().length > 0) {
+    <ul
+      class="list-unstyled mb-3 d-flex flex-column gap-2"
+      aria-label="Files to import"
+      aria-live="polite"
+    >
+      @for (entry of files(); track entry.file) {
+        <li
+          class="border rounded px-2 py-1 small"
+          [class.border-danger]="entry.state === 'failed'"
+          [class.border-warning]="entry.state === 'mismatch'"
+        >
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-truncate flex-grow-1" [title]="entry.file.name">{{
+              entry.file.name
+            }}</span>
+            <span class="flex-shrink-0 text-body-secondary file-status">
+              @switch (entry.state) {
+                @case ('waiting') {
+                  Ready
+                }
+                @case ('importing') {
+                  <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  Importing…
+                }
+                @case ('imported') {
+                  <span class="text-success">
+                    {{ entry.result!.added }} added
+                    @if (entry.result!.skipped > 0) {
+                      , {{ entry.result!.skipped }} already in
+                    }
+                  </span>
+                }
+                @case ('failed') {
+                  <span class="text-danger">Not imported</span>
+                }
+                @case ('mismatch') {
+                  <span class="text-warning-emphasis">Another account's?</span>
+                }
+              }
+            </span>
+          </div>
+          @if (entry.message; as message) {
+            <p class="mb-1 mt-1">{{ message }}</p>
+          }
+          @if (entry.state === 'mismatch') {
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary mb-1"
+              [disabled]="uploading()"
+              (click)="importAnyway(entry)"
+            >
+              Import anyway
+            </button>
+          }
+        </li>
+      }
+    </ul>
   }
 
   <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
-    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">
+      {{ anyImported() ? 'Close' : 'Cancel' }}
+    </button>
     <button
       type="submit"
       class="btn btn-primary"
-      [disabled]="form.invalid || !file() || uploading()"
+      [disabled]="form.invalid || pending().length === 0 || uploading()"
     >
       @if (uploading()) {
         <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
         Importing…
+      } @else if (pending().length > 1) {
+        Import {{ pending().length }} files
+      } @else if (files().some((f) => f.state === 'failed')) {
+        Try again
       } @else {
         Import
       }
