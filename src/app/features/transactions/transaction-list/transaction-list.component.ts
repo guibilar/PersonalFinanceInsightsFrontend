@@ -32,7 +32,7 @@ import {
   BreakdownInterval,
   BreakdownPeriodDto,
 } from '../../../core/models/outputs/transaction-breakdown-output-dto';
-import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
+import { ImportSummary } from '../statement-import/statement-import.component';
 import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { Flow } from '../../../core/models/enums/flow';
@@ -332,7 +332,7 @@ export class TransactionListComponent {
   protected readonly applyRulesConfirmation = APPLY_RULES_CONFIRMATION;
 
   /** After a change to the transactions: the list, and the totals over them. */
-  private reload(): void {
+  protected reload(): void {
     this.transactions.reload();
     this.breakdown.reload();
     this.tagsResource.reload();
@@ -421,7 +421,7 @@ export class TransactionListComponent {
     return FLOW_LABELS[flow];
   }
 
-  onImported(result: ImportResultOutputDto): void {
+  onImported(result: ImportSummary): void {
     this.showImport.set(false);
     this.reload();
     const noun = result.added === 1 ? 'transaction' : 'transactions';
@@ -431,6 +431,7 @@ export class TransactionListComponent {
         : '';
     this.toasts.success(
       `Imported ${result.added} new ${noun}` +
+        (result.files > 1 ? ` from ${result.files} files` : '') +
         (result.skipped > 0 ? ` (${result.skipped} already imported)` : '') +
         balance,
     );

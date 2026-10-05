@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { AccountRepository } from '../../../core/api/account-repository';
@@ -12,6 +19,20 @@ import { accountLabel } from '../../../shared/utils/account-labels';
 
 /** Matches the API's upload limit. */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+/** One of the files picked, and how its import went. */
+export interface FileImport {
+  file: File;
+  state: 'waiting' | 'importing' | 'imported' | 'failed' | 'mismatch';
+  /** Why it failed, or why the API thinks it belongs to another account. */
+  message?: string;
+  result?: ImportResultOutputDto;
+}
+
+/** What all the files added together; the balance is the latest a statement gave. */
+export interface ImportSummary extends ImportResultOutputDto {
+  files: number;
+}
 
 @Component({
   selector: 'app-statement-import',
@@ -24,7 +45,10 @@ export class StatementImportComponent {
   private readonly accountRepository = inject(AccountRepository);
   private readonly fb = inject(NonNullableFormBuilder);
 
-  readonly imported = output<ImportResultOutputDto>();
+  /** Every file is in: the dialog can close. */
+  readonly imported = output<ImportSummary>();
+  /** Some files are in and others need attention: the list behind can show what was added meanwhile. */
+  readonly progressed = output<void>();
   readonly cancelled = output<void>();
 
   // Accounts without statement files have nothing to import into.
@@ -40,61 +64,107 @@ export class StatementImportComponent {
     accountId: this.fb.control<string | null>(null, Validators.required),
   });
 
-  readonly file = signal<File | null>(null);
+  readonly files = signal<FileImport[]>([]);
   readonly fileError = signal<string | null>(null);
-  readonly uploading = signal(false);
-  readonly error = signal<string | null>(null);
-  /** The API's reason to think the file is from another account; the import can go ahead anyway. */
-  readonly mismatch = signal<string | null>(null);
+  readonly uploading = computed(() => this.files().some((f) => f.state === 'importing'));
+  /** Files still to send: new ones, and ones that failed (tried again). */
+  readonly pending = computed(() =>
+    this.files().filter((f) => f.state === 'waiting' || f.state === 'failed'),
+  );
+  readonly anyImported = computed(() => this.files().some((f) => f.state === 'imported'));
 
   constructor() {
-    // A different account may well be the right one: the warning was about the previous choice.
+    // A different account may well be the right one: the warnings were about the previous choice.
     this.form.controls.accountId.valueChanges
       .pipe(takeUntilDestroyed())
-      .subscribe(() => this.mismatch.set(null));
+      .subscribe(() =>
+        this.files.update((files) =>
+          files.map((f) => (f.state === 'mismatch' ? { file: f.file, state: 'waiting' } : f)),
+        ),
+      );
   }
 
   onFileSelected(input: HTMLInputElement): void {
-    const file = input.files?.[0] ?? null;
-    this.error.set(null);
-    this.mismatch.set(null);
-    if (file && file.size > MAX_FILE_BYTES) {
-      this.file.set(null);
-      this.fileError.set('The file is larger than 5 MB.');
-      return;
-    }
-    this.fileError.set(null);
-    this.file.set(file);
+    const picked = Array.from(input.files ?? []);
+    const tooLarge = picked.filter((f) => f.size > MAX_FILE_BYTES);
+    this.fileError.set(
+      tooLarge.length === 0
+        ? null
+        : tooLarge.length === 1 && picked.length === 1
+          ? 'The file is larger than 5 MB.'
+          : `Left out, larger than 5 MB: ${tooLarge.map((f) => f.name).join(', ')}.`,
+    );
+    this.files.set(
+      picked
+        .filter((f) => f.size <= MAX_FILE_BYTES)
+        .map((file) => ({ file, state: 'waiting' as const })),
+    );
   }
 
-  /** `confirmed`: import even though the API said the file looks like it's from another account. */
-  onSubmit(confirmed = false): void {
-    const file = this.file();
+  /** Sends the files still to import, one after another (a refused one doesn't stop the rest). */
+  async onSubmit(): Promise<void> {
     const accountId = this.form.controls.accountId.value;
-    if (!file || !accountId || this.uploading()) {
+    const pending = this.pending();
+    if (pending.length === 0 || !accountId || this.uploading()) {
       this.form.markAllAsTouched();
       return;
     }
-
-    this.uploading.set(true);
-    this.error.set(null);
-    this.mismatch.set(null);
-    this.repository.importStatement(file, accountId, confirmed).subscribe({
-      next: (result) => {
-        this.uploading.set(false);
-        this.imported.emit(result);
-      },
-      error: (error: unknown) => {
-        this.uploading.set(false);
-        const mismatch = accountMismatch(error);
-        if (mismatch) {
-          this.mismatch.set(mismatch);
-        } else {
-          this.error.set(describeError(error));
-        }
-      },
-    });
+    for (const entry of pending) await this.send(entry.file, accountId, false);
+    this.finish();
   }
+
+  /** Imports one file the API thought was another account's. */
+  async importAnyway(entry: FileImport): Promise<void> {
+    const accountId = this.form.controls.accountId.value;
+    if (!accountId || this.uploading()) return;
+    await this.send(entry.file, accountId, true);
+    this.finish();
+  }
+
+  private async send(file: File, accountId: string, confirmed: boolean): Promise<void> {
+    this.set(file, { file, state: 'importing' });
+    try {
+      const result = await firstValueFrom(
+        this.repository.importStatement(file, accountId, confirmed),
+      );
+      this.set(file, { file, state: 'imported', result });
+    } catch (error) {
+      const mismatch = accountMismatch(error);
+      this.set(
+        file,
+        mismatch
+          ? { file, state: 'mismatch', message: mismatch }
+          : { file, state: 'failed', message: describeError(error) },
+      );
+    }
+  }
+
+  private set(file: File, entry: FileImport): void {
+    this.files.update((files) => files.map((f) => (f.file === file ? entry : f)));
+  }
+
+  private finish(): void {
+    const files = this.files();
+    if (files.length > 0 && files.every((f) => f.state === 'imported')) {
+      this.imported.emit(summarize(files.map((f) => f.result!)));
+    } else if (this.anyImported()) {
+      this.progressed.emit();
+    }
+  }
+}
+
+function summarize(results: ImportResultOutputDto[]): ImportSummary {
+  const latest = results
+    .filter((r) => r.balance != null && r.balanceDate)
+    .sort((a, b) => a.balanceDate!.localeCompare(b.balanceDate!))
+    .at(-1);
+  return {
+    files: results.length,
+    read: results.reduce((sum, r) => sum + r.read, 0),
+    added: results.reduce((sum, r) => sum + r.added, 0),
+    skipped: results.reduce((sum, r) => sum + r.skipped, 0),
+    ...(latest ? { balance: latest.balance, balanceDate: latest.balanceDate } : {}),
+  };
 }
 
 /** The API's explanation when it thinks the file belongs to another account (409, code "account-mismatch"). */

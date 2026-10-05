@@ -423,8 +423,12 @@
 </ng-template>
 
 @if (showImport()) {
-  <app-modal title="Import statement" (closed)="showImport.set(false)">
-    <app-statement-import (imported)="onImported($event)" (cancelled)="showImport.set(false)" />
+  <app-modal title="Import statements" (closed)="showImport.set(false)">
+    <app-statement-import
+      (imported)="onImported($event)"
+      (progressed)="reload()"
+      (cancelled)="showImport.set(false)"
+    />
   </app-modal>
 }
 
