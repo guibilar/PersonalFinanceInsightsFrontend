@@ -1,7 +1,9 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
     <h1 class="h3 mb-1">Accounts</h1>
-    <p class="text-body-secondary mb-0">The bank accounts and cards your statements come from</p>
+    <p class="text-body-secondary mb-0">
+      The bank accounts, cards and investments your statements come from, and what each holds
+    </p>
   </div>
   <button
     type="button"
@@ -40,8 +42,71 @@
               {{ typeLabels[account.type] }} · {{ formatLabels[account.format] }} ·
               {{ account.transactionCount }}
               {{ account.transactionCount === 1 ? 'transaction' : 'transactions' }}
+              @if (account.plan && account.plan !== RegisteredPlan.None) {
+                ·
+                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis">{{
+                  planLabels[account.plan]
+                }}</span>
+              }
             </div>
+            @if (account.plan && account.plan !== RegisteredPlan.None) {
+              <div class="room small mt-1">
+                @if (account.roomLeft !== null && account.roomLeft !== undefined) {
+                  <div
+                    class="progress room-bar"
+                    role="progressbar"
+                    [attr.aria-valuenow]="roomUsed(account)"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    [attr.aria-label]="planLabels[account.plan] + ' room used this year'"
+                  >
+                    <div
+                      class="progress-bar"
+                      [class.bg-danger]="account.roomLeft < 0"
+                      [style.width.%]="roomUsed(account)"
+                    ></div>
+                  </div>
+                  <span [class.text-danger]="account.roomLeft < 0">
+                    @if (account.roomLeft < 0) {
+                      Over by {{ -account.roomLeft | currency }}
+                    } @else {
+                      {{ account.roomLeft | currency }} of {{ account.contributionRoom | currency }}
+                      room left this year
+                    }
+                  </span>
+                  <span class="text-body-secondary">
+                    · {{ account.depositedThisYear | currency }} in
+                    @if (account.withdrawnThisYear) {
+                      · {{ account.withdrawnThisYear | currency }} out (room again in January)
+                    }
+                  </span>
+                } @else {
+                  <span class="text-body-secondary">
+                    {{ account.depositedThisYear ?? 0 | currency }} deposited this year. Enter this
+                    year's room (Edit) to see what's left.
+                  </span>
+                }
+              </div>
+            }
           </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary text-end balance-button flex-shrink-0"
+            [attr.aria-label]="'Balances of ' + account.name"
+            (click)="balancesOf.set(account)"
+          >
+            @if (account.balance; as balance) {
+              <span class="d-block fw-medium"
+                >{{ account.type === AccountType.CreditCard ? 'Owes ' : ''
+                }}{{ balance.amount | currency }}</span
+              >
+              <span class="d-block small text-body-secondary">{{
+                balance.date | date: 'MMM d' : 'UTC'
+              }}</span>
+            } @else {
+              Add balance
+            }
+          </button>
           <div class="d-flex flex-shrink-0">
             <button
               type="button"
@@ -92,10 +157,16 @@
   </app-modal>
 }
 
+@if (balancesOf(); as account) {
+  <app-modal [title]="'Balances · ' + account.name" (closed)="balancesOf.set(null)">
+    <app-account-balances [account]="account" (changed)="accounts.reload()" />
+  </app-modal>
+}
+
 @if (deleting(); as account) {
   <app-confirm-dialog
     [title]="'Delete “' + account.name + '”?'"
-    message="It has no transactions, so nothing else changes."
+    message="It has no transactions, so nothing else changes (its balances go with it)."
     confirmLabel="Delete"
     [danger]="true"
     (confirmed)="confirmDelete()"

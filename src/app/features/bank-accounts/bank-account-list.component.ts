@@ -1,9 +1,16 @@
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { AccountRepository } from '../../core/api/account-repository';
 import { AccountInputDto } from '../../core/models/inputs/account-input-dto';
 import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
-import { ACCOUNT_TYPE_LABELS, STATEMENT_FORMAT_LABELS } from '../../shared/utils/account-labels';
+import { RegisteredPlan } from '../../core/models/enums/registered-plan';
+import { AccountType } from '../../core/models/enums/account-type';
+import {
+  ACCOUNT_TYPE_LABELS,
+  PLAN_LABELS,
+  STATEMENT_FORMAT_LABELS,
+} from '../../shared/utils/account-labels';
 import { conflictDetail } from '../../shared/utils/problem-detail';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
@@ -12,11 +19,18 @@ import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { BankAccountFormComponent } from './bank-account-form.component';
+import { AccountBalancesComponent } from './account-balances.component';
 
-/** The bank accounts statements are imported into: add, edit, and delete the empty ones. */
+/**
+ * The accounts statements are imported into: add, edit, delete the empty ones, and enter their balances. A registered
+ * plan's room left this year shows under it.
+ */
 @Component({
   selector: 'app-bank-account-list',
   imports: [
+    CurrencyPipe,
+    DatePipe,
+    AccountBalancesComponent,
     BankAccountFormComponent,
     ConfirmDialogComponent,
     ErrorStateComponent,
@@ -37,16 +51,34 @@ export class BankAccountListComponent {
   /** undefined: dialog closed; null: adding; an account: editing it. */
   readonly editing = signal<AccountOutputDto | null | undefined>(undefined);
   readonly deleting = signal<AccountOutputDto | null>(null);
+  /** The account whose balances are open. */
+  readonly balancesOf = signal<AccountOutputDto | null>(null);
   readonly saving = signal(false);
 
   protected readonly typeLabels = ACCOUNT_TYPE_LABELS;
   protected readonly formatLabels = STATEMENT_FORMAT_LABELS;
+  protected readonly planLabels = PLAN_LABELS;
+  protected readonly RegisteredPlan = RegisteredPlan;
+  protected readonly AccountType = AccountType;
+
+  /** How much of this year's room is used, 0–100. */
+  roomUsed(account: AccountOutputDto): number {
+    const room = account.contributionRoom ?? 0;
+    if (room <= 0) return 100;
+    return Math.min(100, Math.round(((account.depositedThisYear ?? 0) / room) * 100));
+  }
 
   onFormSubmit(input: AccountInputDto): void {
     if (this.saving()) return;
     const editing = this.editing();
     const request = editing
-      ? this.accountRepository.update(editing.id, { name: input.name, format: input.format })
+      ? this.accountRepository.update(editing.id, {
+          name: input.name,
+          format: input.format,
+          plan: input.plan,
+          contributionRoom: input.contributionRoom,
+          contributionRoomYear: input.contributionRoomYear,
+        })
       : this.accountRepository.create(input);
 
     this.saving.set(true);

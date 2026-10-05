@@ -44,6 +44,12 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'net-worth',
+        title: 'Net worth · Personal Finances',
+        loadComponent: () =>
+          import('./features/net-worth/net-worth.component').then((m) => m.NetWorthComponent),
+      },
+      {
         path: 'review',
         title: 'Review · Personal Finances',
         loadComponent: () =>

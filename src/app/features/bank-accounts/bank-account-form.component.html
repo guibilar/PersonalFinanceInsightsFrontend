@@ -37,7 +37,8 @@
         The type can't be changed once the account exists.
       } @else {
         Decides what money in and out counts as when no flow rule matches: on a credit card money in
-        is a refund, on chequing it is income, and on savings everything is a transfer.
+        is a refund, on chequing it is income, and on savings and investments everything is a
+        transfer.
       }
     </div>
   </div>
@@ -60,6 +61,63 @@
       transactions by hand.
     </div>
   </div>
+
+  @if (canHavePlan()) {
+    <div class="mb-3">
+      <label for="account-plan" class="form-label">Registered plan</label>
+      <select
+        id="account-plan"
+        class="form-select"
+        formControlName="plan"
+        aria-describedby="account-plan-hint"
+      >
+        @for (plan of plans; track plan) {
+          <option [ngValue]="plan">{{ planLabels[plan] }}</option>
+        }
+      </select>
+      <div id="account-plan-hint" class="form-text">
+        A TFSA, RRSP or FHSA: its deposits count against the year's contribution room.
+      </div>
+    </div>
+
+    @if (hasPlan()) {
+      <div class="row g-2 mb-3">
+        <div class="col-7">
+          <label for="account-room" class="form-label">Contribution room</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              id="account-room"
+              class="form-control"
+              formControlName="contributionRoom"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              aria-describedby="account-room-hint"
+              [class.is-invalid]="form.controls.contributionRoom.invalid"
+            />
+          </div>
+        </div>
+        <div class="col-5">
+          <label for="account-room-year" class="form-label">For the year</label>
+          <input
+            type="number"
+            id="account-room-year"
+            class="form-control"
+            formControlName="contributionRoomYear"
+            min="2009"
+            [max]="thisYear"
+            [class.is-invalid]="form.controls.contributionRoomYear.invalid"
+          />
+        </div>
+        <div id="account-room-hint" class="form-text">
+          As the CRA's My Account shows it: for a TFSA, your room on January 1. This year's deposits
+          are taken from it.
+        </div>
+      </div>
+    }
+  }
 
   <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 border-top pt-3">
     <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>

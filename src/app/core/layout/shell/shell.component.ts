@@ -46,6 +46,7 @@ export class ShellComponent {
     { path: '/budgets', label: 'Budgets', icon: 'budgets', exact: false },
     { path: '/subscriptions', label: 'Subscriptions', icon: 'refresh', exact: false },
     { path: '/review', label: 'Review', icon: 'calendar', exact: false },
+    { path: '/net-worth', label: 'Net worth', icon: 'trending-up', exact: false },
     { path: '/rules', label: 'Rules', icon: 'rules', exact: false },
     { path: '/categories', label: 'Categories', icon: 'tag', exact: false },
     { path: '/tags', label: 'Tags', icon: 'hash', exact: false },

@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BankAccountListComponent } from './bank-account-list.component';
 import { AccountType } from '../../core/models/enums/account-type';
+import { RegisteredPlan } from '../../core/models/enums/registered-plan';
 import { StatementFormat } from '../../core/models/enums/statement-format';
 import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
 import { ToastService } from '../../shared/ui/toast/toast.service';
@@ -82,9 +83,9 @@ describe('BankAccountListComponent', () => {
     await load([accounts[0], { ...accounts[1], format: StatementFormat.Neo }, accounts[2]]);
 
     expect(rows()).toEqual([
-      'Chequing Chequing · CIBC · 120 transactions',
-      'Visa Credit card · Neo Financial · 1 transaction',
-      'Mastercard Credit card · CIBC · 0 transactions',
+      'Chequing Chequing · CIBC · 120 transactions Add balance',
+      'Visa Credit card · Neo Financial · 1 transaction Add balance',
+      'Mastercard Credit card · CIBC · 0 transactions Add balance',
     ]);
   });
 
@@ -198,5 +199,88 @@ describe('BankAccountListComponent', () => {
 
     await reloaded();
     expect(messages()).toEqual(['Mastercard has transactions, so it cannot be deleted.']);
+  });
+
+  describe('plans and balances', () => {
+    const tfsa: AccountOutputDto = {
+      id: 'a9',
+      name: 'Wealthsimple TFSA',
+      type: AccountType.Investment,
+      format: StatementFormat.Manual,
+      transactionCount: 4,
+      plan: RegisteredPlan.Tfsa,
+      contributionRoom: 7000,
+      contributionRoomYear: 2026,
+      depositedThisYear: 3500,
+      withdrawnThisYear: 400,
+      roomLeft: 3500,
+      balance: { id: 'b1', date: '2026-09-30T00:00:00Z', amount: 12000 },
+    };
+
+    it("shows a plan's room left this year, and the latest balance", async () => {
+      await load([tfsa]);
+
+      const row = rows()[0];
+      expect(row).toContain('Investment · No files (add by hand) · 4 transactions · TFSA');
+      expect(row).toContain('$3,500.00 of $7,000.00 room left this year');
+      expect(row).toContain('$400.00 out (room again in January)');
+      expect(row).toMatch(/\$12,000\.00\s*Sep 30$/);
+    });
+
+    it('asks for the room when none was entered for this year', async () => {
+      await load([{ ...tfsa, roomLeft: null }]);
+
+      expect(rows()[0]).toContain("Enter this year's room (Edit) to see what's left.");
+    });
+
+    it('enters a balance, and lists and deletes the ones before', async () => {
+      await load([tfsa]);
+      root()
+        .querySelector<HTMLButtonElement>('[aria-label="Balances of Wealthsimple TFSA"]')!
+        .click();
+      fixture.detectChanges();
+      TestBed.tick();
+      http
+        .expectOne('/api/Accounts/a9/Balances')
+        .flush([{ id: 'b1', date: '2026-09-30T00:00:00Z', amount: 12000 }]);
+      await fixture.whenStable();
+      expect(root().querySelector('[aria-label="Balances entered"]')!.textContent).toContain(
+        '$12,000.00',
+      );
+
+      const date = root().querySelector<HTMLInputElement>('#balance-date')!;
+      date.value = '2026-10-14';
+      date.dispatchEvent(new Event('input'));
+      const amount = root().querySelector<HTMLInputElement>('#balance-amount')!;
+      amount.value = '12500.5';
+      amount.dispatchEvent(new Event('input'));
+      root()
+        .querySelector<HTMLFormElement>('app-account-balances form')!
+        .dispatchEvent(new Event('submit'));
+
+      const save = http.expectOne({ method: 'POST', url: '/api/Accounts/a9/Balances' });
+      expect(save.request.body).toEqual({ date: '2026-10-14', amount: 12500.5 });
+      save.flush({ id: 'b2', date: '2026-10-14T00:00:00Z', amount: 12500.5 });
+      // Both lists follow: the balances, and the accounts with their latest.
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.tick();
+      http.expectOne('/api/Accounts/a9/Balances').flush([
+        { id: 'b2', date: '2026-10-14T00:00:00Z', amount: 12500.5 },
+        { id: 'b1', date: '2026-09-30T00:00:00Z', amount: 12000 },
+      ]);
+      http.expectOne('/api/Accounts').flush([tfsa]);
+      await fixture.whenStable();
+      expect(messages()).toEqual(['Balance saved']);
+
+      root()
+        .querySelector<HTMLButtonElement>('[aria-label="Delete the balance of Sep 30, 2026"]')!
+        .click();
+      http.expectOne({ method: 'DELETE', url: '/api/Accounts/a9/Balances/b1' }).flush(null);
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.tick();
+      http.match('/api/Accounts/a9/Balances').forEach((r) => r.flush([]));
+      http.match('/api/Accounts').forEach((r) => r.flush([tfsa]));
+      await fixture.whenStable();
+    });
   });
 });
