@@ -1,3 +1,4 @@
+import { finishedMonths, monthIndex, monthLabel } from '../../shared/utils/months';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import {
@@ -10,6 +11,7 @@ import { AccountOutputDto } from '../../core/models/outputs/account-output-dto';
 import { AccountType } from '../../core/models/enums/account-type';
 import { RegisteredPlan } from '../../core/models/enums/registered-plan';
 import { StatementFormat } from '../../core/models/enums/statement-format';
+import { formatCurrency, formatDay } from '../../shared/utils/format';
 
 export interface CategoryShare {
   category: string;
@@ -62,50 +64,12 @@ export function previousMonthToDateLabel(now: Date): string {
   return lastDay === 1 ? `${month} 1` : `${month} 1–${lastDay}`;
 }
 
-/**
- * Index of the month a report label ("Sep 2026") stands for, counting months since year 0, so labels and
- * dates compare as numbers; null for a label in another format.
- */
-export function monthIndex(label: string): number | null {
-  const [name, year] = label.split(' ');
-  const month = MONTH_NAMES.indexOf(name);
-  return month >= 0 && /^\d{4}$/.test(year ?? '') ? Number(year) * 12 + month : null;
-}
-
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
 /** What the monthly average is taken over, in the same terms as {@link finishedMonths}. */
 export function averageCaption(labels: string[], now: Date): string {
   const current = now.getFullYear() * 12 + now.getMonth();
   const finished = labels.filter((label) => (monthIndex(label) ?? current) < current).length;
   if (finished > 0) return `Over ${finished} finished month${finished === 1 ? '' : 's'}`;
   return labels.length > 0 ? 'This month so far' : 'No spending yet';
-}
-
-/**
- * Positions of the months that are over, to average: the running month would pull the average down (and
- * future-dated rows don't belong in it either). When no month is over yet (January), all of them.
- */
-export function finishedMonths(labels: string[], now: Date): number[] {
-  const current = now.getFullYear() * 12 + now.getMonth();
-  const finished = labels.flatMap((label, index) => {
-    const month = monthIndex(label);
-    return month !== null && month < current ? [index] : [];
-  });
-  return finished.length > 0 ? finished : labels.map((_, index) => index);
 }
 
 /** Percentage change from `previous` to `current`, or null when there is nothing to compare with. */
@@ -171,11 +135,6 @@ export function budgetsOverLimit(budgets: BudgetOutputDto[]): number {
   return budgets.filter((budget) => budget.percentageUsed >= 100).length;
 }
 
-/** "Oct 2026": how the reports label the month a day is in. */
-export function monthLabel(day: Date): string {
-  return `${MONTH_NAMES[day.getMonth()]} ${day.getFullYear()}`;
-}
-
 /** This month's income, spending and what was left over; null before anything is recorded this month. */
 export function leftOverThisMonth(
   report: CashFlowReportOutputDto,
@@ -214,15 +173,6 @@ export interface AttentionItem {
 const PRICE_CHANGE_DAYS = 45;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-CA', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
 
 /**
  * The day an account's imported statements reach: its latest transaction or its latest balance (Wealthsimple
@@ -306,7 +256,7 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
   for (const account of accountsBehind(inputs.accounts, today)) {
     items.push({
       kind: 'statement',
-      text: `${account.name}: statements reach ${shortDate(statementsReach(account)!)}. Import last month's`,
+      text: `${account.name}: statements reach ${formatDay(statementsReach(account)!)}. Import last month's`,
       link: '/transactions',
     });
   }
@@ -317,7 +267,7 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
     const verb = change.to > change.from ? 'went up' : 'went down';
     items.push({
       kind: 'price',
-      text: `${payment.name} ${verb} from ${money(change.from)} to ${money(change.to)}`,
+      text: `${payment.name} ${verb} from ${formatCurrency(change.from)} to ${formatCurrency(change.to)}`,
       link: '/subscriptions',
     });
   }
@@ -330,11 +280,6 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
     });
   }
   return items;
-}
-
-const moneyFormat = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
-function money(amount: number): string {
-  return moneyFormat.format(amount);
 }
 
 /** An investment or registered account on the dashboard: what it holds, and its plan's room this year. */

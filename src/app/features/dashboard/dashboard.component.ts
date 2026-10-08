@@ -46,6 +46,7 @@ import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';
 import { valueOf } from '../../shared/utils/resource-value';
+import { formatDay } from '../../shared/utils/format';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
 Chart.register(
@@ -280,18 +281,10 @@ export class DashboardComponent {
 
   readonly investments = computed(() => investments(valueOf(this.accounts) ?? []));
   protected readonly planLabels = PLAN_LABELS;
+  protected readonly formatDay = formatDay;
 
   /** The category card shows this month's split, or each category against a usual month. */
   readonly categoryView = signal<'month' | 'usual'>('month');
-
-  shortDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('en-CA', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    });
-  }
 
   readonly budgetSummary = computed(() => {
     const items = valueOf(this.budgets)?.items;

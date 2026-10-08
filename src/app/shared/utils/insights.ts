@@ -2,6 +2,7 @@ import {
   RecurringCadence,
   RecurringPaymentDto,
 } from '../../core/models/outputs/insights-output-dto';
+import { formatDay } from './format';
 
 /** "every month", for a line under a recurring payment. */
 export const CADENCE_LABELS: Record<RecurringCadence, string> = {
@@ -47,10 +48,7 @@ export function compared(change: { text: string }, other: string): string {
 
 /** A calendar day from the API ("2026-10-20T00:00:00Z") as "Oct 20", read as the date it is, not a local time. */
 export function shortDay(iso: string): string {
-  return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDay(iso, { year: false });
 }
 
 /** The month a review covers after or before ([year, month]), or the year; null past today or before the data. */

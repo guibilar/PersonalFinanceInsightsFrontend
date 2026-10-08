@@ -1,3 +1,4 @@
+import { formatDay } from './format';
 /** A date filter as the transactions API takes it: inclusive ISO days, either end left open. */
 export interface DateRange {
   startDate?: string;
@@ -71,12 +72,7 @@ export function matchDatePreset(range: DateRange, today: Date): DatePresetId | '
 
 /** The days a preset covers, for its option: "Jun 1 – Aug 31, 2026", "Sep 1 – today". */
 export function describeRange(range: DateRange): string {
-  const day = (iso: string, withYear: boolean) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      ...(withYear ? { year: 'numeric' } : {}),
-    });
+  const day = (iso: string, withYear: boolean) => formatDay(iso, { year: withYear });
   if (!range.startDate) return '';
   if (!range.endDate) return `${day(range.startDate, false)} – today`;
   const sameYear = range.startDate.slice(0, 4) === range.endDate.slice(0, 4);

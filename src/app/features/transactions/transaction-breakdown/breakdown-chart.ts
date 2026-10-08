@@ -3,10 +3,10 @@ import {
   BAR_MARKS,
   ChartTheme,
   categoryAxis,
-  formatCurrency,
   tooltipStyle,
   valueAxis,
-} from '../../dashboard/chart-helper';
+} from '../../../shared/charts/chart-helper';
+import { formatCurrency } from '../../../shared/utils/format';
 import {
   BreakdownPeriodDto,
   TransactionBreakdownOutputDto,

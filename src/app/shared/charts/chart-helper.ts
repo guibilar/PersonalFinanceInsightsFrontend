@@ -4,7 +4,8 @@ import type {} from 'chartjs-plugin-annotation';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { CategoryReference } from '../../core/models/outputs/category-output-dto';
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
-import { finishedMonths } from './dashboard-stats';
+import { finishedMonths } from '../utils/months';
+import { formatCompactCurrency, formatCurrency } from '../utils/format';
 
 const AVERAGE_ANNOTATION_ID = 'avgLine';
 
@@ -16,23 +17,6 @@ Chart.defaults.font.size = 12;
 /** Whether the savings accounts changed in any month: nothing recorded on one is not the same as nothing saved. */
 export function hasSavingsChange(report: CashFlowReportOutputDto): boolean {
   return report.months.some((month) => month.savingsChange !== 0);
-}
-
-const currencyFormatter = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
-const compactFormatter = new Intl.NumberFormat('en-CA', {
-  style: 'currency',
-  currency: 'CAD',
-  notation: 'compact',
-  maximumFractionDigits: 1,
-});
-
-export function formatCurrency(value: number): string {
-  return currencyFormatter.format(value);
-}
-
-/** "$5K", "$1.2K": for axis ticks, which carry the values that aren't labelled. */
-export function formatCompactCurrency(value: number): string {
-  return compactFormatter.format(value);
 }
 
 /** Average monthly spend over the given months (positions), across the categories visible in the chart. */

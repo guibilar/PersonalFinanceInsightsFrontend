@@ -5,11 +5,10 @@ import {
   CHART_THEMES,
   ChartHelper,
   cashFlowColors,
-  formatCompactCurrency,
-  formatCurrency,
   valueAxis,
   visibleMonthlyAverage,
 } from './chart-helper';
+import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { categoryRefs } from '../../testing/test-categories';
 

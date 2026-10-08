@@ -16,7 +16,7 @@ import { AccountRepository } from '../../../core/api/account-repository';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
 import { accountLabel } from '../../../shared/utils/account-labels';
-import { formatCurrency } from '../../dashboard/chart-helper';
+import { formatCurrency, formatDay } from '../../../shared/utils/format';
 
 /** Matches the API's upload limit. */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -159,7 +159,7 @@ export function describeImport(result: ImportSummary): string {
   const noun = result.added === 1 ? 'transaction' : 'transactions';
   const balance =
     result.balance != null && result.balanceDate
-      ? `; balance on ${new Date(result.balanceDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}: ${formatCurrency(result.balance)}`
+      ? `; balance on ${formatDay(result.balanceDate)}: ${formatCurrency(result.balance)}`
       : '';
   return (
     `Imported ${result.added} new ${noun}` +
