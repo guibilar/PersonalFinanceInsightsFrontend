@@ -1,12 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
-import {
-  CHART_THEMES,
-  ChartHelper,
-  cashFlowColors,
-  hasSavingsChange,
-} from '../../../shared/charts/chart-helper';
+import { ChartHelper, hasSavingsChange } from '../../../shared/charts/chart-helper';
+import { CHART_THEMES, cashFlowColors } from '../../../shared/charts/chart-theme';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CashFlowReportOutputDto } from '../../../core/models/outputs/cash-flow-report-output-dto';
 

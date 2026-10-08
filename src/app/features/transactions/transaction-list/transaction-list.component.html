@@ -22,16 +22,16 @@
     <button
       type="button"
       class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-      [disabled]="applyingRules()"
-      (click)="confirmingRules.set(true)"
+      [disabled]="actions.applyingRules()"
+      (click)="actions.confirmingRules.set(true)"
     >
       <app-icon name="refresh" [size]="16" />
-      {{ applyingRules() ? 'Applying…' : 'Apply rules' }}
+      {{ actions.applyingRules() ? 'Applying…' : 'Apply rules' }}
     </button>
     <button
       type="button"
       class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-      (click)="openAdd()"
+      (click)="actions.openAdd()"
     >
       <app-icon name="plus" [size]="16" /> Add transaction
     </button>
@@ -243,7 +243,7 @@
                     [hidden]="showDeleted()"
                     [attr.aria-label]="'Edit ' + transaction.description"
                     title="Edit"
-                    (click)="editingTransaction.set(transaction)"
+                    (click)="actions.editingTransaction.set(transaction)"
                   >
                     <app-icon name="pencil" [size]="14" />
                   </button>
@@ -306,7 +306,7 @@
                       class="btn btn-link p-0 lh-1 text-body-secondary"
                       [attr.aria-label]="'Unlink from ' + budget.name"
                       title="Unlink"
-                      (click)="onUnlink(transaction.id)"
+                      (click)="actions.onUnlink(transaction.id)"
                     >
                       <app-icon name="close" [size]="12" />
                     </button>
@@ -316,7 +316,7 @@
                     type="button"
                     class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-0"
                     [attr.aria-label]="'Link ' + transaction.description + ' to a budget'"
-                    (click)="linkingTransaction.set(transaction)"
+                    (click)="actions.linkingTransaction.set(transaction)"
                   >
                     <app-icon name="link" [size]="12" />
                     <span class="d-none d-sm-inline">Link</span>
@@ -336,7 +336,7 @@
                     type="button"
                     class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
                     [attr.aria-label]="'Restore ' + transaction.description"
-                    (click)="restore(transaction)"
+                    (click)="actions.restore(transaction)"
                   >
                     <app-icon name="undo" [size]="14" />
                     <span class="d-none d-sm-inline">Restore</span>
@@ -347,7 +347,7 @@
                     class="btn btn-icon"
                     [attr.aria-label]="'Edit ' + transaction.description"
                     title="Edit"
-                    (click)="editingTransaction.set(transaction)"
+                    (click)="actions.editingTransaction.set(transaction)"
                   >
                     <app-icon name="pencil" [size]="16" />
                   </button>
@@ -371,63 +371,63 @@
   </app-modal>
 }
 
-@if (showAdd()) {
-  <app-modal title="Add transaction" (closed)="showAdd.set(false)">
+@if (actions.showAdd()) {
+  <app-modal title="Add transaction" (closed)="actions.showAdd.set(false)">
     <app-transaction-add-form
       [accounts]="accounts()"
       [categories]="categories()"
-      [saving]="savingAdd()"
-      [previous]="lastAdded()"
-      [duplicate]="addDuplicate()"
-      (submitAdd)="onAddSubmit($event)"
-      (cancelled)="showAdd.set(false)"
+      [saving]="actions.savingAdd()"
+      [previous]="actions.lastAdded()"
+      [duplicate]="actions.addDuplicate()"
+      (submitAdd)="actions.onAddSubmit($event)"
+      (cancelled)="actions.showAdd.set(false)"
     />
   </app-modal>
 }
 
-@if (editingTransaction(); as transaction) {
-  <app-modal title="Edit transaction" (closed)="editingTransaction.set(null)">
+@if (actions.editingTransaction(); as transaction) {
+  <app-modal title="Edit transaction" (closed)="actions.editingTransaction.set(null)">
     <app-transaction-edit-form
       [transaction]="transaction"
       [categories]="categories()"
       [tags]="tags()"
-      [saving]="savingEdit()"
-      (submitUpdate)="onEditSubmit($event)"
-      (cancelled)="editingTransaction.set(null)"
-      (deleteRequested)="deletingTransaction.set(transaction)"
+      [saving]="actions.savingEdit()"
+      (submitUpdate)="actions.onEditSubmit($event)"
+      (cancelled)="actions.editingTransaction.set(null)"
+      (deleteRequested)="actions.deletingTransaction.set(transaction)"
     />
   </app-modal>
 }
 
-@if (deletingTransaction(); as transaction) {
+@if (actions.deletingTransaction(); as transaction) {
   <app-confirm-dialog
     [title]="'Delete “' + transaction.description + '”?'"
     message="It disappears from lists, reports and budgets, and re-importing its statement won't add it back. You can restore it from Deleted transactions."
-    [confirmLabel]="removing() ? 'Deleting…' : 'Delete'"
+    [confirmLabel]="actions.removing() ? 'Deleting…' : 'Delete'"
     [danger]="true"
-    (confirmed)="confirmDelete()"
-    (cancelled)="deletingTransaction.set(null)"
+    (confirmed)="actions.confirmDelete()"
+    (cancelled)="actions.deletingTransaction.set(null)"
   />
 }
 
-@if (confirmingRules()) {
+@if (actions.confirmingRules()) {
   <app-confirm-dialog
     title="Apply rules?"
     [message]="applyRulesConfirmation"
     confirmLabel="Apply rules"
-    (confirmed)="applyRules()"
-    (cancelled)="confirmingRules.set(false)"
+    (confirmed)="actions.applyRules()"
+    (cancelled)="actions.confirmingRules.set(false)"
   />
 }
 
-@if (linkingTransaction(); as transaction) {
-  <app-modal title="Link to a budget" (closed)="linkingTransaction.set(null)">
+@if (actions.linkingTransaction(); as transaction) {
+  <app-modal title="Link to a budget" (closed)="actions.linkingTransaction.set(null)">
     <app-transaction-link-form
       [transaction]="transaction"
       [budgets]="activeBudgets()"
-      [saving]="savingLink()"
-      (submitTransaction)="onLinkSubmit($event)"
-      (cancelled)="linkingTransaction.set(null)"
+      [saving]="actions.savingLink()"
+      (submitTransaction)="actions.onLinkSubmit($event, activeBudgets())"
+      (cancelled)="actions.linkingTransaction.set(null)"
     />
   </app-modal>
 }

@@ -31,7 +31,7 @@ import {
   categoryAxis,
   tooltipStyle,
   valueAxis,
-} from '../../shared/charts/chart-helper';
+} from '../../shared/charts/chart-theme';
 import { formatCurrency } from '../../shared/utils/format';
 
 Chart.register(CategoryScale, LinearScale, BarElement, BarController, Tooltip);

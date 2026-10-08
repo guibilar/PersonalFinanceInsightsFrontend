@@ -5,7 +5,7 @@ import {
   categoryAxis,
   tooltipStyle,
   valueAxis,
-} from '../../../shared/charts/chart-helper';
+} from '../../../shared/charts/chart-theme';
 import { formatCurrency } from '../../../shared/utils/format';
 import {
   BreakdownPeriodDto,
