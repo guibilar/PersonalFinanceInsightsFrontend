@@ -1,13 +1,7 @@
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { Chart } from 'chart.js';
-import {
-  BAR_MARKS,
-  CHART_THEMES,
-  ChartHelper,
-  cashFlowColors,
-  valueAxis,
-  visibleMonthlyAverage,
-} from './chart-helper';
+import { ChartHelper, visibleMonthlyAverage } from './chart-helper';
+import { BAR_MARKS, CHART_THEMES, cashFlowColors, valueAxis } from './chart-theme';
 import { formatCompactCurrency, formatCurrency } from '../utils/format';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { categoryRefs } from '../../testing/test-categories';

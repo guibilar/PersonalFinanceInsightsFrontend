@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { Router } from '@angular/router';
-import { CHART_THEMES, ChartHelper } from '../../../shared/charts/chart-helper';
+import { ChartHelper } from '../../../shared/charts/chart-helper';
+import { CHART_THEMES } from '../../../shared/charts/chart-theme';
 import { categoryLink } from '../dashboard-stats';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';

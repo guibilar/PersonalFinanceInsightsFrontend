@@ -421,9 +421,9 @@ describe('TransactionListComponent', () => {
     });
 
     it('saves an edit, closes the panel and reloads', () => {
-      component.editingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
 
-      component.onEditSubmit({
+      component.actions.onEditSubmit({
         update: { description: 'Coffee', categoryId: TEST_CATEGORIES.dining.id },
       });
       const put = http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' });
@@ -431,7 +431,7 @@ describe('TransactionListComponent', () => {
         description: 'Coffee',
         categoryId: TEST_CATEGORIES.dining.id,
       });
-      expect(component.savingEdit()).toBe(true);
+      expect(component.actions.savingEdit()).toBe(true);
       put.flush({
         ...coffee,
         description: 'Coffee',
@@ -439,8 +439,8 @@ describe('TransactionListComponent', () => {
         categoryLocked: true,
       });
 
-      expect(component.editingTransaction()).toBeNull();
-      expect(component.savingEdit()).toBe(false);
+      expect(component.actions.editingTransaction()).toBeNull();
+      expect(component.actions.savingEdit()).toBe(false);
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)
@@ -450,10 +450,10 @@ describe('TransactionListComponent', () => {
     });
 
     it('can also add a rule first and apply the rules, with one toast for it all', () => {
-      component.editingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
       const rule = { keyword: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id, position: 0 };
 
-      component.onEditSubmit({
+      component.actions.onEditSubmit({
         update: { description: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id },
         rule,
       });
@@ -462,14 +462,14 @@ describe('TransactionListComponent', () => {
         .flush({ ...coffee, category: TEST_CATEGORIES.dining, categoryLocked: true });
       const create = http.expectOne({ method: 'POST', url: '/api/CategoryRules' });
       expect(create.request.body).toEqual(rule);
-      expect(component.editingTransaction()).toEqual(coffee);
+      expect(component.actions.editingTransaction()).toEqual(coffee);
       create.flush({ id: 'r1', ...rule });
       http
         .expectOne({ method: 'POST', url: '/api/Transaction/ApplyRules' })
         .flush({ checked: 40, updated: 2 });
 
-      expect(component.editingTransaction()).toBeNull();
-      expect(component.savingEdit()).toBe(false);
+      expect(component.actions.editingTransaction()).toBeNull();
+      expect(component.actions.savingEdit()).toBe(false);
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)
@@ -479,10 +479,10 @@ describe('TransactionListComponent', () => {
     });
 
     it('says why the rule was not added, and still closes the saved edit', () => {
-      component.editingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
       const rule = { keyword: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id, position: 0 };
 
-      component.onEditSubmit({
+      component.actions.onEditSubmit({
         update: { description: 'COFFEE', categoryId: TEST_CATEGORIES.dining.id },
         rule,
       });
@@ -495,7 +495,7 @@ describe('TransactionListComponent', () => {
         );
 
       http.expectNone('/api/Transaction/ApplyRules');
-      expect(component.editingTransaction()).toBeNull();
+      expect(component.actions.editingTransaction()).toBeNull();
       lastFilterRequest();
       expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
         expect.objectContaining({
@@ -507,23 +507,23 @@ describe('TransactionListComponent', () => {
     });
 
     it('keeps the panel open when saving fails', () => {
-      component.editingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
 
-      component.onEditSubmit({
+      component.actions.onEditSubmit({
         update: { description: 'Coffee', categoryId: TEST_CATEGORIES.dining.id },
       });
       http
         .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
         .flush(null, { status: 500, statusText: 'Error' });
 
-      expect(component.editingTransaction()).toEqual(coffee);
-      expect(component.savingEdit()).toBe(false);
+      expect(component.actions.editingTransaction()).toEqual(coffee);
+      expect(component.actions.savingEdit()).toBe(false);
     });
 
     it('says why the API refused the edit', () => {
-      component.editingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
 
-      component.onEditSubmit({ update: { description: 'Coffee', categoryId: 'gone' } });
+      component.actions.onEditSubmit({ update: { description: 'Coffee', categoryId: 'gone' } });
       http
         .expectOne({ method: 'PUT', url: '/api/Transaction/t1' })
         .flush(
@@ -531,16 +531,16 @@ describe('TransactionListComponent', () => {
           { status: 400, statusText: 'Bad Request' },
         );
 
-      expect(component.editingTransaction()).toEqual(coffee);
+      expect(component.actions.editingTransaction()).toEqual(coffee);
       expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
         expect.objectContaining({ kind: 'error', message: "That category doesn't exist." }),
       );
     });
 
     it('says why a transaction could not be linked to a budget', () => {
-      component.linkingTransaction.set(coffee);
+      component.actions.linkingTransaction.set(coffee);
 
-      component.onLinkSubmit({ transactionId: 't1', budgetId: 'b1' });
+      component.actions.onLinkSubmit({ transactionId: 't1', budgetId: 'b1' });
       http.expectOne({ method: 'POST', url: '/api/Transaction/LinkTransaction' }).flush(
         {
           status: 409,
@@ -549,7 +549,7 @@ describe('TransactionListComponent', () => {
         { status: 409, statusText: 'Conflict' },
       );
 
-      expect(component.savingLink()).toBe(false);
+      expect(component.actions.savingLink()).toBe(false);
       expect(
         TestBed.inject(ToastService)
           .toasts()
@@ -559,31 +559,31 @@ describe('TransactionListComponent', () => {
 
     it('deletes only after confirming, then closes the panel and reloads', () => {
       const toasts = TestBed.inject(ToastService);
-      component.editingTransaction.set(coffee);
-      component.deletingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
+      component.actions.deletingTransaction.set(coffee);
       http.expectNone({ method: 'DELETE' });
 
-      component.confirmDelete();
-      component.confirmDelete(); // a double click sends one request
+      component.actions.confirmDelete();
+      component.actions.confirmDelete(); // a double click sends one request
       http.expectOne({ method: 'DELETE', url: '/api/Transaction/t1' }).flush(null);
 
-      expect(component.deletingTransaction()).toBeNull();
-      expect(component.editingTransaction()).toBeNull();
+      expect(component.actions.deletingTransaction()).toBeNull();
+      expect(component.actions.editingTransaction()).toBeNull();
       lastFilterRequest();
       expect(toasts.toasts().map((t) => t.message)).toEqual(['Deleted “COFFEE”']);
     });
 
     it('keeps the transaction when deleting fails', () => {
-      component.editingTransaction.set(coffee);
-      component.deletingTransaction.set(coffee);
+      component.actions.editingTransaction.set(coffee);
+      component.actions.deletingTransaction.set(coffee);
 
-      component.confirmDelete();
+      component.actions.confirmDelete();
       http
         .expectOne({ method: 'DELETE', url: '/api/Transaction/t1' })
         .flush(null, { status: 500, statusText: 'Error' });
 
-      expect(component.editingTransaction()).toEqual(coffee);
-      expect(component.removing()).toBe(false);
+      expect(component.actions.editingTransaction()).toEqual(coffee);
+      expect(component.actions.removing()).toBe(false);
       expect(TestBed.inject(ToastService).toasts()[0]).toEqual(
         expect.objectContaining({ kind: 'error' }),
       );
@@ -604,7 +604,7 @@ describe('TransactionListComponent', () => {
       );
       await fixture.whenStable();
 
-      component.restore({ ...coffee, hidden: true });
+      component.actions.restore({ ...coffee, hidden: true });
       http.expectOne({ method: 'POST', url: '/api/Transaction/t1/Restore' }).flush(null);
       lastFilterRequest();
       expect(
@@ -620,16 +620,16 @@ describe('TransactionListComponent', () => {
     });
 
     it('applies the rules after confirming and reports what changed', () => {
-      component.confirmingRules.set(true);
+      component.actions.confirmingRules.set(true);
 
-      component.applyRules();
-      expect(component.confirmingRules()).toBe(false);
-      expect(component.applyingRules()).toBe(true);
+      component.actions.applyRules();
+      expect(component.actions.confirmingRules()).toBe(false);
+      expect(component.actions.applyingRules()).toBe(true);
       http
         .expectOne({ method: 'POST', url: '/api/Transaction/ApplyRules' })
         .flush({ checked: 40, updated: 3 });
 
-      expect(component.applyingRules()).toBe(false);
+      expect(component.actions.applyingRules()).toBe(false);
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)
@@ -654,18 +654,18 @@ describe('TransactionListComponent', () => {
     });
 
     it('adds, closes the form, reloads and confirms', () => {
-      component.openAdd();
-      component.onAddSubmit(input);
-      expect(component.savingAdd()).toBe(true);
+      component.actions.openAdd();
+      component.actions.onAddSubmit(input);
+      expect(component.actions.savingAdd()).toBe(true);
       http.expectOne({ method: 'POST', url: '/api/Transaction' }).flush({
         id: 't9',
         description: 'COFFEE',
         accountName: 'Visa',
       });
 
-      expect(component.showAdd()).toBe(false);
-      expect(component.savingAdd()).toBe(false);
-      expect(component.lastAdded()).toEqual({ date: '2026-09-10', accountId: 'a2' });
+      expect(component.actions.showAdd()).toBe(false);
+      expect(component.actions.savingAdd()).toBe(false);
+      expect(component.actions.lastAdded()).toEqual({ date: '2026-09-10', accountId: 'a2' });
       lastFilterRequest();
       expect(
         TestBed.inject(ToastService)
@@ -675,8 +675,8 @@ describe('TransactionListComponent', () => {
     });
 
     it('keeps the form open on a duplicate, and adds it anyway when asked', () => {
-      component.openAdd();
-      component.onAddSubmit(input);
+      component.actions.openAdd();
+      component.actions.onAddSubmit(input);
       http
         .expectOne({ method: 'POST', url: '/api/Transaction' })
         .flush(
@@ -684,26 +684,26 @@ describe('TransactionListComponent', () => {
           { status: 409, statusText: 'Conflict' },
         );
 
-      expect(component.showAdd()).toBe(true);
-      expect(component.addDuplicate()).toBe('An identical transaction already exists.');
+      expect(component.actions.showAdd()).toBe(true);
+      expect(component.actions.addDuplicate()).toBe('An identical transaction already exists.');
 
-      component.onAddSubmit({ ...input, allowDuplicate: true });
+      component.actions.onAddSubmit({ ...input, allowDuplicate: true });
       const again = http.expectOne({ method: 'POST', url: '/api/Transaction' });
       expect(again.request.body).toEqual({ ...input, allowDuplicate: true });
-      expect(component.addDuplicate()).toBeNull();
+      expect(component.actions.addDuplicate()).toBeNull();
       again.flush({ id: 't10', description: 'COFFEE', accountName: 'Visa' });
-      expect(component.showAdd()).toBe(false);
+      expect(component.actions.showAdd()).toBe(false);
     });
 
     it('keeps the form open and says so when adding fails', () => {
-      component.openAdd();
-      component.onAddSubmit(input);
+      component.actions.openAdd();
+      component.actions.onAddSubmit(input);
       http
         .expectOne({ method: 'POST', url: '/api/Transaction' })
         .flush(null, { status: 500, statusText: 'Error' });
 
-      expect(component.showAdd()).toBe(true);
-      expect(component.savingAdd()).toBe(false);
+      expect(component.actions.showAdd()).toBe(true);
+      expect(component.actions.savingAdd()).toBe(false);
       expect(
         TestBed.inject(ToastService)
           .toasts()
@@ -712,8 +712,8 @@ describe('TransactionListComponent', () => {
     });
 
     it('says why the API refused it', () => {
-      component.openAdd();
-      component.onAddSubmit(input);
+      component.actions.openAdd();
+      component.actions.onAddSubmit(input);
       http
         .expectOne({ method: 'POST', url: '/api/Transaction' })
         .flush(
@@ -721,7 +721,7 @@ describe('TransactionListComponent', () => {
           { status: 400, statusText: 'Bad Request' },
         );
 
-      expect(component.showAdd()).toBe(true);
+      expect(component.actions.showAdd()).toBe(true);
       expect(
         TestBed.inject(ToastService)
           .toasts()

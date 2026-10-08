@@ -36,7 +36,7 @@ import {
   TransactionBreakdownOutputDto,
 } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
-import { CHART_THEMES } from '../../../shared/charts/chart-helper';
+import { CHART_THEMES } from '../../../shared/charts/chart-theme';
 import { breakdownChart, breakdownMeasure } from './breakdown-chart';
 
 // Registered here so Chart.js ships with the transactions page only when it is used; registering twice is harmless.

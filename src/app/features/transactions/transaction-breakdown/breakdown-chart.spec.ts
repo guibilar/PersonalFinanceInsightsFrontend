@@ -1,6 +1,6 @@
 import { ChartEvent } from 'chart.js';
 import { breakdownChart, breakdownMeasure } from './breakdown-chart';
-import { CHART_THEMES } from '../../../shared/charts/chart-helper';
+import { CHART_THEMES } from '../../../shared/charts/chart-theme';
 import { TEST_BREAKDOWN } from '../../../testing/test-breakdown';
 
 const theme = CHART_THEMES.light;
