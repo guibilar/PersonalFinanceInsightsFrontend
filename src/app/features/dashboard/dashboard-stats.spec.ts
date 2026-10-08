@@ -4,12 +4,11 @@ import {
   categoryAverages,
   categoryLink,
   categoryShares,
-  finishedMonths,
-  monthIndex,
   percentChange,
   previousMonthToDateLabel,
   spentThisMonth,
 } from './dashboard-stats';
+import { finishedMonths, monthIndex } from '../../shared/utils/months';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { categoryRefs } from '../../testing/test-categories';

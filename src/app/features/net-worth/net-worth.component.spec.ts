@@ -7,7 +7,7 @@ import { NetWorthComponent, netWorthChart } from './net-worth.component';
 import { AccountType } from '../../core/models/enums/account-type';
 import { RegisteredPlan } from '../../core/models/enums/registered-plan';
 import { NetWorthReportDto } from '../../core/models/outputs/net-worth-output-dto';
-import { CHART_THEMES } from '../dashboard/chart-helper';
+import { CHART_THEMES } from '../../shared/charts/chart-helper';
 
 const report: NetWorthReportDto = {
   assets: 8000,

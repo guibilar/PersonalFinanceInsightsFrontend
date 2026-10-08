@@ -311,7 +311,7 @@
               </div>
               <p class="small text-body-secondary mb-0">
                 @if (row.balanceDate) {
-                  Balance on {{ shortDate(row.balanceDate) }}
+                  Balance on {{ formatDay(row.balanceDate) }}
                 } @else {
                   No balance yet
                 }

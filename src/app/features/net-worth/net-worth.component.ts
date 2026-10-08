@@ -29,10 +29,10 @@ import {
   CHART_THEMES,
   ChartTheme,
   categoryAxis,
-  formatCurrency,
   tooltipStyle,
   valueAxis,
-} from '../dashboard/chart-helper';
+} from '../../shared/charts/chart-helper';
+import { formatCurrency } from '../../shared/utils/format';
 
 Chart.register(CategoryScale, LinearScale, BarElement, BarController, Tooltip);
 
