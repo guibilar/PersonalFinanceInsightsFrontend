@@ -129,76 +129,15 @@
     </div>
   } @else {
     @if (selectedCount() > 0) {
-      <div
-        class="bulk-bar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-primary-subtle"
-        role="region"
-        aria-label="Change the selected transactions"
-      >
-        <span class="fw-medium me-1" aria-live="polite">{{ selectedCount() }} selected</span>
-        <label class="visually-hidden" for="bulk-category">Set the category</label>
-        <select
-          id="bulk-category"
-          class="form-select form-select-sm w-auto"
-          [disabled]="bulkSaving()"
-          (change)="
-            bulkApply({ categoryId: $any($event.target).value }); $any($event.target).value = ''
-          "
-        >
-          <option value="" selected>Set category…</option>
-          @for (category of categories(); track category.id) {
-            <option [value]="category.id">{{ category.name }}</option>
-          }
-        </select>
-        <label class="visually-hidden" for="bulk-flow">Set what they count as</label>
-        <select
-          id="bulk-flow"
-          class="form-select form-select-sm w-auto"
-          [disabled]="bulkSaving()"
-          (change)="bulkApply({ flow: $any($event.target).value }); $any($event.target).value = ''"
-        >
-          <option value="" selected>Counts as…</option>
-          @for (flow of flows; track flow) {
-            <option [value]="flow">{{ flowLabel(flow) }}</option>
-          }
-        </select>
-        <label class="visually-hidden" for="bulk-budget">Link to a budget</label>
-        <select
-          id="bulk-budget"
-          class="form-select form-select-sm w-auto"
-          [disabled]="bulkSaving()"
-          (change)="bulkBudget($any($event.target).value); $any($event.target).value = ''"
-        >
-          <option value="" selected>Budget…</option>
-          @for (budget of activeBudgets(); track budget.id) {
-            <option [value]="budget.id">Link to {{ budget.name }}</option>
-          }
-          <option value="unlink">Unlink from budgets</option>
-        </select>
-        @if (tags().length > 0) {
-          <label class="visually-hidden" for="bulk-tag">Add or remove a tag</label>
-          <select
-            id="bulk-tag"
-            class="form-select form-select-sm w-auto"
-            [disabled]="bulkSaving()"
-            (change)="bulkTag($any($event.target).value); $any($event.target).value = ''"
-          >
-            <option value="" selected>Tag…</option>
-            <optgroup label="Add">
-              @for (tag of tags(); track tag.id) {
-                <option [value]="'add:' + tag.id">Add #{{ tag.name }}</option>
-              }
-            </optgroup>
-            <optgroup label="Remove">
-              @for (tag of tags(); track tag.id) {
-                <option [value]="'remove:' + tag.id">Remove #{{ tag.name }}</option>
-              }
-            </optgroup>
-          </select>
-        }
-        <button type="button" class="btn btn-link btn-sm ms-auto" (click)="clearSelection()">
-          Clear
-        </button>
-      </div>
+      <app-transaction-bulk-bar
+        [count]="selectedCount()"
+        [categories]="categories()"
+        [budgets]="activeBudgets()"
+        [tags]="tags()"
+        [saving]="bulkSaving()"
+        (apply)="bulkApply($event)"
+        (cleared)="clearSelection()"
+      />
     }
     <div class="table-responsive">
       <table

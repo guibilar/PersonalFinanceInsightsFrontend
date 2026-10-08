@@ -31,10 +31,7 @@ import { CategoryAveragesComponent } from './category-averages/category-averages
 import { CashFlowComponent } from './cash-flow/cash-flow.component';
 import { MonthForecastComponent } from './month-forecast/month-forecast.component';
 import {
-  AttentionKind,
-  attentionItems,
   budgetsOverLimit,
-  investments,
   leftOverThisMonth,
   usualByNow,
   netWorthChange,
@@ -42,6 +39,8 @@ import {
   previousMonthToDateLabel,
   spentThisMonth,
 } from './dashboard-stats';
+import { AttentionKind, attentionItems } from './attention';
+import { investments } from './investments';
 import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';

@@ -47,6 +47,29 @@ $input-bg: var(--bs-body-bg);
 @import 'bootstrap/scss/maps';
 @import 'bootstrap/scss/mixins';
 @import 'bootstrap/scss/utilities';
+// Utility groups no template uses, each generated for every breakpoint. Put one back here before using its classes.
+$utilities: map-remove(
+  $utilities,
+  'float',
+  'object-fit',
+  'order',
+  'align-content',
+  'align-self',
+  'margin-x',
+  'margin-y',
+  'padding-end',
+  'pointer-events',
+  'user-select',
+  'focus-ring',
+  'link-opacity',
+  'link-offset',
+  'link-underline',
+  'link-underline-opacity',
+  'rounded-top',
+  'rounded-end',
+  'rounded-bottom',
+  'rounded-start'
+);
 
 @import 'bootstrap/scss/root';
 @import 'bootstrap/scss/reboot';
