@@ -1,41 +1,103 @@
 # Personal Finances Frontend
 
-Angular 22 frontend for the Personal Finance Insights API: a spending and income dashboard,
-transaction list with budget linking, budget management, categories with their colours, category and
-flow rules, and the bank accounts statements are imported into.
+Angular 22 frontend for the Personal Finance Insights API: where the money goes, what is coming, and what you are
+worth, from the bank statements you import. The sidebar groups the pages:
 
-The Transactions page totals whatever its filters pick (a merchant by search, a category, dates...) and, under
-"Over time", spreads it over weeks, months, quarters or years with a running total and the top merchants (more load
-8 at a time from `/api/Reports/merchants`); clicking a bar lists that period. Links can open it filtered: `/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`,
-as the dashboard's category names and chart segments do. Dates are picked from presets (this month, last month, the
-last 3, 6 or 12 whole months, this year, last year) or typed in as a custom range; a link's dates that match a preset
-show as that preset.
+- **Overview:** the Dashboard, Net worth and Review.
+- **Spending:** Transactions, Budgets and Subscriptions.
+- **Setup:** Accounts, Categories, Tags and Rules.
 
-A budget's period is Total (everything linked), Monthly, Yearly or Custom (two dates). Any period but Total can also
-count spending by itself, by categories or by a merchant (part of the description, ignoring case, so "no frills" takes
-in every store of the chain); a budget counts one or the other, so the form locks the categories once a merchant is
-typed and the merchant once a category is ticked.
+"Import statements", at the top of the sidebar, is there on every page.
 
-The dashboard's "Income and spending" chart shows, per month of the year, income, spending and what was left over
-(income minus spending, red when negative), with the averages above it; how the savings accounts changed is added
-only when any of them has activity. Which months the averages cover comes from the API. Every figure of the chart
-is also in a table (the "Table" button).
+## The pages
 
-The charts share one look (`features/dashboard/chart-helper.ts`): thin bars rounded at the end that shows the value,
-a gap of the surface's colour between stacked segments, hairline grid lines with compact axis ticks, and light and
-dark themes. The income and spending series take the first slots of a colour-blind-checked categorical palette (each
-mode stepped for its surface); categories keep the colour they were given. The transactions breakdown draws the
-running total in a chart of its own below the bars, not on a second axis.
+**Dashboard.** Four tiles: spent this month (against a usual month at the same point of the month), left over
+this month, net worth (and its change since last month) and budgets over their limit. Under them, **Needs attention**
+lists what wants a look, most pressing first, each linking to where it is dealt with:
 
-Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
-transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
+- budgets over their limit;
+- no statement imported for more than a week;
+- an account whose statements stop before last month;
+- a subscription whose price changed;
+- transactions left in Other because no rule names their merchant.
+
+Then:
+
+- **Where the month is heading:** spent so far, the recurring payments still due, and usual spending for the days
+  left, with each monthly and yearly budget's projected end.
+- **By category:** this month's split, or each category against a usual month.
+- **Budgets at a glance.**
+- **Income and spending** per month, with what was left over, as a chart or a table.
+- **Monthly spending** by category.
+- **Investments:** what each holds, and this year's contributions and room.
+- **Recent transactions.**
+
+A category's name or chart segment opens its transactions.
+
+**Transactions.** Search (descriptions and notes), filters (dates from presets or a custom range, category, tag,
+account, what it counts as) and sorting. The page totals whatever the filters pick. Under "Over time" it spreads that
+total over weeks, months, quarters or years, with a running total and the top merchants (more load 8 at a time);
+clicking a bar lists that period.
+
+Links can open the page filtered, as the dashboard's do:
+`/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`. Dates that match a preset show as that
+preset.
+
+A transaction can be:
+
+- edited: its description, category (optionally adding a rule so similar ones follow), what it counts as, a note
+  and tags;
+- linked to a budget;
+- deleted, which hides it: deleted ones are listed under "Deleted" to restore, and re-importing their statement
+  doesn't add them back.
+
+Transactions can also be added by hand. Ticking several opens a bar that sets a category, flow, budget or tag on all
+of them at once.
+
+**Budgets.** A budget's period is Total (everything linked), Monthly, Yearly or Custom (two dates). Any period but
+Total can also count spending by itself, by categories or by a merchant (part of the description, ignoring case, so
+"no frills" takes in every store of the chain). A budget counts one or the other, so the form locks the categories
+once a merchant is typed, and the merchant once a category is ticked.
+
+**Subscriptions.** Payments that come again and again (subscriptions, bills, rent), found in the last two years of
+spending: what each costs a month and a year, when the next one is due, and price changes. Ones that stopped are
+listed apart.
+
+**Net worth.** What the accounts and investments hold, less what the cards owe, over the last twelve months, and each
+account's latest balance (entered by hand, or from a Wealthsimple statement).
+
+**Review.** A month or a year against the one before:
+
+- spending and income;
+- spending per month;
+- each category, and what changed most;
+- where the most went;
+- the biggest purchase;
+- days without spending.
+
+**Rules.** Category rules, checked in order (first match wins; move them up or down), and flow rules. "Sort them" lists the
+merchants left in Other because no rule names them; picking a category adds the rule and applies the rules.
+
+**Categories and tags.** Names and colours, used everywhere they show. Tags are your own labels across categories
+("Vacation 2026"); a tag on a row filters the list by it.
 
 ## Accounts and flows
 
-Statements are imported into an **account** (`/accounts`): a name and a type (chequing, savings or
-credit card) that can't change. Only an account that never had transactions can be deleted. When a
-file doesn't look like it belongs to the chosen account (a credit card export into a chequing account,
-or rows already stored on another account), the import asks before going ahead ("Import anyway").
+Statements are imported into an **account** (`/accounts`): a name, a type (chequing, savings, credit card or
+investment) and its statement format, which the import reads:
+
+- CIBC CSV;
+- Neo Financial CSV or PDF;
+- Wealthsimple PDF;
+- none, for an account kept by hand.
+
+Several files can be imported at once, each into its account. When a file doesn't look like it belongs to the chosen
+account (a credit card export into a chequing account, or rows already stored on another account), the import asks
+before going ahead ("Import anyway").
+
+Savings and investment accounts can be a registered plan (TFSA, RRSP or FHSA). The year's contribution room you enter
+is then counted down by the deposits; transfers straight from another plan use none. Only an account that never had
+transactions can be deleted.
 
 Every transaction also has a **flow**, what it counts as in the reports: spending, refund, income,
 transfer (between your own accounts, like a card payment) or ignored. Without a matching flow rule,
@@ -43,6 +105,23 @@ money out is spending, money in is income on chequing and a refund on a credit c
 a savings account is a transfer. Flow rules (the Rules page's "Money in and transfers" tab) override
 that by keyword; the longest matching keyword wins. A flow or category picked by hand on a transaction
 is kept when the rules are re-applied ("Apply rules").
+
+## Charts
+
+The charts share one look (`shared/charts/chart-theme.ts`):
+
+- thin bars, rounded at the end that shows the value;
+- a gap of the surface's colour between stacked segments;
+- hairline grid lines with compact axis ticks;
+- light and dark themes.
+
+The income and spending series take the first slots of a colour-blind-checked categorical palette, with each mode
+stepped for its surface; categories keep the colour they were given. The transactions breakdown draws the running total
+in a chart of its own below the bars, not on a second axis. `shared/charts/chart-helper.ts` builds the dashboard's
+charts.
+
+Categories come from the API (`/api/Categories`): pages load the list and pass it to their forms, and
+transactions, rules, budgets and reports carry each category's name and colour, so nothing is looked up.
 
 ## Getting started
 
@@ -88,15 +167,17 @@ that `npm test` opens).
 
 ```
 src/app/
-  core/       api/ (repositories, API base URL), models/, layout/navigation
-  shared/     ui/ (card, filter panel, form card, loader, error state, paginator), utils/
-  features/   dashboard/, transactions/, budgets/, rules/, bank-accounts/   (lazy-loaded routes)
+  core/       api/ (repositories), models/, data/ (change notifications), layout/ (the shell and sidebar)
+  shared/     ui/ (cards, modal, confirm dialog, toasts, tag picker, skeletons...), charts/ (theme, chart helper),
+              utils/ (formatting, months, date presets, flows, problem details...)
+  features/   dashboard/, transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/,
+              categories/, tags/, bank-accounts/ (Accounts)                              (lazy-loaded routes)
               account/ is the signed-in user's own account (change password), not a bank account
 ```
 
 Components are standalone, OnPush and signal-based; the app runs zoneless.
-Styling is Bootstrap 5 only: `src/styles.scss` imports just the Bootstrap modules in
-use, so add a module there before using its classes.
+Styling is Bootstrap 5 only: `src/styles.scss` imports just the Bootstrap modules in use, and drops the utility groups
+no template uses, so add a module or utility group there before using its classes.
 
 ## Docker, with HTTPS through Tailscale
 
