@@ -444,6 +444,33 @@ describe('DashboardComponent', () => {
     ]);
   });
 
+  it('says when no statement was imported for more than a week', async () => {
+    const { root } = await load(
+      currentMonth(300),
+      emptyCashFlow,
+      EMPTY_FORECAST,
+      EMPTY_UNCATEGORISED,
+      {
+        accounts: [
+          {
+            id: 'a2',
+            name: 'Chequing',
+            type: AccountType.Chequing,
+            format: StatementFormat.Cibc,
+            transactionCount: 40,
+            lastTransactionDate: '2026-09-02T00:00:00Z',
+            lastImportedAt: '2026-08-27T15:00:00Z',
+          },
+        ],
+      },
+    );
+
+    const items = Array.from(root.querySelectorAll<HTMLElement>('.attention li')).map((li) =>
+      li.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(items).toEqual(['No statements imported in 9 days']);
+  });
+
   it('lists investments with their balance and this year’s room', async () => {
     const { root } = await load(
       currentMonth(300),

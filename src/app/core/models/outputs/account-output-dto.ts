@@ -19,6 +19,8 @@ export interface AccountOutputDto {
   transactionCount: number;
   /** The day of its latest transaction (deleted ones included), at midnight UTC; null without any. */
   lastTransactionDate?: string | null;
+  /** When a statement was last imported into it (UTC); null until the first. */
+  lastImportedAt?: string | null;
   /** Savings and investment accounts only; None otherwise. Older APIs leave it out. */
   plan?: RegisteredPlan;
   /** The plan's contribution room for contributionRoomYear, as entered. */
