@@ -291,7 +291,7 @@ describe('TransactionListComponent', () => {
 
     it('unlinks from budgets, and forgets the ticks when the list changes', async () => {
       component.toggleAll(items, true);
-      component.bulkBudget('unlink');
+      component.bulkApply({ unlinkBudget: true });
       const request = http.expectOne('/api/Transaction/Bulk');
       expect(request.request.body).toEqual({
         transactionIds: ['t1', 't2', 't3'],
@@ -390,7 +390,7 @@ describe('TransactionListComponent', () => {
       await fixture.whenStable();
 
       component.toggle('t1');
-      component.bulkTag('remove:g-trip');
+      component.bulkApply({ removeTagId: 'g-trip' });
       const remove = http.expectOne('/api/Transaction/Bulk');
       expect(remove.request.body).toEqual({ transactionIds: ['t1'], removeTagId: 'g-trip' });
       remove.flush({ updated: 1, skipped: 0, notes: [] });

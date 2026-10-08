@@ -1,0 +1,70 @@
+<div
+  class="bulk-bar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-primary-subtle"
+  role="region"
+  aria-label="Change the selected transactions"
+>
+  <span class="fw-medium me-1" aria-live="polite">{{ count() }} selected</span>
+  <label class="visually-hidden" for="bulk-category">Set the category</label>
+  <select
+    #categorySelect
+    id="bulk-category"
+    class="form-select form-select-sm w-auto"
+    [disabled]="saving()"
+    (change)="pick(categorySelect, toCategory)"
+  >
+    <option value="" selected>Set category…</option>
+    @for (category of categories(); track category.id) {
+      <option [value]="category.id">{{ category.name }}</option>
+    }
+  </select>
+  <label class="visually-hidden" for="bulk-flow">Set what they count as</label>
+  <select
+    #flowSelect
+    id="bulk-flow"
+    class="form-select form-select-sm w-auto"
+    [disabled]="saving()"
+    (change)="pick(flowSelect, toFlow)"
+  >
+    <option value="" selected>Counts as…</option>
+    @for (flow of flows; track flow) {
+      <option [value]="flow">{{ flowLabels[flow] }}</option>
+    }
+  </select>
+  <label class="visually-hidden" for="bulk-budget">Link to a budget</label>
+  <select
+    #budgetSelect
+    id="bulk-budget"
+    class="form-select form-select-sm w-auto"
+    [disabled]="saving()"
+    (change)="pick(budgetSelect, toBudget)"
+  >
+    <option value="" selected>Budget…</option>
+    @for (budget of budgets(); track budget.id) {
+      <option [value]="budget.id">Link to {{ budget.name }}</option>
+    }
+    <option value="unlink">Unlink from budgets</option>
+  </select>
+  @if (tags().length > 0) {
+    <label class="visually-hidden" for="bulk-tag">Add or remove a tag</label>
+    <select
+      #tagSelect
+      id="bulk-tag"
+      class="form-select form-select-sm w-auto"
+      [disabled]="saving()"
+      (change)="pick(tagSelect, toTag)"
+    >
+      <option value="" selected>Tag…</option>
+      <optgroup label="Add">
+        @for (tag of tags(); track tag.id) {
+          <option [value]="'add:' + tag.id">Add #{{ tag.name }}</option>
+        }
+      </optgroup>
+      <optgroup label="Remove">
+        @for (tag of tags(); track tag.id) {
+          <option [value]="'remove:' + tag.id">Remove #{{ tag.name }}</option>
+        }
+      </optgroup>
+    </select>
+  }
+  <button type="button" class="btn btn-link btn-sm ms-auto" (click)="cleared.emit()">Clear</button>
+</div>

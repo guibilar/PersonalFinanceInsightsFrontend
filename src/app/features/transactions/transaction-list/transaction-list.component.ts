@@ -8,7 +8,7 @@ import {
   untracked,
 } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ActivatedRoute, ParamMap, Params, Router } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { switchMap, tap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
@@ -27,7 +27,6 @@ import { TransactionInputDto } from '../../../core/models/inputs/transaction-inp
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
-import { TransactionBulkUpdateInputDto } from '../../../core/models/inputs/transaction-bulk-update-input-dto';
 import {
   BreakdownInterval,
   BreakdownPeriodDto,
@@ -61,64 +60,18 @@ import {
   TransactionEditSubmission,
 } from '../transaction-edit-form/transaction-edit-form';
 import { TransactionAddForm } from '../transaction-add-form/transaction-add-form';
+import {
+  CLOSER,
+  criteriaFromQuery,
+  definedCriteria,
+  sameCriteria,
+  intervalFromQuery,
+  OWN_NAVIGATION,
+} from './transaction-list-query';
+import { BulkChange, TransactionBulkBar } from '../transaction-bulk-bar/transaction-bulk-bar';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
 import { TransactionBreakdownComponent } from '../transaction-breakdown/transaction-breakdown.component';
 import { valueOf } from '../../../shared/utils/resource-value';
-
-/** The next interval down, for looking inside a period. */
-const CLOSER: Record<BreakdownInterval, BreakdownInterval> = {
-  Year: 'Month',
-  Quarter: 'Month',
-  Month: 'Week',
-  Week: 'Week',
-};
-
-const CRITERIA_KEYS = [
-  'description',
-  'categoryId',
-  'tagId',
-  'accountId',
-  'flow',
-  'startDate',
-  'endDate',
-] as const;
-
-/** The criteria a link can open the list with: ?categoryId=…&tagId=…&description=…&startDate=…&endDate=…&accountId=… */
-function criteriaFromQuery(query: ParamMap): TransactionCriteria {
-  const criteria: TransactionCriteria = {};
-  for (const key of CRITERIA_KEYS) {
-    const value = query.get(key);
-    if (!value) continue;
-    if (key === 'flow') {
-      if (Object.values(Flow).includes(value as Flow)) criteria.flow = value as Flow;
-    } else {
-      criteria[key] = value;
-    }
-  }
-  return criteria;
-}
-
-/** The criteria that are set, as a query string would carry them. */
-function definedCriteria(criteria: TransactionCriteria): Record<string, string> {
-  const defined: Record<string, string> = {};
-  for (const key of CRITERIA_KEYS) {
-    const value = criteria[key];
-    if (value) defined[key] = value;
-  }
-  return defined;
-}
-
-function sameCriteria(a: TransactionCriteria, b: TransactionCriteria): boolean {
-  return JSON.stringify(definedCriteria(a)) === JSON.stringify(definedCriteria(b));
-}
-
-function intervalFromQuery(query: ParamMap): BreakdownInterval | null {
-  const value = query.get('interval');
-  return value && value in CLOSER ? (value as BreakdownInterval) : null;
-}
-
-/** Marks the navigations the list makes itself to keep the address up to date, so it doesn't apply them back. */
-const OWN_NAVIGATION = 'transactionListFilters';
 
 interface SortableColumn {
   field: TransactionSortField;
@@ -145,6 +98,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
     TransactionLinkForm,
     TransactionEditForm,
     TransactionAddForm,
+    TransactionBulkBar,
     StatementImportComponent,
     TransactionBreakdownComponent,
     ConfirmDialogComponent,
@@ -203,7 +157,6 @@ export class TransactionListComponent {
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly selectedCount = computed(() => this.selected().size);
   readonly bulkSaving = signal(false);
-  protected readonly flows = Object.values(Flow);
   /** Deleted transactions are listed instead of the others, each with a Restore button. */
   readonly showDeleted = computed(() => !!this.filter().hidden);
 
@@ -621,20 +574,8 @@ export class TransactionListComponent {
     if (this.selected().size > 0) this.selected.set(new Set());
   }
 
-  /** "add:<id>" or "remove:<id>", from the bulk bar's tag menu. */
-  bulkTag(value: string): void {
-    const [action, id] = value.split(':');
-    if (!id) return;
-    this.bulkApply(action === 'remove' ? { removeTagId: id } : { addTagId: id });
-  }
-
-  bulkBudget(value: string): void {
-    if (value === 'unlink') this.bulkApply({ unlinkBudget: true });
-    else if (value) this.bulkApply({ budgetId: value });
-  }
-
   /** One change for every ticked transaction; what the API skipped (a flow that doesn't fit, say) is said too. */
-  bulkApply(change: Omit<TransactionBulkUpdateInputDto, 'transactionIds'>): void {
+  bulkApply(change: BulkChange): void {
     const ids = [...this.selected()];
     if (ids.length === 0 || this.bulkSaving()) return;
     if (
