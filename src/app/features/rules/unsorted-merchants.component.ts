@@ -7,7 +7,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 import { ReportsRepository } from '../../core/api/reports-repository';
@@ -18,6 +17,7 @@ import { UncategorisedMerchantDto } from '../../core/models/outputs/insights-out
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { valueOf } from '../../shared/utils/resource-value';
 import { conflictDetail } from '../../shared/utils/problem-detail';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 /** Merchants listed before "Show all". */
 const SHOWN = 6;
@@ -29,7 +29,7 @@ const SHOWN = 6;
  */
 @Component({
   selector: 'app-unsorted-merchants',
-  imports: [CurrencyPipe],
+  imports: [MoneyPipe],
   template: `
     @if (merchants().length > 0) {
       <section id="unsorted" class="card mb-3 border-info-subtle" aria-labelledby="unsorted-title">
@@ -62,7 +62,7 @@ const SHOWN = 6;
                   >
                     {{ merchant.count }}
                     {{ merchant.count === 1 ? 'transaction' : 'transactions' }} ·
-                    {{ merchant.spending | currency }} · like “{{ merchant.examples[0] }}”
+                    {{ merchant.spending | money }} · like “{{ merchant.examples[0] }}”
                   </div>
                 </div>
                 <label class="visually-hidden" [for]="'unsorted-category-' + $index"

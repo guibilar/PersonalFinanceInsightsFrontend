@@ -134,10 +134,10 @@
               <div class="mt-auto">
                 <div class="d-flex align-items-baseline gap-1 mb-2">
                   <span class="h4 fw-semibold mb-0" [class.text-danger]="health(budget) === 'over'">
-                    {{ budget.totalSpent | currency }}
+                    {{ budget.totalSpent | money }}
                   </span>
                   <span class="text-body-secondary small"
-                    >of {{ budget.totalAmount | currency }}{{ periodSuffix(budget) }}</span
+                    >of {{ budget.totalAmount | money }}{{ periodSuffix(budget) }}</span
                   >
                 </div>
                 <div
@@ -160,11 +160,11 @@
                 <div class="d-flex justify-content-between small">
                   @if (budget.totalRemaining >= 0) {
                     <span class="text-body-secondary"
-                      >{{ budget.totalRemaining | currency }} left</span
+                      >{{ budget.totalRemaining | money }} left</span
                     >
                   } @else {
                     <span class="text-danger fw-medium"
-                      >{{ abs(budget.totalRemaining) | currency }} over</span
+                      >{{ abs(budget.totalRemaining) | money }} over</span
                     >
                   }
                   <span
@@ -184,7 +184,7 @@
                     "
                     [class.text-danger]="projection.projectedPercentage > 100"
                   >
-                    At this pace, {{ projection.projected | currency }} ({{
+                    At this pace, {{ projection.projected | money }} ({{
                       projection.projectedPercentage | number: '1.0-0'
                     }}%) by the end of the
                     {{ projection.period === 'Yearly' ? 'year' : 'month' }}

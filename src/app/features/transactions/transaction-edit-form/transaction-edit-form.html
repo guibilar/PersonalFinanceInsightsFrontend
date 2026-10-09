@@ -1,6 +1,6 @@
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <div class="rounded bg-body-tertiary p-3 mb-3 small text-body-secondary">
-    {{ transaction().date | date: 'mediumDate' : 'UTC' }} · {{ transaction().amount | currency }} ·
+    {{ transaction().date | date: 'mediumDate' : 'UTC' }} · {{ transaction().amount | money }} ·
     {{ transaction().accountName }}
   </div>
 

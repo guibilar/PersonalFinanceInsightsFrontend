@@ -15,6 +15,15 @@
     <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
     Personal Finances
   </a>
+  <button
+    type="button"
+    class="btn btn-icon ms-auto privacy-toggle"
+    [attr.aria-label]="amountsHidden() ? 'Show amounts' : 'Hide amounts'"
+    [attr.aria-pressed]="amountsHidden()"
+    (click)="toggleAmountsHidden()"
+  >
+    <app-icon [name]="amountsHidden() ? 'eye-off' : 'eye'" />
+  </button>
 </header>
 
 @if (mobileOpen()) {
@@ -117,6 +126,16 @@
     >
       <app-icon name="log-out" />
       <span class="label">Sign out</span>
+    </button>
+    <button
+      type="button"
+      class="nav-item privacy-toggle"
+      (click)="toggleAmountsHidden()"
+      [attr.aria-pressed]="amountsHidden()"
+      [attr.title]="collapsed() ? (amountsHidden() ? 'Show amounts' : 'Hide amounts') : null"
+    >
+      <app-icon [name]="amountsHidden() ? 'eye-off' : 'eye'" />
+      <span class="label">Hide amounts</span>
     </button>
     <button
       type="button"

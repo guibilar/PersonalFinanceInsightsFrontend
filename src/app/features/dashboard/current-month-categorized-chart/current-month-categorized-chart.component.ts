@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { BaseChartDirective } from 'ng2-charts';
 import { Router } from '@angular/router';
 import { ChartHelper } from '../../../shared/charts/chart-helper';
-import { CHART_THEMES } from '../../../shared/charts/chart-theme';
+import { chartTheme } from '../../../shared/charts/chart-theme';
 import { categoryLink } from '../dashboard-stats';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
@@ -24,7 +24,7 @@ export class CurrentMonthCategorizedChartComponent {
     const month = this.report().monthlyData[0]?.month;
     return ChartHelper.generateDoughnutChartConfiguration(
       this.report(),
-      CHART_THEMES[this.theme.theme()],
+      chartTheme(this.theme.theme()),
       (category) =>
         void this.router.navigate(['/transactions'], {
           queryParams: categoryLink(category.id, month),

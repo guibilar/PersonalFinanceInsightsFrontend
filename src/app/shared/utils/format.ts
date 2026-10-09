@@ -1,3 +1,5 @@
+import { amountsHidden } from './privacy';
+
 /** Amounts and days as the app shows them everywhere: Canadian dollars, and calendar days in English. */
 
 const currencyFormatter = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' });
@@ -8,14 +10,18 @@ const compactFormatter = new Intl.NumberFormat('en-CA', {
   maximumFractionDigits: 1,
 });
 
-/** "$1,234.56", "-$5.00". */
+/** What every amount reads in privacy mode: the same length whatever the amount, so its size doesn't show either. */
+export const HIDDEN_AMOUNT = '$•••••';
+
+/** "$1,234.56", "-$5.00"; "$•••••" in privacy mode. */
 export function formatCurrency(value: number): string {
+  if (amountsHidden()) return value < 0 ? `-${HIDDEN_AMOUNT}` : HIDDEN_AMOUNT;
   return currencyFormatter.format(value);
 }
 
-/** "$5K", "$1.2K": for axis ticks, which carry the values that aren't labelled. */
+/** "$5K", "$1.2K": for axis ticks, which carry the values that aren't labelled. Blank in privacy mode. */
 export function formatCompactCurrency(value: number): string {
-  return compactFormatter.format(value);
+  return amountsHidden() ? '' : compactFormatter.format(value);
 }
 
 /**

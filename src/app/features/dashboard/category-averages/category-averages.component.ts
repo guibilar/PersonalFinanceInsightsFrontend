@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
 import { RouterLink } from '@angular/router';
 import { averageCaption, categoryAverages, categoryColors, categoryLink } from '../dashboard-stats';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 /**
  * What each category costs in a typical month: a bar for the average of the finished months, and a thinner one
@@ -10,7 +11,7 @@ import { averageCaption, categoryAverages, categoryColors, categoryLink } from '
  */
 @Component({
   selector: 'app-category-averages',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink],
+  imports: [MoneyPipe, DecimalPipe, RouterLink],
   template: `
     <p class="small text-body-secondary mb-3">
       {{ caption() }}. The thin bar is {{ thisMonthLabel }} so far.
@@ -28,7 +29,7 @@ import { averageCaption, categoryAverages, categoryColors, categoryLink } from '
               >{{ row.category }}</a
             >
             <span class="text-nowrap">
-              <span class="fw-semibold">{{ row.average | currency }}</span>
+              <span class="fw-semibold">{{ row.average | money }}</span>
               <span class="text-body-secondary"> / month</span>
             </span>
           </div>
@@ -39,9 +40,9 @@ import { averageCaption, categoryAverages, categoryColors, categoryLink } from '
             [attr.aria-label]="
               row.category +
               ': average ' +
-              (row.average | currency) +
+              (row.average | money) +
               ' a month, ' +
-              (row.thisMonth | currency) +
+              (row.thisMonth | money) +
               ' this month'
             "
           >
@@ -58,7 +59,7 @@ import { averageCaption, categoryAverages, categoryColors, categoryLink } from '
             ></div>
           </div>
           <div class="d-flex justify-content-between small text-body-secondary mt-1">
-            <span>{{ row.thisMonth | currency }} this month</span>
+            <span>{{ row.thisMonth | money }} this month</span>
             @if (row.change !== null) {
               <!-- Only over the average is flagged: a month still running is expected to be under it. -->
               <span [class.text-danger]="row.change > 10">

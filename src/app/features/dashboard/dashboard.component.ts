@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import {
@@ -45,7 +44,7 @@ import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';
 import { valueOf } from '../../shared/utils/resource-value';
-import { formatDay } from '../../shared/utils/format';
+import { formatDay, formatCurrency } from '../../shared/utils/format';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
 Chart.register(
@@ -126,14 +125,12 @@ const RECENT_TRANSACTIONS = 6;
       }
     }
   `,
-  providers: [CurrencyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
   private readonly reportsRepository = inject(ReportsRepository);
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly transactionRepository = inject(TransactionRepository);
-  private readonly currency = inject(CurrencyPipe);
   private readonly accountRepository = inject(AccountRepository);
   /** A statement imported from the sidebar reloads everything below. */
   private readonly dataChanges = inject(DataChangesService);
@@ -293,6 +290,6 @@ export class DashboardComponent {
   });
 
   format(amount: number): string {
-    return this.currency.transform(amount) ?? '';
+    return formatCurrency(amount);
   }
 }

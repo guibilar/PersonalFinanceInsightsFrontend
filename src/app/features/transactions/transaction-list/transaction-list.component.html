@@ -328,7 +328,7 @@
                 [class.text-success]="transaction.transactionType === TransactionType.Credit"
               >
                 {{ transaction.transactionType === TransactionType.Credit ? '+' : '−'
-                }}{{ transaction.amount | currency }}
+                }}{{ transaction.amount | money }}
               </td>
               <td class="text-end d-sm-table-cell" [class.d-none]="!showDeleted()">
                 @if (showDeleted()) {

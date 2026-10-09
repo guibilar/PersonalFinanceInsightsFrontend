@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { AccountRepository } from '../../core/api/account-repository';
@@ -20,6 +20,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { BankAccountFormComponent } from './bank-account-form.component';
 import { AccountBalancesComponent } from './account-balances.component';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 /**
  * The accounts statements are imported into: add, edit, delete the empty ones, and enter their balances. A registered
@@ -28,7 +29,7 @@ import { AccountBalancesComponent } from './account-balances.component';
 @Component({
   selector: 'app-bank-account-list',
   imports: [
-    CurrencyPipe,
+    MoneyPipe,
     DatePipe,
     AccountBalancesComponent,
     BankAccountFormComponent,

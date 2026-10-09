@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ReportsRepository } from '../../core/api/reports-repository';
@@ -9,6 +9,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent } from '../../shared/ui/stat-card/stat-card.component';
 import { valueOf } from '../../shared/utils/resource-value';
 import { CADENCE_LABELS, recurringStatus, shortDay } from '../../shared/utils/insights';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { formatCurrency } from '../../shared/utils/format';
 
 /**
  * Subscriptions, bills and rent: the payments that come again and again, found in the spending. What they cost a
@@ -17,14 +19,13 @@ import { CADENCE_LABELS, recurringStatus, shortDay } from '../../shared/utils/in
 @Component({
   selector: 'app-recurring-list',
   imports: [
-    CurrencyPipe,
+    MoneyPipe,
     NgTemplateOutlet,
     RouterLink,
     ErrorStateComponent,
     SkeletonComponent,
     StatCardComponent,
   ],
-  providers: [CurrencyPipe],
   template: `
     <div class="mb-4">
       <h1 class="h3 mb-1">Subscriptions</h1>
@@ -139,7 +140,7 @@ import { CADENCE_LABELS, recurringStatus, shortDay } from '../../shared/utils/in
                 [class.text-bg-danger]="change.to > change.from"
                 [class.text-bg-success]="change.to < change.from"
               >
-                {{ change.to > change.from ? 'Up' : 'Down' }} from {{ change.from | currency }}
+                {{ change.to > change.from ? 'Up' : 'Down' }} from {{ change.from | money }}
               </span>
             }
           </div>
@@ -158,10 +159,10 @@ import { CADENCE_LABELS, recurringStatus, shortDay } from '../../shared/utils/in
         </div>
         <div class="text-end">
           <div class="fw-semibold">
-            {{ payment.variableAmount ? '~' : '' }}{{ payment.amount | currency }}
+            {{ payment.variableAmount ? '~' : '' }}{{ payment.amount | money }}
           </div>
           @if (payment.cadence !== 'Monthly') {
-            <div class="small text-body-secondary">{{ payment.monthlyCost | currency }}/month</div>
+            <div class="small text-body-secondary">{{ payment.monthlyCost | money }}/month</div>
           }
         </div>
       </li>
@@ -183,7 +184,6 @@ import { CADENCE_LABELS, recurringStatus, shortDay } from '../../shared/utils/in
 })
 export class RecurringListComponent {
   private readonly reports = inject(ReportsRepository);
-  private readonly currency = inject(CurrencyPipe);
 
   readonly report = rxResource({ stream: () => this.reports.getRecurring() });
   readonly value = computed(() => valueOf(this.report));
@@ -214,6 +214,6 @@ export class RecurringListComponent {
   }
 
   format(amount: number): string {
-    return this.currency.transform(amount) ?? '';
+    return formatCurrency(amount);
   }
 }

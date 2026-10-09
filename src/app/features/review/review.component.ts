@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ReportsRepository } from '../../core/api/reports-repository';
@@ -9,6 +8,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent } from '../../shared/ui/stat-card/stat-card.component';
 import { valueOf } from '../../shared/utils/resource-value';
 import { changeText, compared, shortDay, stepReview } from '../../shared/utils/insights';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { formatCurrency } from '../../shared/utils/format';
 
 /** Which period a review is of: a month, or a year (month null). Undefined: the last complete month. */
 interface ReviewPeriod {
@@ -24,14 +25,13 @@ interface ReviewPeriod {
 @Component({
   selector: 'app-review',
   imports: [
-    CurrencyPipe,
+    MoneyPipe,
     RouterLink,
     ErrorStateComponent,
     IconComponent,
     SkeletonComponent,
     StatCardComponent,
   ],
-  providers: [CurrencyPipe],
   templateUrl: './review.component.html',
   styles: `
     .bar {
@@ -66,7 +66,6 @@ interface ReviewPeriod {
 })
 export class ReviewComponent {
   private readonly reports = inject(ReportsRepository);
-  private readonly currency = inject(CurrencyPipe);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -122,7 +121,7 @@ export class ReviewComponent {
   protected readonly compare = compared;
 
   format(amount: number): string {
-    return this.currency.transform(amount) ?? '';
+    return formatCurrency(amount);
   }
 
   /** "Left over $1,685.00", or "$573.61 more went out than came in". */

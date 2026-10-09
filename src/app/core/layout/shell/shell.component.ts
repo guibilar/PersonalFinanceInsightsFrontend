@@ -15,6 +15,7 @@ import {
   describeImport,
 } from '../../../features/transactions/statement-import/statement-import.component';
 import { DataChangesService } from '../../data/data-changes.service';
+import { amountsHidden, toggleAmountsHidden } from '../../../shared/utils/privacy';
 
 const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 
@@ -52,6 +53,8 @@ interface NavGroup {
 export class ShellComponent {
   protected readonly theme = inject(ThemeService);
   protected readonly auth = inject(AuthService);
+  protected readonly amountsHidden = amountsHidden;
+  protected readonly toggleAmountsHidden = toggleAmountsHidden;
   private readonly toasts = inject(ToastService);
 
   readonly groups: NavGroup[] = [

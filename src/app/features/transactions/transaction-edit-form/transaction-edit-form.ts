@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,6 +25,7 @@ import { TagPickerComponent } from '../../../shared/ui/tag-picker/tag-picker.com
 import { suggestRuleKeyword } from '../../../shared/utils/suggest-rule-keyword';
 import { FLOW_DESCRIPTIONS, FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
 import { valueOf } from '../../../shared/utils/resource-value';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 const NOT_BLANK = Validators.pattern(/\S/);
 
@@ -42,7 +43,7 @@ export interface TransactionEditSubmission {
  */
 @Component({
   selector: 'app-transaction-edit-form',
-  imports: [ReactiveFormsModule, CurrencyPipe, DatePipe, TagPickerComponent],
+  imports: [ReactiveFormsModule, MoneyPipe, DatePipe, TagPickerComponent],
   templateUrl: './transaction-edit-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
