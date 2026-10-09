@@ -2,8 +2,7 @@
   <div class="rounded bg-body-tertiary p-3 mb-3">
     <div class="fw-semibold">{{ transaction().description }}</div>
     <div class="small text-body-secondary">
-      {{ transaction().date | date: 'mediumDate' : 'UTC' }} ·
-      {{ transaction().amount | currency }} ·
+      {{ transaction().date | date: 'mediumDate' : 'UTC' }} · {{ transaction().amount | money }} ·
       {{ transaction().category }}
     </div>
   </div>

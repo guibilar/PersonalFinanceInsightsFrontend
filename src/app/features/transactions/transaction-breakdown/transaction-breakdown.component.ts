@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
-import { CurrencyPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import {
   BarController,
@@ -36,8 +35,9 @@ import {
   TransactionBreakdownOutputDto,
 } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
-import { CHART_THEMES } from '../../../shared/charts/chart-theme';
+import { chartTheme } from '../../../shared/charts/chart-theme';
 import { breakdownChart, breakdownMeasure } from './breakdown-chart';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 // Registered here so Chart.js ships with the transactions page only when it is used; registering twice is harmless.
 Chart.register(
@@ -70,7 +70,7 @@ const UNITS: Record<BreakdownInterval, [string, string]> = {
  */
 @Component({
   selector: 'app-transaction-breakdown',
-  imports: [BaseChartDirective, CurrencyPipe, IconComponent],
+  imports: [BaseChartDirective, MoneyPipe, IconComponent],
   templateUrl: './transaction-breakdown.component.html',
   styles: `
     .merchant-bar {
@@ -264,7 +264,7 @@ export class TransactionBreakdownComponent {
     const breakdown = this.breakdown();
     return breakdown
       ? breakdownChart(breakdown, {
-          theme: CHART_THEMES[this.theme.theme()],
+          theme: chartTheme(this.theme.theme()),
           color: this.color(),
           selected: this.selected(),
           onSelect: (index) => this.select(index),

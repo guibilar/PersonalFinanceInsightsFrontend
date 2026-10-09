@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CategoryRepository } from '../../core/api/category-repository';
 import { BudgetRepository } from '../../core/api/budget-repository';
@@ -20,6 +20,7 @@ import { periodName, periodSuffix } from '../../shared/utils/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { valueOf } from '../../shared/utils/resource-value';
 import { ReportsRepository } from '../../core/api/reports-repository';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 export type BudgetHealth = 'ok' | 'warning' | 'over';
 
@@ -36,7 +37,7 @@ const PAGE_SIZE = 12;
 @Component({
   selector: 'app-budget-list',
   imports: [
-    CurrencyPipe,
+    MoneyPipe,
     DecimalPipe,
     BudgetFormComponent,
     BudgetToolbarComponent,

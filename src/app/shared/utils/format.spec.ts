@@ -1,10 +1,26 @@
-import { formatCompactCurrency, formatCurrency, formatDay } from './format';
+import { HIDDEN_AMOUNT, formatCompactCurrency, formatCurrency, formatDay } from './format';
+import { PRIVACY_STORAGE_KEY, setAmountsHidden } from './privacy';
 
 describe('format', () => {
   it('shows amounts in Canadian dollars', () => {
     expect(formatCurrency(1234.5)).toBe('$1,234.50');
     expect(formatCurrency(-5)).toBe('-$5.00');
     expect(formatCompactCurrency(1200)).toBe('$1.2K');
+  });
+
+  it('hides every amount in privacy mode, at the same length whatever its size, and remembers it', () => {
+    setAmountsHidden(true);
+    try {
+      expect(formatCurrency(1234.5)).toBe(HIDDEN_AMOUNT);
+      expect(formatCurrency(5)).toBe(HIDDEN_AMOUNT);
+      expect(formatCurrency(-5)).toBe(`-${HIDDEN_AMOUNT}`);
+      expect(formatCompactCurrency(1200)).toBe('');
+      expect(localStorage.getItem(PRIVACY_STORAGE_KEY)).toBe('true');
+    } finally {
+      setAmountsHidden(false);
+      localStorage.removeItem(PRIVACY_STORAGE_KEY);
+    }
+    expect(formatCurrency(5)).toBe('$5.00');
   });
 
   it('shows an API day as the day it is, with or without the year', () => {

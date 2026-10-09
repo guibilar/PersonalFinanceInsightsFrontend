@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-recent-transactions',
-  imports: [CurrencyPipe, DatePipe],
+  imports: [MoneyPipe, DatePipe],
   template: `
     <ul class="list-unstyled mb-0">
       @for (transaction of transactions(); track transaction.id; let last = $last) {
@@ -31,7 +32,7 @@ import { TransactionType } from '../../../core/models/enums/transaction-type';
             [class.text-success]="transaction.transactionType === TransactionType.Credit"
           >
             {{ transaction.transactionType === TransactionType.Credit ? '+' : '−'
-            }}{{ transaction.amount | currency }}
+            }}{{ transaction.amount | money }}
           </div>
         </li>
       }

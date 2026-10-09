@@ -1,14 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { CategorizedReportOutputDto } from '../../../core/models/outputs/categorized-report-output-dto';
 import { CurrentMonthCategorizedChartComponent } from '../current-month-categorized-chart/current-month-categorized-chart.component';
 import { RouterLink } from '@angular/router';
 import { categoryColors, categoryLink, categoryShares } from '../dashboard-stats';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 /** This month's spending per category: doughnut plus a ranked list with each category's share. */
 @Component({
   selector: 'app-category-breakdown',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink, CurrentMonthCategorizedChartComponent],
+  imports: [MoneyPipe, DecimalPipe, RouterLink, CurrentMonthCategorizedChartComponent],
   template: `
     <app-current-month-categorized-chart [report]="report()" />
     <ul class="list-unstyled mb-0 mt-3">
@@ -24,7 +25,7 @@ import { categoryColors, categoryLink, categoryShares } from '../dashboard-stats
               >{{ share.category }}</a
             >
             <span class="fw-semibold">
-              {{ share.amount | currency }}
+              {{ share.amount | money }}
               <span class="text-body-secondary fw-normal ms-1"
                 >{{ share.percent | number: '1.0-0' }}%</span
               >

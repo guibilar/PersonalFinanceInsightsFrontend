@@ -7,6 +7,7 @@ import { ShellComponent } from './shell.component';
 import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DataChangesService } from '../../data/data-changes.service';
+import { PRIVACY_STORAGE_KEY, amountsHidden } from '../../../shared/utils/privacy';
 
 describe('ShellComponent', () => {
   beforeEach(() => {
@@ -25,7 +26,10 @@ describe('ShellComponent', () => {
     });
   });
 
-  afterEach(() => localStorage.removeItem('sidebar-collapsed'));
+  afterEach(() => {
+    localStorage.removeItem('sidebar-collapsed');
+    localStorage.removeItem(PRIVACY_STORAGE_KEY);
+  });
 
   it('renders a link per page, in groups', async () => {
     const fixture = TestBed.createComponent(ShellComponent);
@@ -65,6 +69,24 @@ describe('ShellComponent', () => {
     expect(TestBed.inject(ToastService).toasts()[0].message).toBe(
       'Imported 4 new transactions from 2 files (1 already imported)',
     );
+  });
+
+  it('hides and shows the amounts from the sidebar', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    await fixture.whenStable();
+    const toggle = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '.sidebar .privacy-toggle',
+    )!;
+
+    toggle.click();
+    await fixture.whenStable();
+
+    expect(amountsHidden()).toBe(true);
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+
+    toggle.click();
+    await fixture.whenStable();
+    expect(amountsHidden()).toBe(false);
   });
 
   it('remembers the collapsed state', () => {

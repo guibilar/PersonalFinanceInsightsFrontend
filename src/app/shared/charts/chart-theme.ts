@@ -1,5 +1,6 @@
 import { Chart } from 'chart.js';
 import { formatCompactCurrency } from '../utils/format';
+import { amountsHidden } from '../utils/privacy';
 
 // The app's own typeface, so the charts don't fall back to the browser's.
 export const FONT_FAMILY =
@@ -52,6 +53,14 @@ export const CHART_THEMES: Record<'light' | 'dark', ChartTheme> = {
     series: { blue: '#3987e5', orange: '#d95926', aqua: '#199e70', magenta: '#d55181' },
   },
 };
+
+/**
+ * The colours for a mode, for a chart built in a computed. It reads privacy mode and comes back as a different object in
+ * each state, so switching it rebuilds the chart: its ticks, tooltips and labels are formatted as it draws.
+ */
+export function chartTheme(mode: 'light' | 'dark'): ChartTheme {
+  return amountsHidden() ? { ...CHART_THEMES[mode] } : CHART_THEMES[mode];
+}
 
 /** The bars of the income and spending chart: each figure keeps its colour whatever else is shown. */
 export function cashFlowColors(theme: ChartTheme) {

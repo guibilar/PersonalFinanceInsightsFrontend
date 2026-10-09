@@ -7,15 +7,15 @@
         >
         @if (b.spending !== 0 || b.income === 0) {
           <span
-            ><strong>{{ b.spending | currency }}</strong> spent</span
+            ><strong>{{ b.spending | money }}</strong> spent</span
           >
         }
         @if (b.refunds > 0) {
-          <span class="text-body-secondary">{{ b.refunds | currency }} refunded</span>
+          <span class="text-body-secondary">{{ b.refunds | money }} refunded</span>
         }
         @if (b.income > 0) {
           <span
-            ><strong class="text-success">{{ b.income | currency }}</strong> received</span
+            ><strong class="text-success">{{ b.income | money }}</strong> received</span
           >
         }
       } @else if (failed()) {
@@ -62,11 +62,11 @@
         </div>
         @if (average(); as average) {
           <p class="small text-body-secondary mb-0">
-            Average <strong class="text-body">{{ average.amount | currency }}</strong> per
+            Average <strong class="text-body">{{ average.amount | money }}</strong> per
             {{ average.per }} · over {{ average.over }}
             @if (highest(); as highest) {
               · Highest {{ highest.label }},
-              <strong class="text-body">{{ highest.amount | currency }}</strong>
+              <strong class="text-body">{{ highest.amount | money }}</strong>
             }
           </p>
         }
@@ -94,7 +94,7 @@
             <div class="flex-grow-1 small">
               <strong>{{ period.label }}</strong>
               <span class="text-body-secondary">
-                · {{ (measure() === 'income' ? period.income : period.spending) | currency }} ·
+                · {{ (measure() === 'income' ? period.income : period.spending) | money }} ·
                 {{ period.count }} {{ period.count === 1 ? 'transaction' : 'transactions' }}</span
               >
             </div>
@@ -158,7 +158,7 @@
               <div class="d-flex justify-content-between gap-2 small">
                 <span class="text-truncate" [title]="merchant.name">{{ merchant.name }}</span>
                 <span class="text-nowrap">
-                  <strong>{{ merchant.spending | currency }}</strong>
+                  <strong>{{ merchant.spending | money }}</strong>
                   <span class="text-body-secondary">
                     · {{ merchant.count }} {{ merchant.count === 1 ? 'time' : 'times' }}</span
                   >

@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SpendingForecastDto } from '../../../core/models/outputs/insights-output-dto';
 import { changeText, compared, shortDay } from '../../../shared/utils/insights';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
+import { formatCurrency } from '../../../shared/utils/format';
 
 /** How many upcoming charges are listed; the rest are on the Subscriptions page. */
 const UPCOMING_SHOWN = 4;
@@ -13,11 +15,11 @@ const UPCOMING_SHOWN = 4;
  */
 @Component({
   selector: 'app-month-forecast',
-  imports: [CurrencyPipe, DecimalPipe, RouterLink],
+  imports: [MoneyPipe, DecimalPipe, RouterLink],
   template: `
     @let f = forecast();
     <div class="d-flex flex-wrap align-items-baseline gap-2 mb-1">
-      <span class="h3 fw-semibold mb-0">{{ f.projected | currency }}</span>
+      <span class="h3 fw-semibold mb-0">{{ f.projected | money }}</span>
       <span class="text-body-secondary">by the end of the month</span>
     </div>
     @if (vsUsual(); as vs) {
@@ -26,7 +28,7 @@ const UPCOMING_SHOWN = 4;
         [class.text-danger]="vs.up"
         [class.text-success]="!vs.up && vs.text !== 'about the same'"
       >
-        {{ compare(vs, 'usual') }} ({{ f.usual | currency }}, the average of the last
+        {{ compare(vs, 'usual') }} ({{ f.usual | money }}, the average of the last
         {{ f.usualMonths === 1 ? 'month' : f.usualMonths + ' months' }})
       </p>
     } @else {
@@ -46,15 +48,15 @@ const UPCOMING_SHOWN = 4;
     </div>
     <ul class="list-inline small text-body-secondary mb-3">
       <li class="list-inline-item me-3">
-        <span class="key bg-primary"></span>Spent {{ f.spent | currency }}
+        <span class="key bg-primary"></span>Spent {{ f.spent | money }}
       </li>
       <li class="list-inline-item me-3">
-        <span class="key bg-warning"></span>Recurring still due {{ upcomingTotal() | currency }}
+        <span class="key bg-warning"></span>Recurring still due {{ upcomingTotal() | money }}
       </li>
       <li class="list-inline-item">
         <span class="key bg-primary-subtle border"></span>Day-to-day, {{ f.daysLeft }}
-        {{ f.daysLeft === 1 ? 'day' : 'days' }} at {{ f.dailyRate | currency }}
-        {{ dayToDay() | currency }}
+        {{ f.daysLeft === 1 ? 'day' : 'days' }} at {{ f.dailyRate | money }}
+        {{ dayToDay() | money }}
       </li>
     </ul>
 
@@ -73,7 +75,7 @@ const UPCOMING_SHOWN = 4;
                   >{{ charge.name }}
                   <span class="text-body-secondary">· {{ day(charge.date) }}</span></span
                 >
-                <span class="text-nowrap">{{ charge.amount | currency }}</span>
+                <span class="text-nowrap">{{ charge.amount | money }}</span>
               </li>
             }
           </ul>
@@ -103,7 +105,7 @@ const UPCOMING_SHOWN = 4;
                   "
                   [title]="'Spent ' + format(budget.spent) + ' of ' + format(budget.amount)"
                 >
-                  {{ budget.projected | currency }} of {{ budget.amount | currency }} ({{
+                  {{ budget.projected | money }} of {{ budget.amount | money }} ({{
                     budget.projectedPercentage | number: '1.0-0'
                   }}%)
                 </span>
@@ -161,6 +163,6 @@ export class MonthForecastComponent {
   }
 
   format(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return formatCurrency(amount);
   }
 }

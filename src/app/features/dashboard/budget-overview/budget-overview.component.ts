@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto';
 import { periodSuffix } from '../../../shared/utils/budget-period';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 /** Active budgets, most used first, with their progress. */
 @Component({
   selector: 'app-budget-overview',
-  imports: [CurrencyPipe, DecimalPipe],
+  imports: [MoneyPipe, DecimalPipe],
   template: `
     <ul class="list-unstyled mb-0">
       @for (budget of sorted(); track budget.id) {
@@ -14,9 +15,9 @@ import { periodSuffix } from '../../../shared/utils/budget-period';
           <div class="d-flex justify-content-between small mb-1">
             <span class="fw-medium">{{ budget.name }}</span>
             <span [class.text-danger]="budget.percentageUsed >= 100" class="fw-semibold">
-              {{ budget.totalSpent | currency }}
+              {{ budget.totalSpent | money }}
               <span class="text-body-secondary fw-normal"
-                >/ {{ budget.totalAmount | currency }}{{ suffix(budget) }}</span
+                >/ {{ budget.totalAmount | money }}{{ suffix(budget) }}</span
               >
             </span>
           </div>
@@ -39,10 +40,10 @@ import { periodSuffix } from '../../../shared/utils/budget-period';
           </div>
           <p class="small text-body-secondary mt-1 mb-0">
             @if (budget.totalRemaining >= 0) {
-              {{ budget.totalRemaining | currency }} left ·
+              {{ budget.totalRemaining | money }} left ·
               {{ budget.percentageUsed | number: '1.0-0' }}% used
             } @else {
-              {{ -budget.totalRemaining | currency }} over budget
+              {{ -budget.totalRemaining | money }} over budget
             }
           </p>
         </li>

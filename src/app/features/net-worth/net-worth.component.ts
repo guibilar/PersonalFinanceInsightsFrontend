@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -26,13 +26,14 @@ import { ACCOUNT_TYPE_LABELS, PLAN_LABELS } from '../../shared/utils/account-lab
 import { valueOf } from '../../shared/utils/resource-value';
 import {
   BAR_MARKS,
-  CHART_THEMES,
+  chartTheme,
   ChartTheme,
   categoryAxis,
   tooltipStyle,
   valueAxis,
 } from '../../shared/charts/chart-theme';
 import { formatCurrency } from '../../shared/utils/format';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 Chart.register(CategoryScale, LinearScale, BarElement, BarController, Tooltip);
 
@@ -86,7 +87,7 @@ export function netWorthChart(
 @Component({
   selector: 'app-net-worth',
   imports: [
-    CurrencyPipe,
+    MoneyPipe,
     DatePipe,
     RouterLink,
     BaseChartDirective,
@@ -94,7 +95,6 @@ export function netWorthChart(
     SkeletonComponent,
     StatCardComponent,
   ],
-  providers: [CurrencyPipe],
   template: `
     <div class="mb-4">
       <h1 class="h3 mb-1">Net worth</h1>
@@ -170,9 +170,9 @@ export function netWorthChart(
                 @for (month of report.months; track month.month) {
                   <tr>
                     <th scope="row">{{ month.month }}</th>
-                    <td>{{ month.assets | currency }}</td>
-                    <td>{{ month.liabilities | currency }}</td>
-                    <td>{{ month.netWorth | currency }}</td>
+                    <td>{{ month.assets | money }}</td>
+                    <td>{{ month.liabilities | money }}</td>
+                    <td>{{ month.netWorth | money }}</td>
                   </tr>
                 }
               </table>
@@ -191,7 +191,7 @@ export function netWorthChart(
                 @if (account.balance !== null) {
                   <div class="text-end">
                     <div class="fw-semibold" [class.text-danger]="account.isLiability">
-                      {{ account.isLiability ? '−' : '' }}{{ account.balance | currency }}
+                      {{ account.isLiability ? '−' : '' }}{{ account.balance | money }}
                     </div>
                     <div class="small text-body-secondary">
                       {{ account.movedSince ? 'Entered' : 'As of' }}
@@ -216,12 +216,11 @@ export function netWorthChart(
 export class NetWorthComponent {
   private readonly reports = inject(ReportsRepository);
   private readonly theme = inject(ThemeService);
-  private readonly currency = inject(CurrencyPipe);
 
   readonly report = rxResource({ stream: () => this.reports.getNetWorth() });
   readonly value = computed(() => valueOf(this.report));
   readonly known = computed(() => (this.value()?.accounts ?? []).filter((a) => a.balance !== null));
-  readonly chart = computed(() => netWorthChart(this.value()!, CHART_THEMES[this.theme.theme()]));
+  readonly chart = computed(() => netWorthChart(this.value()!, chartTheme(this.theme.theme())));
   /** Some month counted fewer accounts than today. */
   readonly partial = computed(() =>
     (this.value()?.months ?? []).some((m) => m.accountsCounted < this.known().length),
@@ -246,7 +245,7 @@ export class NetWorthComponent {
   });
 
   format(amount: number): string {
-    return this.currency.transform(amount) ?? '';
+    return formatCurrency(amount);
   }
 
   describe(account: NetWorthAccountDto): string {

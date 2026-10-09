@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,6 +9,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { validationDetail } from '../../shared/utils/problem-detail';
 import { valueOf } from '../../shared/utils/resource-value';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 /** Today in the browser's time zone, as yyyy-MM-dd. */
 function today(): string {
@@ -22,7 +23,7 @@ function today(): string {
  */
 @Component({
   selector: 'app-account-balances',
-  imports: [ReactiveFormsModule, CurrencyPipe, DatePipe, IconComponent],
+  imports: [ReactiveFormsModule, MoneyPipe, DatePipe, IconComponent],
   template: `
     <form class="row g-2 align-items-end mb-3" [formGroup]="form" (ngSubmit)="save()">
       <div class="col-sm-5">
@@ -79,7 +80,7 @@ function today(): string {
         @for (balance of list(); track balance.id) {
           <li class="list-group-item px-0 d-flex align-items-center gap-2">
             <span class="flex-grow-1">{{ balance.date | date: 'mediumDate' : 'UTC' }}</span>
-            <span class="fw-medium">{{ balance.amount | currency }}</span>
+            <span class="fw-medium">{{ balance.amount | money }}</span>
             <button
               type="button"
               class="btn btn-link btn-sm text-body-secondary p-1"

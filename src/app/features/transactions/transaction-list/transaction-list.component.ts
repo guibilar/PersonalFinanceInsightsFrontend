@@ -7,7 +7,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
@@ -63,6 +63,7 @@ import { StatementImportComponent } from '../statement-import/statement-import.c
 import { TransactionBreakdownComponent } from '../transaction-breakdown/transaction-breakdown.component';
 import { valueOf } from '../../../shared/utils/resource-value';
 import { TransactionActions } from './transaction-actions';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 interface SortableColumn {
   field: TransactionSortField;
@@ -82,7 +83,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
   templateUrl: './transaction-list.component.html',
   styleUrl: './transaction-list.component.scss',
   imports: [
-    CurrencyPipe,
+    MoneyPipe,
     DatePipe,
     PaginatedContentComponent,
     TransactionToolbarComponent,

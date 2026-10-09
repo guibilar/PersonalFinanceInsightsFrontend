@@ -148,9 +148,9 @@
                       >{{ item.category.name }}</span
                     >
                     <span class="text-nowrap">
-                      <strong>{{ item.spending | currency }}</strong>
+                      <strong>{{ item.spending | money }}</strong>
                       <span class="text-body-secondary">
-                        · was {{ item.previousSpending | currency }}</span
+                        · was {{ item.previousSpending | money }}</span
                       >
                     </span>
                   </div>
@@ -184,13 +184,13 @@
               @for (item of movers().up; track item.category.id) {
                 <li class="d-flex justify-content-between mb-1">
                   <span>{{ item.category.name }}</span>
-                  <span class="text-danger text-nowrap">+{{ item.change | currency }}</span>
+                  <span class="text-danger text-nowrap">+{{ item.change | money }}</span>
                 </li>
               }
               @for (item of movers().down; track item.category.id) {
                 <li class="d-flex justify-content-between mb-1">
                   <span>{{ item.category.name }}</span>
-                  <span class="text-success text-nowrap">−{{ -item.change | currency }}</span>
+                  <span class="text-success text-nowrap">−{{ -item.change | money }}</span>
                 </li>
               }
             </ul>
@@ -209,7 +209,7 @@
                   <div class="d-flex justify-content-between gap-2">
                     <span class="text-truncate">{{ merchant.name }}</span>
                     <span class="text-nowrap"
-                      ><strong>{{ merchant.spending | currency }}</strong>
+                      ><strong>{{ merchant.spending | money }}</strong>
                       <span class="text-body-secondary">
                         · {{ merchant.count }} {{ merchant.count === 1 ? 'time' : 'times' }}</span
                       ></span
@@ -226,7 +226,7 @@
           <div class="card-body">
             <h2 class="h6 mb-2">Biggest purchase</h2>
             <p class="mb-0">
-              <strong>{{ purchase.amount | currency }}</strong> at {{ purchase.description }}
+              <strong>{{ purchase.amount | money }}</strong> at {{ purchase.description }}
             </p>
             <p class="small text-body-secondary mb-0">
               {{ day(purchase.date) }}

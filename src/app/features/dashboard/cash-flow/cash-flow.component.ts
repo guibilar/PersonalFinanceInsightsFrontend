@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartHelper, hasSavingsChange } from '../../../shared/charts/chart-helper';
-import { CHART_THEMES, cashFlowColors } from '../../../shared/charts/chart-theme';
+import { chartTheme, cashFlowColors } from '../../../shared/charts/chart-theme';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CashFlowReportOutputDto } from '../../../core/models/outputs/cash-flow-report-output-dto';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 /**
  * Income against spending, and what was left over, per month, with the monthly averages above. How the savings
@@ -12,7 +12,7 @@ import { CashFlowReportOutputDto } from '../../../core/models/outputs/cash-flow-
  */
 @Component({
   selector: 'app-cash-flow',
-  imports: [BaseChartDirective, CurrencyPipe],
+  imports: [BaseChartDirective, MoneyPipe],
   template: `
     <dl
       class="row row-cols-2 g-2 mb-3"
@@ -26,7 +26,7 @@ import { CashFlowReportOutputDto } from '../../../core/models/outputs/cash-flow-
             >{{ average.label }}
           </dt>
           <dd class="h5 fw-semibold mb-0" [class.text-danger]="average.amount < 0">
-            {{ average.amount | currency }}
+            {{ average.amount | money }}
           </dd>
         </div>
       }
@@ -88,13 +88,13 @@ import { CashFlowReportOutputDto } from '../../../core/models/outputs/cash-flow-
             @for (month of report().months; track month.month) {
               <tr>
                 <th scope="row" class="fw-medium">{{ month.month }}</th>
-                <td class="text-end">{{ month.income | currency }}</td>
-                <td class="text-end">{{ month.spending | currency }}</td>
+                <td class="text-end">{{ month.income | money }}</td>
+                <td class="text-end">{{ month.spending | money }}</td>
                 <td class="text-end" [class.text-danger]="month.net < 0">
-                  {{ month.net | currency }}
+                  {{ month.net | money }}
                 </td>
                 @if (withSavings()) {
-                  <td class="text-end">{{ month.savingsChange | currency }}</td>
+                  <td class="text-end">{{ month.savingsChange | money }}</td>
                 }
               </tr>
             }
@@ -113,7 +113,7 @@ export class CashFlowComponent {
 
   readonly withSavings = computed(() => hasSavingsChange(this.report()));
 
-  private readonly colors = computed(() => cashFlowColors(CHART_THEMES[this.theme.theme()]));
+  private readonly colors = computed(() => cashFlowColors(chartTheme(this.theme.theme())));
 
   readonly averages = computed(() => {
     const report = this.report();
@@ -141,6 +141,6 @@ export class CashFlowComponent {
   });
 
   readonly chart = computed(() =>
-    ChartHelper.generateCashFlowChartConfiguration(this.report(), CHART_THEMES[this.theme.theme()]),
+    ChartHelper.generateCashFlowChartConfiguration(this.report(), chartTheme(this.theme.theme())),
   );
 }

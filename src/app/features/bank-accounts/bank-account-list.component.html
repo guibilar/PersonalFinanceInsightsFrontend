@@ -68,21 +68,21 @@
                   </div>
                   <span [class.text-danger]="account.roomLeft < 0">
                     @if (account.roomLeft < 0) {
-                      Over by {{ -account.roomLeft | currency }}
+                      Over by {{ -account.roomLeft | money }}
                     } @else {
-                      {{ account.roomLeft | currency }} of {{ account.contributionRoom | currency }}
+                      {{ account.roomLeft | money }} of {{ account.contributionRoom | money }}
                       room left this year
                     }
                   </span>
                   <span class="text-body-secondary">
-                    · {{ account.depositedThisYear | currency }} in
+                    · {{ account.depositedThisYear | money }} in
                     @if (account.withdrawnThisYear) {
-                      · {{ account.withdrawnThisYear | currency }} out (room again in January)
+                      · {{ account.withdrawnThisYear | money }} out (room again in January)
                     }
                   </span>
                 } @else {
                   <span class="text-body-secondary">
-                    {{ account.depositedThisYear ?? 0 | currency }} deposited this year. Enter this
+                    {{ account.depositedThisYear ?? 0 | money }} deposited this year. Enter this
                     year's room (Edit) to see what's left.
                   </span>
                 }
@@ -98,7 +98,7 @@
             @if (account.balance; as balance) {
               <span class="d-block fw-medium"
                 >{{ account.type === AccountType.CreditCard ? 'Owes ' : ''
-                }}{{ balance.amount | currency }}</span
+                }}{{ balance.amount | money }}</span
               >
               <span class="d-block small text-body-secondary">{{
                 balance.date | date: 'MMM d' : 'UTC'
