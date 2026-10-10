@@ -101,6 +101,7 @@ import { IconComponent } from '../icon/icon.component';
 export class ToastContainerComponent {
   protected readonly toasts = inject(ToastService);
   private readonly stack = viewChild.required<ElementRef<HTMLElement>>('stack');
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
     // A popover in the top layer, so notifications show above an open dialog (ModalComponent) too. Shown again on
@@ -108,6 +109,9 @@ export class ToastContainerComponent {
     effect(() => {
       this.toasts.toasts();
       const stack = this.stack().nativeElement;
+      // Inside the open modal dialog, if any (the rest of the page is inert); back here once it closes.
+      const parent = this.toasts.topDialog() ?? this.host.nativeElement;
+      if (stack.parentElement !== parent) parent.appendChild(stack);
       if (typeof stack.showPopover !== 'function') return;
       if (stack.matches(':popover-open')) stack.hidePopover();
       stack.showPopover();

@@ -104,7 +104,7 @@ describe('UnsortedMerchantsComponent', () => {
       TestBed.inject(ToastService)
         .toasts()
         .map((t) => t.message),
-    ).toEqual(['Rule “CORNER STORE” added: 3 transactions now in Groceries']);
+    ).toEqual(['Rule “CORNER STORE” added for Groceries: 3 transactions updated by the rules']);
     expect(added).toBe(1);
     // Nothing left: the card goes.
     expect(root().querySelector('section')).toBeNull();

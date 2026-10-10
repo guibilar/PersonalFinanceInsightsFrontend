@@ -16,7 +16,7 @@
 
 @if (budgets.error()) {
   <app-error-state message="Could not load budgets." (retry)="budgets.reload()" />
-} @else if (budgets.isLoading() && !budgets.hasValue()) {
+} @else if (!page()) {
   <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
     @for (placeholder of [1, 2, 3]; track placeholder) {
       <div class="col">
@@ -28,7 +28,7 @@
   </div>
 } @else {
   <app-paginated-content
-    [data]="budgets.value()"
+    [data]="page()"
     [contentTemplate]="grid"
     (pageChange)="onPageChange($event)"
   />

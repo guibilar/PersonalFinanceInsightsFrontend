@@ -18,7 +18,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { conflictDetail } from '../../shared/utils/problem-detail';
 import { periodName, periodSuffix } from '../../shared/utils/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
-import { valueOf } from '../../shared/utils/resource-value';
+import { keptValueOf, valueOf } from '../../shared/utils/resource-value';
+import { DataChangesService } from '../../core/data/data-changes.service';
 import { ReportsRepository } from '../../core/api/reports-repository';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
@@ -77,15 +78,23 @@ export class BudgetListComponent {
   readonly categories = computed(() => valueOf(this.categoriesResource) ?? []);
 
   /** Where each monthly and yearly budget should end at its usual pace, by id. */
-  readonly forecast = rxResource({ stream: () => this.reportsRepository.getForecast() });
+  /** A statement imported from the sidebar loads the budgets and their pace again. */
+  private readonly dataChanges = inject(DataChangesService);
+
+  readonly forecast = rxResource({
+    params: () => this.dataChanges.version(),
+    stream: () => this.reportsRepository.getForecast(),
+  });
   readonly projections = computed(
     () => new Map((valueOf(this.forecast)?.budgets ?? []).map((b) => [b.budgetId, b])),
   );
 
   readonly budgets = rxResource({
-    params: () => this.filter(),
-    stream: ({ params }) => this.budgetRepository.filter(params),
+    params: () => ({ filter: this.filter(), version: this.dataChanges.version() }),
+    stream: ({ params }) => this.budgetRepository.filter(params.filter),
   });
+  /** Kept while another page or filter loads, so the pager (and its focus) stays put. */
+  readonly page = keptValueOf(this.budgets);
 
   protected readonly Status = Status;
   protected readonly health = budgetHealth;

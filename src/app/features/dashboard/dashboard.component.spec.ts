@@ -336,7 +336,7 @@ describe('DashboardComponent', () => {
     expect(card).toContain('$1,215.00 by the end of the month');
     expect(card).toContain('8% less than usual ($1,321.67, the average of the last 3 months)');
     expect(card).toContain('Recurring still due $1,000.00');
-    expect(card).toContain('Day-to-day, 16 days at $10.00 $160.00');
+    expect(card).toContain('Day-to-day, 16 days at $10.00 a day: $160.00');
     expect(card).toContain('LANDLORD · Oct 20 $1,000.00');
     expect(card).toContain('Food $460.00 of $400.00 (115%)');
   });

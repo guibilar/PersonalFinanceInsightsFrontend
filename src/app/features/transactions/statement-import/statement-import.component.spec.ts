@@ -7,6 +7,8 @@ import { ImportSummary, StatementImportComponent } from './statement-import.comp
 import { AccountType } from '../../../core/models/enums/account-type';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { AccountOutputDto } from '../../../core/models/outputs/account-output-dto';
+import { DataChangesService } from '../../../core/data/data-changes.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 const accounts: AccountOutputDto[] = [
   {
@@ -286,6 +288,43 @@ describe('StatementImportComponent', () => {
         balanceDate: '2026-06-30T00:00:00Z',
       },
     ]);
+  });
+
+  it('holds the account while files are on their way to it', async () => {
+    await loadAccounts();
+    component.form.controls.accountId.setValue('a1');
+    selectFile(new File(['x'], 'May.pdf'));
+    const done = component.onSubmit();
+    await fixture.whenStable();
+    expect(component.form.controls.accountId.disabled).toBe(true);
+
+    importRequest().flush({ read: 1, added: 1, skipped: 0 });
+    await done;
+    await fixture.whenStable();
+    expect(component.form.controls.accountId.enabled).toBe(true);
+  });
+
+  it('closed while importing: stops before the next file, and still reloads and says what landed', async () => {
+    await loadAccounts();
+    const changes = TestBed.inject(DataChangesService);
+    const before = changes.version();
+    component.form.controls.accountId.setValue('a1');
+    selectFile(new File(['x'], 'May.pdf'), new File(['y'], 'June.pdf'));
+
+    const done = component.onSubmit();
+    const first = importRequest();
+    fixture.destroy();
+    first.flush({ read: 2, added: 2, skipped: 0 });
+    await done;
+
+    http.expectNone({ method: 'POST', url: '/api/Transaction/Import' });
+    expect(imported).toEqual([]);
+    expect(changes.version()).toBe(before + 1);
+    expect(
+      TestBed.inject(ToastService)
+        .toasts()
+        .map((t) => t.message),
+    ).toEqual(['Imported 2 new transactions']);
   });
 
   it('keeps going past a file it can’t read, and stays open to show which', async () => {

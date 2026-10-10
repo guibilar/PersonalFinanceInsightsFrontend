@@ -226,9 +226,14 @@ export class ChartHelper {
     chartOptions: ChartConfiguration<'doughnut'>['options'];
     chartPlugins: Plugin<'doughnut'>[];
   } {
-    const categories = report.categories ?? [];
     const currentMonth = report.monthlyData[0]?.categoryValues ?? {};
-    const amounts = categories.map((category) => currentMonth[category.name] || 0);
+    const amountOf = (category: CategoryReference) => currentMonth[category.name] || 0;
+    // Slices for spending only: Chart.js sizes a slice by its absolute value, so a category whose refunds outweigh
+    // its spending would show as a share of the month. The list below the ring leaves those out too.
+    const categories = (report.categories ?? []).filter((category) => amountOf(category) > 0);
+    const amounts = categories.map(amountOf);
+    // The figure in the middle is still the month's net, as "Spent this month" says.
+    const net = (report.categories ?? []).reduce((sum, category) => sum + amountOf(category), 0);
 
     const chartData: ChartData<'doughnut'> = {
       labels: categories.map((category) => category.name),
@@ -267,13 +272,7 @@ export class ChartHelper {
       },
     };
 
-    const chartPlugins = [
-      centerLabel(
-        theme,
-        amounts.reduce((sum, amount) => sum + amount, 0),
-        'this month',
-      ),
-    ];
+    const chartPlugins = [centerLabel(theme, net, 'this month')];
     return { chartData, chartOptions, chartPlugins };
   }
 

@@ -160,4 +160,16 @@ describe('TransactionAddForm', () => {
       expect.objectContaining({ description: 'Coffee', allowDuplicate: true }),
     ]);
   });
+
+  it('drops the duplicate warning once the form changes, so Add checks again', async () => {
+    component.form.patchValue({ description: 'Coffee', amount: 4.5 });
+    fixture.componentRef.setInput('duplicate', 'An identical transaction already exists.');
+    await fixture.whenStable();
+    expect(root().textContent).toContain('Add it anyway');
+
+    component.form.patchValue({ amount: 5 });
+    await fixture.whenStable();
+
+    expect(root().textContent).not.toContain('Add it anyway');
+  });
 });

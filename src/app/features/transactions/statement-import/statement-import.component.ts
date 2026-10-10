@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
+  effect,
   inject,
   output,
   signal,
@@ -15,6 +17,8 @@ import { TransactionRepository } from '../../../core/api/transaction-repository'
 import { AccountRepository } from '../../../core/api/account-repository';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { ImportResultOutputDto } from '../../../core/models/outputs/import-result-output-dto';
+import { DataChangesService } from '../../../core/data/data-changes.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { accountLabel } from '../../../shared/utils/account-labels';
 import { formatCurrency, formatDay } from '../../../shared/utils/format';
 
@@ -45,6 +49,10 @@ export class StatementImportComponent {
   private readonly repository = inject(TransactionRepository);
   private readonly accountRepository = inject(AccountRepository);
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly dataChanges = inject(DataChangesService);
+  private readonly toasts = inject(ToastService);
+  /** Closed (Cancel, Escape, the backdrop) while a file was on its way: what it outputs nobody hears any more. */
+  private closed = false;
 
   /** Every file is in: the dialog can close. */
   readonly imported = output<ImportSummary>();
@@ -75,6 +83,13 @@ export class StatementImportComponent {
   readonly anyImported = computed(() => this.files().some((f) => f.state === 'imported'));
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => (this.closed = true));
+    // The files go to the account chosen when Import was pressed: switching it meanwhile would show another.
+    effect(() => {
+      const account = this.form.controls.accountId;
+      if (this.uploading()) account.disable({ emitEvent: false });
+      else account.enable({ emitEvent: false });
+    });
     // A different account may well be the right one: the warnings were about the previous choice.
     this.form.controls.accountId.valueChanges
       .pipe(takeUntilDestroyed())
@@ -110,7 +125,11 @@ export class StatementImportComponent {
       this.form.markAllAsTouched();
       return;
     }
-    for (const entry of pending) await this.send(entry.file, accountId, false);
+    for (const entry of pending) {
+      // Closed meanwhile: the file on its way still lands, the rest aren't sent.
+      if (this.closed) break;
+      await this.send(entry.file, accountId, false);
+    }
     this.finish();
   }
 
@@ -146,6 +165,15 @@ export class StatementImportComponent {
 
   private finish(): void {
     const files = this.files();
+    if (this.closed) {
+      // The page that opened it can't be told through outputs any more: the shared signal reloads it.
+      const done = files.filter((f) => f.state === 'imported').map((f) => f.result!);
+      if (done.length > 0) {
+        this.dataChanges.changed();
+        this.toasts.success(describeImport(summarize(done)));
+      }
+      return;
+    }
     if (files.length > 0 && files.every((f) => f.state === 'imported')) {
       this.imported.emit(summarize(files.map((f) => f.result!)));
     } else if (this.anyImported()) {

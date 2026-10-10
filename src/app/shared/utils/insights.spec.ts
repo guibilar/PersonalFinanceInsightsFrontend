@@ -25,6 +25,12 @@ describe('insights', () => {
       expect(stepReview(2025, 3, -1, today, '2025-03')).toBeNull();
     });
 
+    it('stops at 2000 when there is no data to stop at', () => {
+      expect(stepReview(2000, 1, -1, today, null)).toBeNull();
+      expect(stepReview(2000, null, -1, today, null)).toBeNull();
+      expect(stepReview(2000, 2, -1, today, null)).toEqual({ year: 2000, month: 1 });
+    });
+
     it('moves a year at a time, a year with any data being there', () => {
       expect(stepReview(2026, null, -1, today, '2025-11')).toEqual({ year: 2025, month: null });
       expect(stepReview(2025, null, -1, today, '2025-11')).toBeNull();

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -93,6 +100,8 @@ export class RuleListComponent {
   readonly editing = signal<CategoryRuleOutputDto | null | undefined>(undefined);
   readonly deleting = signal<CategoryRuleOutputDto | null>(null);
   readonly saving = signal(false);
+  /** The "sort what's left in Other" card: what it lists changes with every rule. */
+  private readonly unsorted = viewChild(UnsortedMerchantsComponent);
   /** A move is on its way: positions are about to change, so the move buttons wait for it. */
   readonly moving = signal(false);
   readonly confirmingApply = signal(false);
@@ -143,6 +152,7 @@ export class RuleListComponent {
         this.saving.set(false);
         this.editing.set(undefined);
         this.rules.reload();
+        this.unsorted()?.refresh();
         this.toasts.success(editing ? `Saved “${rule.keyword}”` : `Added “${rule.keyword}”`);
       },
       error: (error: unknown) => {
@@ -188,6 +198,7 @@ export class RuleListComponent {
     this.ruleRepository.delete(rule.id).subscribe({
       next: () => {
         this.rules.reload();
+        this.unsorted()?.refresh();
         this.toasts.success(`Deleted “${rule.keyword}”`);
       },
       error: () => this.toasts.error(`Could not delete “${rule.keyword}”.`),
@@ -200,6 +211,7 @@ export class RuleListComponent {
     this.transactionRepository.applyRules().subscribe({
       next: (result) => {
         this.applying.set(false);
+        this.unsorted()?.refresh();
         this.toasts.success(describeRulesResult(result));
       },
       error: () => {

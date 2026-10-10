@@ -1,11 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -134,6 +138,10 @@ export class TransactionListComponent {
   });
   readonly showImport = signal(false);
   /** Ticked for a bulk change; cleared when the list shows other transactions. */
+  private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
+  private readonly injector = inject(Injector);
+  /** A reload after a change is under way: see the constructor. */
+  private refocusAfterLoad = false;
   readonly selected = signal<ReadonlySet<string>>(new Set());
   readonly selectedCount = computed(() => this.selected().size);
   readonly bulkSaving = signal(false);
@@ -223,6 +231,19 @@ export class TransactionListComponent {
 
   constructor() {
     this.actions.changed.pipe(takeUntilDestroyed()).subscribe(() => this.reload());
+    // Deleting, restoring, unlinking or a bulk change takes away the control that was focused (its row, the bar):
+    // once the list is back, focus starts again from the heading instead of the top of the page.
+    effect(() => {
+      if (this.transactions.isLoading() || !this.refocusAfterLoad) return;
+      this.refocusAfterLoad = false;
+      afterNextRender(
+        () => {
+          const focused = document.activeElement;
+          if (!focused || focused === document.body) this.heading().nativeElement.focus();
+        },
+        { injector: this.injector },
+      );
+    });
     // A statement imported from the sidebar while the list is open: show what it added.
     const changes = inject(DataChangesService).version;
     const seen = changes();
@@ -250,7 +271,10 @@ export class TransactionListComponent {
     // The route's query emits while its navigation is still running, so that navigation is the current one, not the
     // last successful one (that is the one before it).
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((query) => {
-      if (this.router.currentNavigation()?.extras.state?.[OWN_NAVIGATION]) return;
+      // Back and Forward bring the history entry's state with them, the flag included: those navigations are the
+      // person's, and the list follows the address they land on.
+      const navigation = this.router.currentNavigation();
+      if (navigation?.trigger !== 'popstate' && navigation?.extras.state?.[OWN_NAVIGATION]) return;
       const criteria = criteriaFromQuery(query);
       if (!sameCriteria(criteria, this.filter())) this.onCriteriaChange(criteria);
       this.breakdownOpen.set(query.get('overTime') === '1');
@@ -260,6 +284,16 @@ export class TransactionListComponent {
     effect(() => {
       this.filter();
       untracked(() => this.clearSelection());
+    });
+    // Reloaded after a delete (from the edit dialog, say): a ticked row that went isn't ticked any more.
+    effect(() => {
+      const page = valueOf(this.transactions);
+      if (!page || this.transactions.isLoading()) return;
+      const ids = new Set(page.items.map((t) => t.id));
+      const selected = untracked(this.selected);
+      if ([...selected].some((id) => !ids.has(id))) {
+        this.selected.set(new Set([...selected].filter((id) => ids.has(id))));
+      }
     });
     // Years of weeks are charted by month (or longer) instead: the buttons and the address say what is shown.
     effect(() => {
@@ -275,6 +309,7 @@ export class TransactionListComponent {
 
   /** After a change to the transactions: the list, and the totals over them. */
   protected reload(): void {
+    this.refocusAfterLoad = true;
     this.transactions.reload();
     this.breakdown.reload();
     this.tagsResource.reload();

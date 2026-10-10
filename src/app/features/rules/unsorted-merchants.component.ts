@@ -71,7 +71,7 @@ const SHOWN = 6;
                 <select
                   [id]="'unsorted-category-' + $index"
                   class="form-select form-select-sm w-auto"
-                  [disabled]="busy() === merchant.keyword"
+                  [disabled]="busy() !== null"
                   (change)="
                     choose(merchant, $any($event.target).value); $any($event.target).value = ''
                   "
@@ -130,6 +130,11 @@ export class UnsortedMerchantsComponent {
   readonly choices = computed(() => this.categories().filter((c) => !c.isFallback));
   readonly other = computed(() => this.categories().find((c) => c.isFallback) ?? null);
 
+  /** Loads the list again: a rule added, changed or removed elsewhere on the page changes what is left. */
+  refresh(): void {
+    this.uncategorised.reload();
+  }
+
   setKeyword(merchant: UncategorisedMerchantDto, keyword: string): void {
     this.keywords.set({ ...this.keywords(), [merchant.keyword]: keyword });
   }
@@ -152,7 +157,8 @@ export class UnsortedMerchantsComponent {
           this.toasts.success(
             category?.isFallback
               ? `Rule “${keyword}” added: it stays in ${category.name} and isn't listed here any more`
-              : `Rule “${keyword}” added: ${updated} ${updated === 1 ? 'transaction' : 'transactions'} now in ${category?.name ?? 'that category'}`,
+              : // Applying runs every rule, so the count is all it changed, not only this merchant's.
+                `Rule “${keyword}” added for ${category?.name ?? 'that category'}: ${updated} ${updated === 1 ? 'transaction' : 'transactions'} updated by the rules`,
           );
           this.uncategorised.reload();
           this.ruleAdded.emit();

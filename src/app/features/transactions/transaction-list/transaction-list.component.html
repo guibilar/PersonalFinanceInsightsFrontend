@@ -1,6 +1,8 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
-    <h1 class="h3 mb-1">{{ showDeleted() ? 'Deleted transactions' : 'Transactions' }}</h1>
+    <h1 #heading class="h3 mb-1" tabindex="-1">
+      {{ showDeleted() ? 'Deleted transactions' : 'Transactions' }}
+    </h1>
     <p class="text-body-secondary mb-0">
       @if (showDeleted()) {
         Left out of lists, reports and budgets, and not added back when a statement is re-imported

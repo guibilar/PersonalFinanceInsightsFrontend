@@ -3,7 +3,7 @@
     <div class="fw-semibold">{{ transaction().description }}</div>
     <div class="small text-body-secondary">
       {{ transaction().date | date: 'mediumDate' : 'UTC' }} · {{ transaction().amount | money }} ·
-      {{ transaction().category }}
+      {{ transaction().category.name }}
     </div>
   </div>
 

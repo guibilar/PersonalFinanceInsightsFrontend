@@ -79,7 +79,29 @@ describe('ChartHelper', () => {
       averageMonthlyTotal: 0,
     });
 
-    expect(chartData.datasets[0].data).toEqual([0]);
+    expect(chartData.datasets[0].data).toEqual([]);
+  });
+
+  it('leaves out a category whose refunds outweigh its spending, keeping the net in the middle', () => {
+    const { chartData, chartPlugins } = ChartHelper.generateDoughnutChartConfiguration({
+      categories: categoryRefs('Groceries', 'Clothing'),
+      monthlyData: [
+        { month: 'Oct 2026', total: 100, categoryValues: { Groceries: 300, Clothing: -200 } },
+      ],
+      averageMonthlyTotal: 0,
+    });
+    const texts: string[] = [];
+    const ctx = {
+      save: () => undefined,
+      restore: () => undefined,
+      fillText: (t: string) => texts.push(t),
+    };
+    const draw = chartPlugins[0].afterDatasetsDraw as unknown as (chart: unknown) => void;
+    draw({ ctx, chartArea: { left: 0, right: 180, top: 0, bottom: 180 } });
+
+    expect(chartData.labels).toEqual(['Groceries']);
+    expect(chartData.datasets[0].data).toEqual([300]);
+    expect(texts[0]).toBe('$100.00');
   });
 });
 

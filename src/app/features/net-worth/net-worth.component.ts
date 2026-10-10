@@ -23,7 +23,8 @@ import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.com
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent } from '../../shared/ui/stat-card/stat-card.component';
 import { ACCOUNT_TYPE_LABELS, PLAN_LABELS } from '../../shared/utils/account-labels';
-import { valueOf } from '../../shared/utils/resource-value';
+import { keptValueOf } from '../../shared/utils/resource-value';
+import { DataChangesService } from '../../core/data/data-changes.service';
 import {
   BAR_MARKS,
   chartTheme,
@@ -190,9 +191,14 @@ export function netWorthChart(
                 </div>
                 @if (account.balance !== null) {
                   <div class="text-end">
-                    <div class="fw-semibold" [class.text-danger]="account.isLiability">
-                      {{ account.isLiability ? '−' : '' }}{{ account.balance | money }}
-                    </div>
+                    <!-- A card's balance is what it owes; below zero (overpaid, a refund) it's a credit. -->
+                    @if (account.isLiability && account.balance < 0) {
+                      <div class="fw-semibold">{{ -account.balance | money }} credit</div>
+                    } @else {
+                      <div class="fw-semibold" [class.text-danger]="account.isLiability">
+                        {{ account.isLiability ? '−' : '' }}{{ account.balance | money }}
+                      </div>
+                    }
                     <div class="small text-body-secondary">
                       {{ account.movedSince ? 'Entered' : 'As of' }}
                       {{ account.balanceDate | date: 'MMM d, y' : 'UTC'
@@ -217,8 +223,14 @@ export class NetWorthComponent {
   private readonly reports = inject(ReportsRepository);
   private readonly theme = inject(ThemeService);
 
-  readonly report = rxResource({ stream: () => this.reports.getNetWorth() });
-  readonly value = computed(() => valueOf(this.report));
+  /** A statement imported from the sidebar loads the balances again. */
+  private readonly dataChanges = inject(DataChangesService);
+
+  readonly report = rxResource({
+    params: () => this.dataChanges.version(),
+    stream: () => this.reports.getNetWorth(),
+  });
+  readonly value = keptValueOf(this.report);
   readonly known = computed(() => (this.value()?.accounts ?? []).filter((a) => a.balance !== null));
   readonly chart = computed(() => netWorthChart(this.value()!, chartTheme(this.theme.theme())));
   /** Some month counted fewer accounts than today. */

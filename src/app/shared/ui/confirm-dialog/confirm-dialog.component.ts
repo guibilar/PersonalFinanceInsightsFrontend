@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { trapTabKey } from '../focus-trap';
+import { ToastService } from '../toast/toast.service';
 
 let nextId = 0;
 
@@ -80,6 +81,7 @@ let nextId = 0;
 })
 export class ConfirmDialogComponent implements OnDestroy {
   private readonly previousFocus = inject(DOCUMENT).activeElement as HTMLElement | null;
+  private readonly toasts = inject(ToastService);
   private readonly cancelButton = viewChild.required<ElementRef<HTMLButtonElement>>('cancelButton');
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
@@ -96,6 +98,7 @@ export class ConfirmDialogComponent implements OnDestroy {
   constructor() {
     afterNextRender(() => {
       this.dialog().nativeElement.showModal();
+      this.toasts.dialogOpened(this.dialog().nativeElement);
       this.cancelButton().nativeElement.focus();
     });
   }
@@ -117,6 +120,7 @@ export class ConfirmDialogComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.toasts.dialogClosed(this.dialog().nativeElement);
     this.previousFocus?.focus?.();
   }
 }

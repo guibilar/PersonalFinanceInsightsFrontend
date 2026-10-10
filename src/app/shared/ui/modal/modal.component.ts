@@ -12,6 +12,7 @@ import {
 import { DOCUMENT } from '@angular/common';
 import { IconComponent } from '../icon/icon.component';
 import { trapTabKey } from '../focus-trap';
+import { ToastService } from '../toast/toast.service';
 
 let nextId = 0;
 
@@ -63,6 +64,7 @@ let nextId = 0;
 })
 export class ModalComponent implements OnDestroy {
   private readonly document = inject(DOCUMENT);
+  private readonly toasts = inject(ToastService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   private readonly previousFocus = this.document.activeElement as HTMLElement | null;
   private readonly previousOverflow = this.document.body.style.overflow;
@@ -82,6 +84,7 @@ export class ModalComponent implements OnDestroy {
     afterNextRender(() => {
       const dialog = this.dialog().nativeElement;
       dialog.showModal();
+      this.toasts.dialogOpened(dialog);
       // With a mouse, focus goes straight to the first field. On a touch screen the dialog itself takes it: a
       // field focused from script pops the keyboard up over the form.
       const field = this.touchScreen()
@@ -121,6 +124,7 @@ export class ModalComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.toasts.dialogClosed(this.dialog().nativeElement);
     this.document.body.style.overflow = this.previousOverflow;
     this.previousFocus?.focus?.();
   }

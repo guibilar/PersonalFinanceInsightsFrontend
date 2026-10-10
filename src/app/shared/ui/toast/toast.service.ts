@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 
 export type ToastKind = 'success' | 'error';
 
@@ -16,6 +16,21 @@ export class ToastService {
   private nextId = 1;
   private readonly items = signal<Toast[]>([]);
   readonly toasts = this.items.asReadonly();
+
+  private readonly dialogs = signal<HTMLDialogElement[]>([]);
+  /**
+   * The modal dialog on top, if one is open. Everything outside it is inert, a popover shown over it included: the
+   * stack goes inside it, so its notifications can be dismissed and are read out.
+   */
+  readonly topDialog = computed(() => this.dialogs().at(-1) ?? null);
+
+  dialogOpened(dialog: HTMLDialogElement): void {
+    this.dialogs.update((dialogs) => [...dialogs, dialog]);
+  }
+
+  dialogClosed(dialog: HTMLDialogElement): void {
+    this.dialogs.update((dialogs) => dialogs.filter((d) => d !== dialog));
+  }
 
   success(message: string): void {
     this.show('success', message);

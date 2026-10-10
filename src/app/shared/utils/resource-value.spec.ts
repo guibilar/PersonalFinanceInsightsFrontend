@@ -1,6 +1,6 @@
-import { Injector, provideZonelessChangeDetection, resource } from '@angular/core';
+import { Injector, provideZonelessChangeDetection, resource, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { valueOf } from './resource-value';
+import { keptValueOf, valueOf } from './resource-value';
 
 describe('valueOf', () => {
   beforeEach(() =>
@@ -25,5 +25,48 @@ describe('valueOf', () => {
     expect(failed.status()).toBe('error');
     expect(() => failed.value()).toThrow();
     expect(valueOf(failed)).toBeUndefined();
+  });
+});
+
+describe('keptValueOf', () => {
+  beforeEach(() =>
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] }),
+  );
+
+  const flush = async () => {
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+    await new Promise((resolve) => setTimeout(resolve));
+  };
+
+  it('keeps the last value while another request loads, and drops it when that fails', async () => {
+    const page = signal(1);
+    let release!: (value: string) => void;
+    const answers: Record<number, () => Promise<string>> = {
+      1: () => Promise.resolve('page 1'),
+      2: () => new Promise((resolve) => (release = resolve)),
+      3: () => Promise.reject(new Error('500')),
+    };
+    const loaded = resource({
+      params: () => page(),
+      loader: ({ params }) => answers[params](),
+      injector: TestBed.inject(Injector),
+    });
+    const kept = TestBed.runInInjectionContext(() => keptValueOf(loaded));
+    await flush();
+    expect(kept()).toBe('page 1');
+
+    page.set(2);
+    TestBed.tick();
+    expect(valueOf(loaded)).toBeUndefined();
+    expect(kept()).toBe('page 1');
+
+    release('page 2');
+    await flush();
+    expect(kept()).toBe('page 2');
+
+    page.set(3);
+    await flush();
+    expect(kept()).toBeUndefined();
   });
 });

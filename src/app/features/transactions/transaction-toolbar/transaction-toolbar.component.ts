@@ -126,6 +126,8 @@ export class TransactionToolbarComponent {
       const filter = this.filter();
       const period = matchDatePreset(filter, new Date());
       if (period === 'custom') this.customRange.set(true);
+      // The fields now hold the applied range, which is never backwards: an earlier warning is about dates gone.
+      this.rangeBackwards.set(false);
       // ...but not a search still being typed, when the search applied stays the same: it applies once typing pauses.
       const typed = this.form.controls.description.value;
       const typing =
@@ -196,15 +198,18 @@ export class TransactionToolbarComponent {
   /** Removes one applied criterion; a search still being typed isn't applied with it, but stays in its field. */
   remove(key: Chip['key']): void {
     const applied = this.appliedCriteria();
-    if (key === 'dates') {
-      this.criteriaChange.emit({ ...applied, startDate: undefined, endDate: undefined });
-      return;
-    }
-    this.criteriaChange.emit({ ...applied, [key]: undefined });
+    const next =
+      key === 'dates'
+        ? { ...applied, startDate: undefined, endDate: undefined }
+        : { ...applied, [key]: undefined };
+    // No dates left: the period reads "All dates", so the empty custom fields go too.
+    if (!next.startDate && !next.endDate) this.customRange.set(false);
+    this.criteriaChange.emit(next);
   }
 
   clearAll(): void {
     this.form.controls.description.setValue('', { emitEvent: false });
+    this.customRange.set(false);
     this.criteriaChange.emit({});
   }
 

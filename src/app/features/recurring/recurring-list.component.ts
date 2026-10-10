@@ -7,7 +7,8 @@ import { RecurringPaymentDto } from '../../core/models/outputs/insights-output-d
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent } from '../../shared/ui/stat-card/stat-card.component';
-import { valueOf } from '../../shared/utils/resource-value';
+import { keptValueOf } from '../../shared/utils/resource-value';
+import { DataChangesService } from '../../core/data/data-changes.service';
 import { CADENCE_LABELS, recurringStatus, shortDay } from '../../shared/utils/insights';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { formatCurrency } from '../../shared/utils/format';
@@ -67,7 +68,7 @@ import { formatCurrency } from '../../shared/utils/format';
             icon="alert-circle"
             [value]="raised().length === 0 ? 'None' : raised().length + ''"
             [hint]="raised().length === 0 ? 'No fixed price changed lately' : raisedHint()"
-            [tone]="raised().length === 0 ? 'neutral' : 'bad'"
+            [tone]="raised().length === 0 ? 'neutral' : wentUp() ? 'bad' : 'good'"
           />
         </div>
       </div>
@@ -83,7 +84,7 @@ import { formatCurrency } from '../../shared/utils/format';
           </div>
         } @else {
           <ul class="list-group list-group-flush">
-            @for (payment of coming(); track payment.name + payment.amount) {
+            @for (payment of coming(); track payment.name + payment.cadence + payment.amount) {
               <ng-container
                 [ngTemplateOutlet]="row"
                 [ngTemplateOutletContext]="{ $implicit: payment }"
@@ -100,7 +101,7 @@ import { formatCurrency } from '../../shared/utils/format';
         </p>
         <div class="card">
           <ul class="list-group list-group-flush">
-            @for (payment of stopped(); track payment.name + payment.amount) {
+            @for (payment of stopped(); track payment.name + payment.cadence + payment.amount) {
               <ng-container
                 [ngTemplateOutlet]="row"
                 [ngTemplateOutletContext]="{ $implicit: payment }"
@@ -185,8 +186,14 @@ import { formatCurrency } from '../../shared/utils/format';
 export class RecurringListComponent {
   private readonly reports = inject(ReportsRepository);
 
-  readonly report = rxResource({ stream: () => this.reports.getRecurring() });
-  readonly value = computed(() => valueOf(this.report));
+  /** A statement imported from the sidebar loads them again. */
+  private readonly dataChanges = inject(DataChangesService);
+
+  readonly report = rxResource({
+    params: () => this.dataChanges.version(),
+    stream: () => this.reports.getRecurring(),
+  });
+  readonly value = keptValueOf(this.report);
 
   readonly coming = computed(
     () => this.value()?.payments.filter((p) => p.status !== 'Stopped') ?? [],
@@ -201,8 +208,12 @@ export class RecurringListComponent {
     return `${count} recurring ${count === 1 ? 'payment' : 'payments'}`;
   });
 
+  /** The changed prices that went up: red only for those, not for prices that came down. */
+  readonly wentUp = computed(() =>
+    this.raised().filter((p) => p.priceChange!.to > p.priceChange!.from),
+  );
   readonly raisedHint = computed(() => {
-    const up = this.raised().filter((p) => p.priceChange!.to > p.priceChange!.from);
+    const up = this.wentUp();
     return up.length > 0 ? `${up.map((p) => p.name).join(', ')} went up` : 'Prices went down';
   });
 

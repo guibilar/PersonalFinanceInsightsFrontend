@@ -271,7 +271,7 @@ describe('BudgetFormComponent', () => {
       expect(message()).toBe('');
     });
 
-    it('says nothing while a year is typed, and asks for the full year if it is saved half-typed', () => {
+    it('says nothing while a year is typed, and asks for the full year once the field is left half-typed', () => {
       const root = () => fixture.nativeElement as HTMLElement;
       const message = () => root().querySelector('[role=alert]')?.textContent ?? '';
       create();
@@ -284,6 +284,12 @@ describe('BudgetFormComponent', () => {
         expect(component.form.invalid).toBe(true);
         expect(message()).toBe('');
       }
+
+      // Create is disabled meanwhile, so leaving the field is when it says why.
+      expect(root().querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(true);
+      component.form.controls.endDate.markAsTouched();
+      fixture.detectChanges();
+      expect(message()).toContain('Enter the full year');
 
       component.onSubmit();
       fixture.detectChanges();

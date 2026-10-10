@@ -31,8 +31,14 @@ const UPCOMING_SHOWN = 4;
         {{ compare(vs, 'usual') }} ({{ f.usual | money }}, the average of the last
         {{ f.usualMonths === 1 ? 'month' : f.usualMonths + ' months' }})
       </p>
-    } @else {
+    } @else if (f.usual === null) {
       <p class="small text-body-secondary mb-3">No complete month yet to compare with.</p>
+    } @else {
+      <!-- Complete months there are, but refunds outweighed the spending: no fair percentage to give. -->
+      <p class="small text-body-secondary mb-3">
+        A usual month came to {{ f.usual | money }} (the average of the last
+        {{ f.usualMonths === 1 ? 'month' : f.usualMonths + ' months' }}).
+      </p>
     }
 
     <div class="progress-stacked forecast-bar mb-2" role="img" [attr.aria-label]="barLabel()">
@@ -55,7 +61,7 @@ const UPCOMING_SHOWN = 4;
       </li>
       <li class="list-inline-item">
         <span class="key bg-primary-subtle border"></span>Day-to-day, {{ f.daysLeft }}
-        {{ f.daysLeft === 1 ? 'day' : 'days' }} at {{ f.dailyRate | money }}
+        {{ f.daysLeft === 1 ? 'day' : 'days' }} at {{ f.dailyRate | money }} a day:
         {{ dayToDay() | money }}
       </li>
     </ul>
