@@ -6,7 +6,8 @@ import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.com
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent } from '../../shared/ui/stat-card/stat-card.component';
-import { valueOf } from '../../shared/utils/resource-value';
+import { keptValueOf } from '../../shared/utils/resource-value';
+import { DataChangesService } from '../../core/data/data-changes.service';
 import { changeText, compared, shortDay, stepReview } from '../../shared/utils/insights';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { formatCurrency } from '../../shared/utils/format';
@@ -72,12 +73,16 @@ export class ReviewComponent {
   readonly today = new Date();
   readonly period = signal<ReviewPeriod | undefined>(fromQuery(this.route.snapshot.queryParamMap));
 
+  /** A statement imported from the sidebar loads the review again. */
+  private readonly dataChanges = inject(DataChangesService);
+
   readonly review = rxResource({
-    params: () => ({ period: this.period() }),
+    params: () => ({ period: this.period(), version: this.dataChanges.version() }),
     stream: ({ params }) =>
       this.reports.getReview(params.period?.year, params.period?.month ?? undefined),
   });
-  readonly value = computed(() => valueOf(this.review));
+  // Kept while the next period loads, so the month switcher (and its focus) stays put.
+  readonly value = keptValueOf(this.review);
 
   readonly isYear = computed(() => this.value()?.month === null);
 
@@ -150,6 +155,12 @@ export class ReviewComponent {
       const month = review.year === now.getFullYear() ? now.getMonth() + 1 : 12;
       this.go({ year: review.year, month });
     }
+  }
+
+  /** The review the page opens on: the month so far. */
+  latest(): void {
+    this.period.set(undefined);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
   }
 
   go(period: ReviewPeriod | null): void {

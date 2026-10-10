@@ -343,6 +343,22 @@ describe('TransactionToolbarComponent', () => {
     expect(root.querySelector('[role=alert]')).toBeNull();
   });
 
+  it('forgets a backwards range once the filter changes, and hides custom fields when the dates go', () => {
+    create({ page: 1, pageSize: 10, startDate: '2026-05-01', endDate: '2026-06-01' });
+    component.form.controls.endDate.setValue('2026-04-01');
+    fixture.detectChanges();
+    expect(component.rangeBackwards()).toBe(true);
+    expect(component.customRange()).toBe(true);
+
+    component.clearAll();
+    fixture.componentRef.setInput('filter', { page: 1, pageSize: 10 });
+    fixture.detectChanges();
+
+    expect(component.rangeBackwards()).toBe(false);
+    expect(component.customRange()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).querySelector('#tx-from')).toBeNull();
+  });
+
   it('waits while a year is typed digit by digit, then applies the day', () => {
     create({ page: 1, pageSize: 10, startDate: '2026-09-01' });
     const root = fixture.nativeElement as HTMLElement;

@@ -166,3 +166,9 @@ body {
     text-decoration: underline;
   }
 }
+
+// Bootstrap sets the browser colour scheme for dark only: light chosen on a dark phone or computer would otherwise
+// keep the dark scrollbars, date pickers and dropdown lists.
+[data-bs-theme='light'] {
+  color-scheme: light;
+}

@@ -56,6 +56,12 @@
   <div class="card">
     <div class="card-body">
       <app-error-state message="Could not load the review." (retry)="review.reload()" />
+      @if (period()) {
+        <!-- The period itself may be what failed (one typed into the address): a way back that doesn't ask for it. -->
+        <button type="button" class="btn btn-link px-0" (click)="latest()">
+          Back to the latest month
+        </button>
+      }
     </div>
   </div>
 } @else if (value(); as review) {

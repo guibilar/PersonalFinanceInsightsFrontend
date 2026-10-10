@@ -58,7 +58,8 @@ function tidy(name: string): string {
         [class.is-invalid]="!!error()"
         [attr.maxlength]="maxName"
         [value]="text()"
-        [disabled]="adding()"
+        [readOnly]="adding()"
+        [attr.aria-busy]="adding()"
         (input)="onInput($any($event.target).value)"
         (keydown.enter)="$event.preventDefault(); add()"
       />

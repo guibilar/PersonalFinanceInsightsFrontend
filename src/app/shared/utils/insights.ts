@@ -51,7 +51,10 @@ export function shortDay(iso: string): string {
   return formatDay(iso, { year: false });
 }
 
-/** The month a review covers after or before ([year, month]), or the year; null past today or before the data. */
+/**
+ * The month a review covers after or before ([year, month]), or the year; null past today, before the data, or before
+ * 2000 (the API's first year: with no data yet there is no other floor).
+ */
 export function stepReview(
   year: number,
   month: number | null,
@@ -71,7 +74,7 @@ export function stepReview(
   // A year spans its months: it is there while any of them is.
   const startKey = next.year * 12 + (next.month === null ? 0 : next.month - 1);
   const endKey = next.year * 12 + (next.month === null ? 11 : next.month - 1);
-  if (startKey > nowKey) return null;
+  if (startKey > nowKey || next.year < 2000) return null;
   if (firstKey !== null && endKey < firstKey) return null;
   return next;
 }

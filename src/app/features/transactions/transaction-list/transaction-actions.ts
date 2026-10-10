@@ -78,7 +78,9 @@ export class TransactionActions {
       next: () => {
         this.savingLink.set(false);
         const budget = budgets.find((b) => b.id === linking.budgetId);
-        this.linkingTransaction.set(null);
+        // Closed and another opened while this one saved: that one stays.
+        if (this.linkingTransaction()?.id === linking.transactionId)
+          this.linkingTransaction.set(null);
         this.changed.next();
         this.toasts.success(budget ? `Linked to “${budget.name}”` : 'Transaction linked');
       },
@@ -97,9 +99,9 @@ export class TransactionActions {
     this.transactionRepository.update(transaction.id, update).subscribe({
       next: () => {
         if (rule) {
-          this.addRuleAndApply(rule);
+          this.addRuleAndApply(rule, transaction.id);
         } else {
-          this.finishEdit();
+          this.finishEdit(transaction.id);
           this.toasts.success('Transaction updated');
         }
       },
@@ -112,7 +114,7 @@ export class TransactionActions {
   }
 
   /** After the edit is saved: the rule goes first, then the rules are applied, with one toast for it all. */
-  private addRuleAndApply(rule: CategoryRuleInputDto): void {
+  private addRuleAndApply(rule: CategoryRuleInputDto, transactionId: string): void {
     let added = false;
     this.categoryRuleRepository
       .create(rule)
@@ -122,7 +124,7 @@ export class TransactionActions {
       )
       .subscribe({
         next: ({ updated }) => {
-          this.finishEdit();
+          this.finishEdit(transactionId);
           const others = `${updated} other ${updated === 1 ? 'transaction' : 'transactions'}`;
           this.toasts.success(
             `Transaction updated. Rule “${rule.keyword}” added and ${others} updated`,
@@ -130,7 +132,7 @@ export class TransactionActions {
         },
         error: (error: unknown) => {
           // The transaction itself is saved either way.
-          this.finishEdit();
+          this.finishEdit(transactionId);
           this.toasts.error(
             added
               ? `Transaction updated and rule “${rule.keyword}” added, but the rules could not be applied.`
@@ -140,9 +142,10 @@ export class TransactionActions {
       });
   }
 
-  private finishEdit(): void {
+  /** Closes the edit of [transactionId]: one opened since (the first closed while it saved) stays open. */
+  private finishEdit(transactionId: string): void {
     this.savingEdit.set(false);
-    this.editingTransaction.set(null);
+    if (this.editingTransaction()?.id === transactionId) this.editingTransaction.set(null);
     this.changed.next();
   }
 

@@ -1,6 +1,6 @@
 <div class="mb-4">
   <h1 class="h3 mb-1">Dashboard</h1>
-  <p class="text-body-secondary mb-0">{{ monthName }} at a glance</p>
+  <p class="text-body-secondary mb-0">{{ monthName() }} at a glance</p>
 </div>
 
 <!-- Headline numbers -->
@@ -137,7 +137,7 @@
   <div class="col-12">
     <app-card-wrapper
       headerTitle="Where the month is heading"
-      [subtitle]="'If ' + monthName + ' goes as usual'"
+      [subtitle]="'If ' + monthName() + ' goes as usual'"
     >
       <a
         card-actions
@@ -162,7 +162,7 @@
   <div class="col-12 col-xl-7">
     <app-card-wrapper
       headerTitle="By category"
-      [subtitle]="categoryView() === 'month' ? monthName : 'A typical month, against this one'"
+      [subtitle]="categoryView() === 'month' ? monthName() : 'A typical month, against this one'"
     >
       <div card-actions class="btn-group btn-group-sm" role="group" aria-label="Show">
         <button
@@ -204,7 +204,7 @@
           <app-error-state message="Could not load the averages." (retry)="yearReport.reload()" />
         } @else if (yearReport.value(); as report) {
           @if (report.monthlyData.length > 0) {
-            <app-category-averages [report]="report" [today]="today" />
+            <app-category-averages [report]="report" [today]="today()" />
           } @else {
             <p class="text-body-secondary text-center py-5 mb-0">
               No spending recorded this year yet.

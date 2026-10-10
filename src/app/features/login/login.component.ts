@@ -31,6 +31,12 @@ export class LoginComponent {
   /** Set when the app sent us here because the API ended the session. */
   readonly sessionEnded = !!(history.state as { sessionEnded?: boolean } | null)?.sessionEnded;
 
+  constructor() {
+    // Said once: the browser keeps a page's state across a reload, which would say it again. The router's own
+    // entries in the state stay.
+    if (this.sessionEnded) history.replaceState({ ...history.state, sessionEnded: undefined }, '');
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();

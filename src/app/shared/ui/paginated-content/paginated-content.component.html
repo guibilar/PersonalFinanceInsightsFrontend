@@ -47,9 +47,11 @@
   }
 
   <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mt-2">
-    <p class="text-body-secondary small mb-0">
-      Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
-    </p>
+    @if (data.totalCount > 0) {
+      <p class="text-body-secondary small mb-0">
+        Showing {{ firstItem() }} to {{ lastItem() }} of {{ data.totalCount }} items
+      </p>
+    }
     <ng-content select="[paginator-footer]" />
   </div>
 }

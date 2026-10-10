@@ -3,6 +3,7 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -72,6 +73,18 @@ export class BankAccountFormComponent implements OnInit {
   readonly canHavePlan = computed(() => holdsSavings(this.type()));
   readonly hasPlan = computed(() => this.canHavePlan() && this.plan() !== RegisteredPlan.None);
 
+  constructor() {
+    // The room fields show only for a plan: hidden, a value left in them (-100, an old year) mustn't keep the form
+    // from saving with no field on screen saying why.
+    effect(() => {
+      const { contributionRoom, contributionRoomYear } = this.form.controls;
+      for (const control of [contributionRoom, contributionRoomYear]) {
+        if (this.hasPlan()) control.enable({ emitEvent: false });
+        else control.disable({ emitEvent: false });
+      }
+    });
+  }
+
   ngOnInit(): void {
     const account = this.account();
     if (account) {
@@ -80,8 +93,13 @@ export class BankAccountFormComponent implements OnInit {
         type: account.type,
         format: account.format,
         plan: account.plan ?? RegisteredPlan.None,
-        contributionRoom: account.contributionRoom ?? null,
-        contributionRoomYear: account.contributionRoomYear ?? this.thisYear,
+        // Last year's room is no use this year: the field asks for this year's (empty leaves the old one as it is).
+        ...(account.contributionRoomYear && account.contributionRoomYear < this.thisYear
+          ? { contributionRoom: null, contributionRoomYear: this.thisYear }
+          : {
+              contributionRoom: account.contributionRoom ?? null,
+              contributionRoomYear: account.contributionRoomYear ?? this.thisYear,
+            }),
       });
       // The patch above already told the type signal; disabled, it never changes again.
       this.form.controls.type.disable();

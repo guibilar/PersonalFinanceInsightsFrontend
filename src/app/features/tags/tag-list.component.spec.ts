@@ -113,6 +113,19 @@ describe('TagListComponent', () => {
     expect(messages()).toEqual(['Renamed to “Trip to Japan”']);
   });
 
+  it('keeps the focus on the row: the field when renaming starts, Rename again when it ends', async () => {
+    await load();
+    root().querySelector<HTMLButtonElement>('[aria-label="Rename Vacation 2026"]')!.click();
+    await fixture.whenStable();
+    expect(document.activeElement?.id).toBe('rename-g-trip');
+
+    Array.from(root().querySelectorAll<HTMLButtonElement>('form button'))
+      .find((button) => button.textContent!.trim() === 'Cancel')!
+      .click();
+    await fixture.whenStable();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Rename Vacation 2026');
+  });
+
   it('deletes after confirming, saying the transactions stay', async () => {
     await load();
     root().querySelector<HTMLButtonElement>('[aria-label="Delete Vacation 2026"]')!.click();

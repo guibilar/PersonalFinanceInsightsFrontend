@@ -131,7 +131,7 @@
     <div class="invalid-feedback">At most {{ maxNote }} characters.</div>
   </div>
 
-  @if (duplicate(); as message) {
+  @if (warning(); as message) {
     <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 py-2" role="alert">
       <span>{{ message }}</span>
       <button

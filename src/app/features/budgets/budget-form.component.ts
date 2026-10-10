@@ -181,7 +181,12 @@ export class BudgetFormComponent implements OnInit {
   /** The custom days are wrong and the person has been to them. */
   daysInvalid(): boolean {
     const { startDate, endDate } = this.form.controls;
-    if (this.form.hasError('daysYear')) return this.submitted();
+    if (this.form.hasError('daysYear')) {
+      // Not while the year is being typed, but once the field with it is left: the Create button stays disabled
+      // meanwhile, so waiting for a submit would never say why.
+      const short = (control: typeof startDate) => yearStillTyped(control.value) && control.touched;
+      return this.submitted() || short(startDate) || short(endDate);
+    }
     return this.form.hasError('daysMissing') || this.form.hasError('daysOrder')
       ? startDate.touched || endDate.touched
       : false;

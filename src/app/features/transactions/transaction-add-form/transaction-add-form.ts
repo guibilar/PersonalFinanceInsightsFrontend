@@ -7,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -54,6 +55,12 @@ export class TransactionAddForm implements OnInit {
   readonly previous = input<{ date: string; accountId: string } | null>(null);
   /** The API's reason when an identical transaction exists; the same one can still be added on purpose. */
   readonly duplicate = input<string | null>(null);
+  /**
+   * The form changed since the API warned: "Add it anyway" would skip the check for values it never saw, so the
+   * warning goes and Add checks again.
+   */
+  private readonly changedSinceWarning = signal(false);
+  readonly warning = computed(() => (this.changedSinceWarning() ? null : this.duplicate()));
   readonly submitAdd = output<TransactionInputDto>();
   readonly cancelled = output<void>();
 
@@ -98,6 +105,13 @@ export class TransactionAddForm implements OnInit {
   }
 
   constructor() {
+    effect(() => {
+      this.duplicate();
+      this.changedSinceWarning.set(false);
+    });
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.changedSinceWarning.set(true));
     // Start on an account that has to be filled by hand, if there is one.
     effect(() => {
       const accounts = this.accounts();

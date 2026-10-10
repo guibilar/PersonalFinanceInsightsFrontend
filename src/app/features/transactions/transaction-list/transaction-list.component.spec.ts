@@ -420,6 +420,22 @@ describe('TransactionListComponent', () => {
       await fixture.whenStable();
     });
 
+    it('leaves open an edit started while an earlier one was still saving', () => {
+      component.actions.editingTransaction.set(coffee);
+      component.actions.onEditSubmit({
+        update: { description: 'Coffee', categoryId: TEST_CATEGORIES.dining.id },
+      });
+      const put = http.expectOne({ method: 'PUT', url: '/api/Transaction/t1' });
+      const other = { ...coffee, id: 't9', description: 'Bakery' };
+      component.actions.editingTransaction.set(other);
+
+      put.flush({ ...coffee, description: 'Coffee' });
+
+      expect(component.actions.editingTransaction()).toBe(other);
+      expect(component.actions.savingEdit()).toBe(false);
+      lastFilterRequest();
+    });
+
     it('saves an edit, closes the panel and reloads', () => {
       component.actions.editingTransaction.set(coffee);
 

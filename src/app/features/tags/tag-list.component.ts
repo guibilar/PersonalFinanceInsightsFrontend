@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -40,6 +48,7 @@ export class TagListComponent {
   readonly maxName = TEXT_LIMITS.tagName;
 
   /** The tag being renamed, in place. */
+  private readonly injector = inject(Injector);
   readonly renaming = signal<TagOutputDto | null>(null);
   readonly deleting = signal<TagOutputDto | null>(null);
   readonly saving = signal(false);
@@ -80,6 +89,20 @@ export class TagListComponent {
   startRename(tag: TagOutputDto): void {
     this.renameName.setValue(tag.name);
     this.renaming.set(tag);
+    // The row swaps its Rename button for the field: focus goes to the field, not off the page.
+    afterNextRender(() => document.getElementById(`rename-${tag.id}`)?.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  /** Back to the row, focus on its Rename button again. */
+  stopRename(): void {
+    const tag = this.renaming();
+    this.renaming.set(null);
+    if (!tag) return;
+    afterNextRender(() => document.getElementById(`rename-button-${tag.id}`)?.focus(), {
+      injector: this.injector,
+    });
   }
 
   rename(): void {
@@ -87,14 +110,14 @@ export class TagListComponent {
     if (!tag || this.renameName.invalid || this.saving()) return;
     const name = this.renameName.value.trim();
     if (name === tag.name) {
-      this.renaming.set(null);
+      this.stopRename();
       return;
     }
     this.saving.set(true);
     this.tagRepository.rename(tag.id, { name }).subscribe({
       next: (renamed) => {
         this.saving.set(false);
-        this.renaming.set(null);
+        this.stopRename();
         this.tags.reload();
         this.toasts.success(`Renamed to “${renamed.name}”`);
       },

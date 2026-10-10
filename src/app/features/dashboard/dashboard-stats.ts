@@ -68,7 +68,8 @@ export function averageCaption(labels: string[], now: Date): string {
 
 /** Percentage change from `previous` to `current`, or null when there is nothing to compare with. */
 export function percentChange(current: number, previous: number | null): number | null {
-  if (previous === null || previous === 0) return null;
+  // Against nothing, or against refunds outweighing spending, a percentage says nothing true.
+  if (previous === null || previous <= 0) return null;
   return ((current - previous) / previous) * 100;
 }
 

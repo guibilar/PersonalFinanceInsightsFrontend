@@ -44,6 +44,7 @@ import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';
 import { valueOf } from '../../shared/utils/resource-value';
+import { finishedMonths } from '../../shared/utils/months';
 import { formatDay, formatCurrency } from '../../shared/utils/format';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
@@ -135,8 +136,17 @@ export class DashboardComponent {
   /** A statement imported from the sidebar reloads everything below. */
   private readonly dataChanges = inject(DataChangesService);
 
-  readonly today = new Date();
-  readonly monthName = this.today.toLocaleString('en-CA', { month: 'long', year: 'numeric' });
+  /**
+   * Read again with the data: the reports follow the server's month, so a page left open into the next one shows the
+   * new month's figures against the new month's date, not the day it was opened.
+   */
+  readonly today = computed(() => {
+    this.dataChanges.version();
+    return new Date();
+  });
+  readonly monthName = computed(() =>
+    this.today().toLocaleString('en-CA', { month: 'long', year: 'numeric' }),
+  );
 
   readonly yearReport = rxResource({
     params: () => this.dataChanges.version(),
@@ -200,7 +210,7 @@ export class DashboardComponent {
     const change = percentChange(spent, month.previousMonthToDateTotal ?? null);
     if (change === null) return null;
     return {
-      text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${previousMonthToDateLabel(this.today)}`,
+      text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${previousMonthToDateLabel(this.today())}`,
       tone: change > 0 ? 'bad' : 'good',
       up: change >= 0,
     };
@@ -214,7 +224,17 @@ export class DashboardComponent {
     const spent = this.spent();
     const year = valueOf(this.yearReport);
     if (spent === null || !year || year.averageMonthlyTotal <= 0) return null;
-    const expected = usualByNow(year.averageMonthlyTotal, this.today);
+    // With no month of the year over yet (every January), the API averages the running month itself: this month
+    // against itself. The like-for-like comparison with last month says it instead.
+    if (
+      finishedMonths(
+        year.monthlyData.map((month) => month.month),
+        this.today(),
+      ).length === 0
+    ) {
+      return null;
+    }
+    const expected = usualByNow(year.averageMonthlyTotal, this.today());
     const difference = spent - expected;
     return {
       text: `${this.format(Math.abs(difference))} ${difference > 0 ? 'over' : 'under'} a usual month by now`,
@@ -225,7 +245,7 @@ export class DashboardComponent {
 
   readonly leftOver = computed(() => {
     const report = valueOf(this.cashFlow);
-    return report ? leftOverThisMonth(report, this.today) : undefined;
+    return report ? leftOverThisMonth(report, this.today()) : undefined;
   });
   readonly leftOverHint = computed<{ text: string; tone: StatTone }>(() => {
     const month = this.leftOver();
@@ -265,7 +285,7 @@ export class DashboardComponent {
         recurring: valueOf(this.recurring) ?? null,
         accounts: valueOf(this.accounts) ?? [],
       },
-      this.today,
+      this.today(),
     );
   });
   protected readonly attentionIcons: Record<AttentionKind, IconName> = {

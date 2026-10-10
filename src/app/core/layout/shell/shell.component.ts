@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  NavigationEnd,
+  NavigationSkipped,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { ThemeService } from '../../theme/theme.service';
@@ -97,7 +104,8 @@ export class ShellComponent {
     // Close the slide-out menu after navigating.
     inject(Router)
       .events.pipe(
-        filter((event) => event instanceof NavigationEnd),
+        // Skipped too: the link to the page already open navigates nowhere, but the menu was still tapped.
+        filter((event) => event instanceof NavigationEnd || event instanceof NavigationSkipped),
         takeUntilDestroyed(),
       )
       .subscribe(() => this.mobileOpen.set(false));

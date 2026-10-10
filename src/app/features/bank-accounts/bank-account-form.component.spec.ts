@@ -144,26 +144,73 @@ describe('BankAccountFormComponent', () => {
       ]);
     });
 
+    const thisYear = new Date().getFullYear();
+    const tfsa = (year: number): AccountOutputDto => ({
+      id: 'a9',
+      name: 'TFSA',
+      type: AccountType.Investment,
+      format: StatementFormat.Manual,
+      transactionCount: 3,
+      plan: RegisteredPlan.Tfsa,
+      contributionRoom: 6500,
+      contributionRoomYear: year,
+    });
+
     it("starts from the account's plan and room when editing", () => {
-      create({
-        id: 'a9',
-        name: 'TFSA',
-        type: AccountType.Investment,
-        format: StatementFormat.Manual,
-        transactionCount: 3,
-        plan: RegisteredPlan.Tfsa,
-        contributionRoom: 6500,
-        contributionRoomYear: 2025,
-      });
+      create(tfsa(thisYear));
 
       expect(component.form.getRawValue()).toEqual(
         expect.objectContaining({
           plan: RegisteredPlan.Tfsa,
           contributionRoom: 6500,
-          contributionRoomYear: 2025,
+          contributionRoomYear: thisYear,
         }),
       );
       expect(component.canHavePlan()).toBe(true);
+    });
+
+    it("asks for this year's room, not last year's, and leaves the old one alone on a rename", () => {
+      create(tfsa(thisYear - 1));
+
+      expect(component.form.getRawValue()).toEqual(
+        expect.objectContaining({ contributionRoom: null, contributionRoomYear: thisYear }),
+      );
+      component.form.patchValue({ name: 'TFSA renamed' });
+      component.onSubmit();
+      expect(submitted).toEqual([
+        {
+          name: 'TFSA renamed',
+          type: AccountType.Investment,
+          format: StatementFormat.Manual,
+          plan: RegisteredPlan.Tfsa,
+        },
+      ]);
+    });
+
+    it('saves once the plan is off, whatever was left in its hidden room', async () => {
+      create(null);
+      component.form.patchValue({
+        name: 'Savings',
+        type: AccountType.Savings,
+        plan: RegisteredPlan.Tfsa,
+      });
+      await fixture.whenStable();
+      component.form.controls.contributionRoom.setValue(-100);
+      expect(component.form.invalid).toBe(true);
+
+      component.form.controls.plan.setValue(RegisteredPlan.None);
+      await fixture.whenStable();
+
+      expect(component.form.valid).toBe(true);
+      component.onSubmit();
+      expect(submitted).toEqual([
+        {
+          name: 'Savings',
+          type: AccountType.Savings,
+          format: StatementFormat.Cibc,
+          plan: RegisteredPlan.None,
+        },
+      ]);
     });
   });
 });
