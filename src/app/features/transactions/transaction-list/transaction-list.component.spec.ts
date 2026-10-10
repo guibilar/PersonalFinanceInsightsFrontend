@@ -924,6 +924,19 @@ describe('TransactionListComponent, in the address bar', () => {
     expect(list.breakdownOpen()).toBe(false);
   });
 
+  it('applies the menu’s link after the page changed its own address', async () => {
+    const list = await harness.navigateByUrl('/transactions', TransactionListComponent);
+    answer();
+    list.onCriteriaChange({ categoryId: 'c-dining' });
+    await settle();
+    expect(router.url).toBe('/transactions?categoryId=c-dining');
+
+    await harness.navigateByUrl('/transactions');
+    await settle();
+
+    expect(list.filter().categoryId).toBeUndefined();
+  });
+
   it('shows the interval the totals were charted in, when the asked one has too many periods', async () => {
     const list = await harness.navigateByUrl(
       '/transactions?startDate=2010-01-01&overTime=1&interval=Week',

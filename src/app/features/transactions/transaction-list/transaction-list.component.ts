@@ -247,8 +247,10 @@ export class TransactionListComponent {
       });
     });
     // ...and a link to the page while it is open (the menu's, or the dashboard's) applies its criteria.
+    // The route's query emits while its navigation is still running, so that navigation is the current one, not the
+    // last successful one (that is the one before it).
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((query) => {
-      if (this.router.lastSuccessfulNavigation()?.extras.state?.[OWN_NAVIGATION]) return;
+      if (this.router.currentNavigation()?.extras.state?.[OWN_NAVIGATION]) return;
       const criteria = criteriaFromQuery(query);
       if (!sameCriteria(criteria, this.filter())) this.onCriteriaChange(criteria);
       this.breakdownOpen.set(query.get('overTime') === '1');
