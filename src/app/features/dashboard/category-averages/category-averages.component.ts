@@ -13,9 +13,15 @@ import { MoneyPipe } from '../../../shared/pipes/money.pipe';
   selector: 'app-category-averages',
   imports: [MoneyPipe, DecimalPipe, RouterLink],
   template: `
-    <p class="small text-body-secondary mb-3">
-      {{ caption() }}. The thin bar is {{ thisMonthLabel }} so far.
-    </p>
+    @if (rows().length > 0) {
+      <p class="small text-body-secondary mb-3">
+        {{ caption() }}. The thin bar is {{ thisMonthLabel }} so far.
+      </p>
+    } @else {
+      <p class="small text-body-secondary mb-0">
+        A usual month for each category shows once a month of the year is over.
+      </p>
+    }
     <ul class="list-unstyled mb-0 row row-cols-1 row-cols-lg-2 gx-5">
       @for (row of rows(); track row.category) {
         <li class="col mb-3">

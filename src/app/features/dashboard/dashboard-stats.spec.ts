@@ -119,6 +119,16 @@ describe('dashboard stats', () => {
     ]);
   });
 
+  it('has no usual month per category while no month of the year is over (January)', () => {
+    const year: CategorizedReportOutputDto = {
+      categories: categoryRefs('Dining'),
+      averageMonthlyTotal: 100,
+      monthlyData: [{ month: 'Jan 2027', total: 100, categoryValues: { Dining: 100 } }],
+    };
+
+    expect(categoryAverages(year, new Date(2027, 0, 20))).toEqual([]);
+  });
+
   it('has a category that only shows up this month, with nothing to compare against', () => {
     const year: CategorizedReportOutputDto = {
       categories: categoryRefs('Dining', 'Pet'),

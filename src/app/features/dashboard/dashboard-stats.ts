@@ -1,4 +1,9 @@
-import { finishedMonths, monthIndex, monthLabel } from '../../shared/utils/months';
+import {
+  anyMonthFinished,
+  finishedMonths,
+  monthIndex,
+  monthLabel,
+} from '../../shared/utils/months';
 import { BudgetOutputDto } from '../../core/models/outputs/budget-output-dto';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import {
@@ -107,6 +112,15 @@ export interface CategoryAverage {
  */
 export function categoryAverages(year: CategorizedReportOutputDto, now: Date): CategoryAverage[] {
   const months = year.monthlyData;
+  // With no month over yet (January), each category would be put against its own running month.
+  if (
+    !anyMonthFinished(
+      months.map((month) => month.month),
+      now,
+    )
+  ) {
+    return [];
+  }
   const finished = finishedMonths(
     months.map((month) => month.month),
     now,
