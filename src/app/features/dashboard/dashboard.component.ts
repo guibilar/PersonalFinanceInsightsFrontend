@@ -44,7 +44,7 @@ import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';
 import { valueOf } from '../../shared/utils/resource-value';
-import { finishedMonths } from '../../shared/utils/months';
+import { anyMonthFinished } from '../../shared/utils/months';
 import { formatDay, formatCurrency } from '../../shared/utils/format';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
@@ -226,14 +226,13 @@ export class DashboardComponent {
     if (spent === null || !year || year.averageMonthlyTotal <= 0) return null;
     // With no month of the year over yet (every January), the API averages the running month itself: this month
     // against itself. The like-for-like comparison with last month says it instead.
-    if (
-      finishedMonths(
+    const runningMonthOnly =
+      year.averageIncludesCurrentMonth ??
+      !anyMonthFinished(
         year.monthlyData.map((month) => month.month),
         this.today(),
-      ).length === 0
-    ) {
-      return null;
-    }
+      );
+    if (runningMonthOnly) return null;
     const expected = usualByNow(year.averageMonthlyTotal, this.today());
     const difference = spent - expected;
     return {

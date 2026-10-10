@@ -150,16 +150,19 @@ describe('DashboardComponent', () => {
       netWorth?: NetWorthReportDto;
       accounts?: AccountOutputDto[];
       recurring?: RecurringReportDto;
+      year?: CategorizedReportOutputDto;
     } = {},
   ): Promise<{ dashboard: DashboardComponent; root: HTMLElement }> {
     const fixture = TestBed.createComponent(DashboardComponent);
     TestBed.tick();
     // The year report would say August cost far more in total; the hint must not use it.
-    http.expectOne('/api/Reports/monthly-categorized-graph').flush({
-      categories: categoryRefs('Dining'),
-      averageMonthlyTotal: 2000,
-      monthlyData: [{ month: 'Aug 2026', total: 2000, categoryValues: { Dining: 2000 } }],
-    });
+    http.expectOne('/api/Reports/monthly-categorized-graph').flush(
+      extra.year ?? {
+        categories: categoryRefs('Dining'),
+        averageMonthlyTotal: 2000,
+        monthlyData: [{ month: 'Aug 2026', total: 2000, categoryValues: { Dining: 2000 } }],
+      },
+    );
     http.expectOne('/api/Reports/current-month-categorized-graph').flush(month);
     http.expectOne('/api/Reports/cash-flow').flush(cashFlow);
     http.expectOne('/api/Budget/Filter').flush(emptyPage);
@@ -188,6 +191,32 @@ describe('DashboardComponent', () => {
       tone: 'good',
       up: false,
     });
+  });
+
+  it('puts this month against no usual one while it is the only one of the year', async () => {
+    // The API averages the running month itself then: this month against itself.
+    const { dashboard } = await load(currentMonth(300, 250), undefined, undefined, undefined, {
+      year: {
+        categories: categoryRefs('Dining'),
+        averageMonthlyTotal: 300,
+        monthlyData: [{ month: 'Sep 2026', total: 300, categoryValues: { Dining: 300 } }],
+      },
+    });
+
+    expect(dashboard.usualHint()).toBeNull();
+  });
+
+  it('trusts the API on whether its average is of the running month', async () => {
+    const { dashboard } = await load(currentMonth(300, 250), undefined, undefined, undefined, {
+      year: {
+        categories: categoryRefs('Dining'),
+        averageMonthlyTotal: 2000,
+        averageIncludesCurrentMonth: true,
+        monthlyData: [{ month: 'Aug 2026', total: 2000, categoryValues: { Dining: 2000 } }],
+      },
+    });
+
+    expect(dashboard.usualHint()).toBeNull();
   });
 
   it('shows no comparison without last month’s figure', async () => {

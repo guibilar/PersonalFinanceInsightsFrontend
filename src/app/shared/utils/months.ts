@@ -38,6 +38,12 @@ export function finishedMonths(labels: string[], now: Date): number[] {
   return finished.length > 0 ? finished : labels.map((_, index) => index);
 }
 
+/** Whether any of the months is over: the reports' averages are of those, or (with none, every January) of the running one. */
+export function anyMonthFinished(labels: string[], now: Date): boolean {
+  const current = now.getFullYear() * 12 + now.getMonth();
+  return labels.some((label) => (monthIndex(label) ?? current) < current);
+}
+
 /** "Oct 2026": how the reports label the month a day is in. */
 export function monthLabel(day: Date): string {
   return `${MONTH_NAMES[day.getMonth()]} ${day.getFullYear()}`;
