@@ -10,6 +10,9 @@ import { ToastService } from '../../shared/ui/toast/toast.service';
 import { validationDetail } from '../../shared/utils/problem-detail';
 import { valueOf } from '../../shared/utils/resource-value';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
+import { cents } from '../../shared/utils/cents';
+import { AccountBalanceOutputDto } from '../../core/models/outputs/account-output-dto';
 
 /** Today in the browser's time zone, as yyyy-MM-dd. */
 function today(): string {
@@ -23,7 +26,7 @@ function today(): string {
  */
 @Component({
   selector: 'app-account-balances',
-  imports: [ReactiveFormsModule, MoneyPipe, DatePipe, IconComponent],
+  imports: [ReactiveFormsModule, MoneyPipe, DatePipe, IconComponent, ConfirmDialogComponent],
   template: `
     <form class="row g-2 align-items-end mb-3" [formGroup]="form" (ngSubmit)="save()">
       <div class="col-sm-5">
@@ -48,9 +51,15 @@ function today(): string {
             formControlName="amount"
             step="0.01"
             inputmode="decimal"
+            aria-describedby="balance-amount-error"
             [class.is-invalid]="form.controls.amount.invalid && form.controls.amount.touched"
           />
         </div>
+        @if (form.controls.amount.hasError('cents')) {
+          <div id="balance-amount-error" class="invalid-feedback d-block">
+            Whole cents only, like 12.50.
+          </div>
+        }
       </div>
       <div class="col-sm-3 d-grid">
         <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
@@ -88,13 +97,24 @@ function today(): string {
                 'Delete the balance of ' + (balance.date | date: 'mediumDate' : 'UTC')
               "
               title="Delete"
-              (click)="remove(balance.id)"
+              (click)="deleting.set(balance)"
             >
               <app-icon name="trash" [size]="14" />
             </button>
           </li>
         }
       </ul>
+    }
+
+    @if (deleting(); as balance) {
+      <app-confirm-dialog
+        [title]="'Delete the balance of ' + (balance.date | date: 'mediumDate' : 'UTC') + '?'"
+        message="The net worth is carried from the balances that are left."
+        [confirmLabel]="removing() ? 'Deleting…' : 'Delete'"
+        [danger]="true"
+        (confirmed)="remove(balance.id)"
+        (cancelled)="deleting.set(null)"
+      />
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,6 +131,9 @@ export class AccountBalancesComponent {
   protected readonly AccountType = AccountType;
   readonly maxDate = today();
   readonly saving = signal(false);
+  /** Asked to delete; the confirm dialog is showing. */
+  readonly deleting = signal<AccountBalanceOutputDto | null>(null);
+  readonly removing = signal(false);
 
   readonly balances = rxResource({
     params: () => this.account().id,
@@ -121,7 +144,7 @@ export class AccountBalancesComponent {
 
   readonly form = this.fb.group({
     date: [today(), Validators.required],
-    amount: this.fb.control<number | null>(null, Validators.required),
+    amount: this.fb.control<number | null>(null, [Validators.required, cents]),
   });
 
   save(): void {
@@ -144,12 +167,20 @@ export class AccountBalancesComponent {
   }
 
   remove(balanceId: string): void {
+    if (this.removing()) return;
+    this.removing.set(true);
     this.repository.deleteBalance(this.account().id, balanceId).subscribe({
       next: () => {
+        this.removing.set(false);
+        this.deleting.set(null);
         this.balances.reload();
         this.changed.emit();
       },
-      error: () => this.toasts.error('Could not delete the balance.'),
+      error: () => {
+        this.removing.set(false);
+        this.deleting.set(null);
+        this.toasts.error('Could not delete the balance.');
+      },
     });
   }
 }

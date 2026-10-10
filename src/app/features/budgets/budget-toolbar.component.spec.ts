@@ -59,6 +59,15 @@ describe('BudgetToolbarComponent', () => {
     }
   });
 
+  it('keeps what is being typed when the list behind changes page', () => {
+    component.search.setValue('foo');
+    // Paging gives the page new criteria with the same search.
+    fixture.componentRef.setInput('criteria', { status: Status.Active });
+    fixture.detectChanges();
+
+    expect(component.search.value).toBe('foo');
+  });
+
   it('switches status and marks the pressed button', async () => {
     await fixture.whenStable();
     const pressed = () =>

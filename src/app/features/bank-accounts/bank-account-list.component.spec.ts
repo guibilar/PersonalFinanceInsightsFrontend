@@ -275,12 +275,43 @@ describe('BankAccountListComponent', () => {
       root()
         .querySelector<HTMLButtonElement>('[aria-label="Delete the balance of Sep 30, 2026"]')!
         .click();
+      await fixture.whenStable();
+      // Only once confirmed.
+      http.expectNone({ method: 'DELETE' });
+      const confirm = root().querySelector('app-confirm-dialog')!;
+      expect(confirm.textContent).toContain('Delete the balance of Sep 30, 2026?');
+      Array.from(confirm.querySelectorAll<HTMLButtonElement>('button'))
+        .find((b) => b.textContent!.trim() === 'Delete')!
+        .click();
       http.expectOne({ method: 'DELETE', url: '/api/Accounts/a9/Balances/b1' }).flush(null);
       await new Promise((resolve) => setTimeout(resolve));
       TestBed.tick();
       http.match('/api/Accounts/a9/Balances').forEach((r) => r.flush([]));
       http.match('/api/Accounts').forEach((r) => r.flush([tfsa]));
       await fixture.whenStable();
+      expect(root().querySelector('app-confirm-dialog')).toBeNull();
+    });
+
+    it('takes a balance in whole cents only', async () => {
+      await load([tfsa]);
+      root()
+        .querySelector<HTMLButtonElement>('[aria-label="Balances of Wealthsimple TFSA"]')!
+        .click();
+      fixture.detectChanges();
+      TestBed.tick();
+      http.expectOne('/api/Accounts/a9/Balances').flush([]);
+      await fixture.whenStable();
+
+      const amount = root().querySelector<HTMLInputElement>('#balance-amount')!;
+      amount.value = '12.505';
+      amount.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+
+      expect(root().querySelector('#balance-amount-error')!.textContent).toContain('Whole cents');
+      expect(
+        root().querySelector<HTMLButtonElement>('app-account-balances button[type="submit"]')!
+          .disabled,
+      ).toBe(true);
     });
   });
 });

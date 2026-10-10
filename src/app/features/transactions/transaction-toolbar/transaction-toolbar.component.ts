@@ -26,6 +26,7 @@ import {
   matchDatePreset,
   yearStillTyped,
 } from '../../../shared/utils/date-presets';
+import { sameCriteria } from '../transaction-list/transaction-list-query';
 
 /** The criteria this toolbar controls; paging and sorting stay with the page. */
 export type TransactionCriteria = Pick<
@@ -116,15 +117,24 @@ export class TransactionToolbarComponent {
     return chips;
   });
 
+  /** The search the fields were last synced to, to tell a search being typed from one applied. */
+  private syncedDescription: string | undefined;
+
   constructor() {
-    // Keep the fields in sync with the applied filter (e.g. after a chip is removed).
+    // Keep the fields in sync with the applied filter (e.g. after a chip is removed)...
     effect(() => {
       const filter = this.filter();
       const period = matchDatePreset(filter, new Date());
       if (period === 'custom') this.customRange.set(true);
+      // ...but not a search still being typed, when the search applied stays the same: it applies once typing pauses.
+      const typed = this.form.controls.description.value;
+      const typing =
+        filter.description === this.syncedDescription &&
+        (typed.trim() || undefined) !== filter.description;
+      this.syncedDescription = filter.description;
       this.form.setValue(
         {
-          description: filter.description ?? '',
+          description: typing ? typed : (filter.description ?? ''),
           categoryId: filter.categoryId ?? null,
           tagId: filter.tagId ?? null,
           accountId: filter.accountId ?? null,
@@ -161,7 +171,9 @@ export class TransactionToolbarComponent {
         const backwards =
           !!criteria.startDate && !!criteria.endDate && criteria.startDate > criteria.endDate;
         this.rangeBackwards.set(backwards);
-        if (!backwards) this.criteriaChange.emit(criteria);
+        // A search that was typed and then reset (by "Clear all") leaves nothing new to apply.
+        if (!backwards && !sameCriteria(criteria, this.filter()))
+          this.criteriaChange.emit(criteria);
       });
 
     controls.period.valueChanges
@@ -181,16 +193,24 @@ export class TransactionToolbarComponent {
     });
   }
 
+  /** Removes one applied criterion; a search still being typed isn't applied with it, but stays in its field. */
   remove(key: Chip['key']): void {
+    const applied = this.appliedCriteria();
     if (key === 'dates') {
-      this.criteriaChange.emit({ ...this.criteria(), startDate: undefined, endDate: undefined });
+      this.criteriaChange.emit({ ...applied, startDate: undefined, endDate: undefined });
       return;
     }
-    this.criteriaChange.emit({ ...this.criteria(), [key]: undefined });
+    this.criteriaChange.emit({ ...applied, [key]: undefined });
   }
 
   clearAll(): void {
+    this.form.controls.description.setValue('', { emitEvent: false });
     this.criteriaChange.emit({});
+  }
+
+  private appliedCriteria(): TransactionCriteria {
+    const { description, categoryId, tagId, accountId, flow, startDate, endDate } = this.filter();
+    return { description, categoryId, tagId, accountId, flow, startDate, endDate };
   }
 
   private criteria(): TransactionCriteria {

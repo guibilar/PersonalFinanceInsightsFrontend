@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   input,
@@ -72,8 +73,11 @@ export class BudgetToolbarComponent {
     { value: Status.Inactive, label: 'Inactive' },
   ];
 
+  /** The search applied; only a change to it resets the field, not paging (which would drop what is being typed). */
+  private readonly appliedName = computed(() => this.criteria().name ?? '');
+
   constructor() {
-    effect(() => this.search.setValue(this.criteria().name ?? '', { emitEvent: false }));
+    effect(() => this.search.setValue(this.appliedName(), { emitEvent: false }));
 
     this.search.valueChanges
       .pipe(
