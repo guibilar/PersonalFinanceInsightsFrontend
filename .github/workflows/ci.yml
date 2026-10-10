@@ -41,6 +41,17 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      # Docker Hub limits pulls without an account, and GitHub's shared runners hit it ("429 Too Many Requests").
+      # Google's public mirror of Docker Hub serves the base images instead; Docker Hub is still asked for anything
+      # the mirror lacks. The runner's own daemon settings are kept.
+      - name: Pull base images through a mirror
+        run: |
+          config=/etc/docker/daemon.json
+          [ -s "$config" ] || echo '{}' | sudo tee "$config" > /dev/null
+          sudo jq '."registry-mirrors" = ["https://mirror.gcr.io"]' "$config" | sudo tee "$config.new" > /dev/null
+          sudo mv "$config.new" "$config"
+          sudo systemctl restart docker
+          docker info --format 'Mirrors: {{.RegistryConfig.Mirrors}}'
       - name: Build the image
         run: docker build -t finance-frontend .
       - name: Start it (no API behind it)

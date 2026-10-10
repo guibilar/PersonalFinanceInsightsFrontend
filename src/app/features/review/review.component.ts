@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReportsRepository } from '../../core/api/reports-repository';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
@@ -70,7 +70,7 @@ export class ReviewComponent {
   private readonly router = inject(Router);
 
   readonly today = new Date();
-  readonly period = signal<ReviewPeriod | undefined>(this.fromQuery());
+  readonly period = signal<ReviewPeriod | undefined>(fromQuery(this.route.snapshot.queryParamMap));
 
   readonly review = rxResource({
     params: () => ({ period: this.period() }),
@@ -120,6 +120,14 @@ export class ReviewComponent {
   protected readonly day = shortDay;
   protected readonly compare = compared;
 
+  constructor() {
+    // A link to the page while it is open (the menu's plain one) shows the period it names.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((query) => {
+      const period = fromQuery(query);
+      if (!samePeriod(period, this.period())) this.period.set(period);
+    });
+  }
+
   format(amount: number): string {
     return formatCurrency(amount);
   }
@@ -158,12 +166,15 @@ export class ReviewComponent {
     const review = this.value();
     return review ? stepReview(review.year, review.month, step, this.today, review.earliest) : null;
   }
+}
 
-  private fromQuery(): ReviewPeriod | undefined {
-    const query = this.route.snapshot.queryParamMap;
-    const year = Number(query.get('year'));
-    if (!Number.isInteger(year) || year < 2000) return undefined;
-    const month = Number(query.get('month'));
-    return { year, month: Number.isInteger(month) && month >= 1 && month <= 12 ? month : null };
-  }
+function fromQuery(query: ParamMap): ReviewPeriod | undefined {
+  const year = Number(query.get('year'));
+  if (!Number.isInteger(year) || year < 2000) return undefined;
+  const month = Number(query.get('month'));
+  return { year, month: Number.isInteger(month) && month >= 1 && month <= 12 ? month : null };
+}
+
+function samePeriod(a: ReviewPeriod | undefined, b: ReviewPeriod | undefined): boolean {
+  return a?.year === b?.year && a?.month === b?.month;
 }

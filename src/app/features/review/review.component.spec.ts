@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { ReviewComponent } from './review.component';
 import { TEST_REVIEW } from '../../testing/test-insights';
@@ -19,7 +20,7 @@ describe('ReviewComponent', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([{ path: 'review', component: ReviewComponent }]),
         provideLocationMocks(),
       ],
     });
@@ -87,5 +88,19 @@ describe('ReviewComponent', () => {
     expect(request.request.params.get('year')).toBe('2026');
     expect(request.request.params.has('month')).toBe(false);
     request.flush({ ...TEST_REVIEW, label: '2026', month: null });
+  });
+  it('goes back to the last complete month from the menu’s link, while open on another', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/review?year=2025&month=3', ReviewComponent);
+    TestBed.tick();
+    const first = http.expectOne((r) => r.url === '/api/Reports/review');
+    expect(first.request.params.get('month')).toBe('3');
+    first.flush({ ...TEST_REVIEW, label: 'March 2025', year: 2025, month: 3 });
+
+    await harness.navigateByUrl('/review');
+    TestBed.tick();
+    const request = http.expectOne((r) => r.url === '/api/Reports/review');
+    expect(request.request.params.keys()).toEqual([]);
+    request.flush(TEST_REVIEW);
   });
 });

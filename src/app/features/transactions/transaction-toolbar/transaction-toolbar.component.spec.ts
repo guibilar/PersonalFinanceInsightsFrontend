@@ -131,6 +131,48 @@ describe('TransactionToolbarComponent', () => {
     });
   });
 
+  it('removes a chip without the search being typed, which stays and applies once typing pauses', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 27));
+    try {
+      create({ page: 1, pageSize: 10, categoryId: TEST_CATEGORIES.rent.id });
+      const search = component.form.controls.description;
+      search.setValue('coff');
+
+      component.remove('categoryId');
+      expect(emitted.at(-1)?.description).toBeUndefined();
+      fixture.componentRef.setInput('filter', { page: 1, pageSize: 10 });
+      fixture.detectChanges();
+      expect(search.value).toBe('coff');
+
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+      expect(emitted.at(-1)).toEqual(
+        expect.objectContaining({ description: 'coff', categoryId: undefined }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears a search being typed with everything else', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 27));
+    try {
+      create({ page: 1, pageSize: 10, categoryId: TEST_CATEGORIES.rent.id });
+      component.form.controls.description.setValue('coff');
+
+      component.clearAll();
+      fixture.componentRef.setInput('filter', { page: 1, pageSize: 10 });
+      fixture.detectChanges();
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+
+      expect(component.form.controls.description.value).toBe('');
+      expect(emitted).toEqual([{}]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('fills the fields from the applied filter without emitting', () => {
     create({ page: 1, pageSize: 10, description: 'rent', startDate: '2026-01-05' });
 
@@ -193,6 +235,9 @@ describe('TransactionToolbarComponent', () => {
 
     component.form.controls.accountId.setValue('a1');
     expect(emitted.at(-1)).toEqual({ accountId: 'a1', flow: Flow.Income });
+    // The page applies it.
+    fixture.componentRef.setInput('filter', { page: 1, pageSize: 10, ...emitted.at(-1) });
+    fixture.detectChanges();
 
     component.remove('flow');
     expect(emitted.at(-1)).toEqual({ accountId: 'a1', flow: undefined });
