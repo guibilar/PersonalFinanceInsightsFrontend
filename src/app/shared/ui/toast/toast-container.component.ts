@@ -6,12 +6,13 @@ import {
   inject,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ToastService } from './toast.service';
 import { IconComponent } from '../icon/icon.component';
 
 @Component({
   selector: 'app-toast-container',
-  imports: [IconComponent],
+  imports: [IconComponent, RouterLink],
   template: `
     <div #stack class="toast-stack" popover="manual" aria-live="polite">
       @for (toast of toasts.toasts(); track toast.id) {
@@ -21,7 +22,18 @@ import { IconComponent } from '../icon/icon.component';
           [attr.role]="toast.kind === 'error' ? 'alert' : 'status'"
         >
           <app-icon [name]="toast.kind === 'error' ? 'alert-circle' : 'check-circle'" [size]="18" />
-          <span class="flex-grow-1">{{ toast.message }}</span>
+          <span class="flex-grow-1">
+            {{ toast.message }}
+            @if (toast.link; as link) {
+              <a
+                class="toast-link"
+                [routerLink]="link.route"
+                [queryParams]="link.queryParams"
+                (click)="toasts.dismiss(toast.id)"
+                >{{ link.label }}</a
+              >
+            }
+          </span>
           <button
             type="button"
             class="btn-dismiss"
@@ -72,6 +84,11 @@ import { IconComponent } from '../icon/icon.component';
           color: var(--bs-danger);
         }
       }
+    }
+    .toast-link {
+      display: inline-block;
+      margin-left: 0.25rem;
+      font-weight: 600;
     }
     .btn-dismiss {
       display: inline-flex;

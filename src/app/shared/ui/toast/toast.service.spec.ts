@@ -30,6 +30,18 @@ describe('ToastService', () => {
     expect(service.toasts()).toEqual([]);
   });
 
+  it('keeps a success toast with a link for longer', () => {
+    const link = { label: 'View', route: '/money/transactions', queryParams: { accountId: 'a1' } };
+    service.success('Added', link);
+    expect(service.toasts()[0].link).toEqual(link);
+
+    vi.advanceTimersByTime(ToastService.DURATION_MS);
+    expect(service.toasts().length).toBe(1);
+
+    vi.advanceTimersByTime(ToastService.LINK_DURATION_MS - ToastService.DURATION_MS);
+    expect(service.toasts()).toEqual([]);
+  });
+
   it('shows at most four at a time, newest last', () => {
     ['a', 'b', 'c', 'd', 'e'].forEach((m) => service.error(m));
 

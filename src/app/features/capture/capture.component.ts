@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { StatementImportLauncher } from '../../core/data/statement-import-launcher.service';
+import { TransactionAddLauncher } from '../../core/data/transaction-add-launcher.service';
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 
 interface CaptureAction {
@@ -16,8 +17,8 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
 ];
 
 /**
- * Capture: one place to add something to any module. For now it imports bank statements into Money, and shows the
- * other actions as coming soon.
+ * Capture: one place to add something to any module. For now it adds a transaction or imports bank statements into
+ * Money, and shows the other actions as coming soon.
  */
 @Component({
   selector: 'app-capture',
@@ -29,6 +30,19 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
     </div>
 
     <div class="row row-cols-1 row-cols-sm-2 g-3">
+      <div class="col">
+        <button type="button" class="card h-100 w-100 capture-action" (click)="adder.open()">
+          <span class="card-body d-flex gap-3 align-items-center text-start">
+            <span class="action-icon"><app-icon name="plus" /></span>
+            <span class="min-w-0">
+              <span class="d-block fw-semibold">Add transaction</span>
+              <span class="d-block small text-body-secondary"
+                >A purchase or a payment, by hand</span
+              >
+            </span>
+          </span>
+        </button>
+      </div>
       <div class="col">
         <button type="button" class="card h-100 w-100 capture-action" (click)="importer.open()">
           <span class="card-body d-flex gap-3 align-items-center text-start">
@@ -96,5 +110,6 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
 })
 export class CaptureComponent {
   protected readonly importer = inject(StatementImportLauncher);
+  protected readonly adder = inject(TransactionAddLauncher);
   protected readonly comingActions = COMING_CAPTURE_ACTIONS;
 }

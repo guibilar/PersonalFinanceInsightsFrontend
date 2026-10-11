@@ -8,6 +8,11 @@ import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DataChangesService } from '../../data/data-changes.service';
 import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
+import { TransactionAddLauncher } from '../../data/transaction-add-launcher.service';
+import { AccountType } from '../../models/enums/account-type';
+import { Flow } from '../../models/enums/flow';
+import { TransactionType } from '../../models/enums/transaction-type';
+import { TEST_CATEGORIES } from '../../../testing/test-categories';
 import { PRIVACY_STORAGE_KEY, amountsHidden } from '../../../shared/utils/privacy';
 
 describe('ShellComponent', () => {
@@ -104,6 +109,58 @@ describe('ShellComponent', () => {
     expect(TestBed.inject(ToastService).toasts()[0].message).toBe(
       'Imported 4 new transactions from 2 files (1 already imported)',
     );
+  });
+
+  it('adds a transaction over any page, and links to it', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const changes = TestBed.inject(DataChangesService);
+    const before = changes.version();
+    const adder = TestBed.inject(TransactionAddLauncher);
+
+    // Capture opens it.
+    adder.open();
+    TestBed.tick();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/Accounts').flush([]);
+    http.expectOne('/api/Categories').flush([]);
+    await fixture.whenStable();
+    expect(root.querySelector('app-transaction-add-panel')).not.toBeNull();
+
+    fixture.componentInstance.onTransactionAdded({
+      id: 't9',
+      date: '2026-10-09',
+      amount: 24.5,
+      description: 'Farmers market',
+      category: TEST_CATEGORIES.other,
+      categoryLocked: false,
+      transactionType: TransactionType.Debit,
+      accountId: 'a1',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flow: Flow.Spending,
+      flowLocked: false,
+      budgetId: '',
+    });
+    await fixture.whenStable();
+
+    expect(root.querySelector('app-transaction-add-panel')).toBeNull();
+    expect(adder.isOpen()).toBe(false);
+    expect(adder.lastAdded()).toEqual({ date: '2026-10-09', accountId: 'a1' });
+    expect(changes.version()).toBe(before + 1);
+    const toast = TestBed.inject(ToastService).toasts()[0];
+    expect(toast.message).toBe('Added “Farmers market” to Visa');
+    expect(toast.link).toEqual({
+      label: 'View',
+      route: '/money/transactions',
+      queryParams: {
+        description: 'Farmers market',
+        accountId: 'a1',
+        startDate: '2026-10-09',
+        endDate: '2026-10-09',
+      },
+    });
   });
 
   it('hides and shows the amounts from the sidebar', async () => {
