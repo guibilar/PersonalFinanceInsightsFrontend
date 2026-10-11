@@ -3,7 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { DashboardComponent } from './dashboard.component';
+import { FinanceTilesComponent } from './finance-tiles/finance-tiles.component';
 import { CategorizedReportOutputDto } from '../../core/models/outputs/categorized-report-output-dto';
 import { CashFlowReportOutputDto } from '../../core/models/outputs/cash-flow-report-output-dto';
 import { categoryRefs } from '../../testing/test-categories';
@@ -152,7 +154,7 @@ describe('DashboardComponent', () => {
       recurring?: RecurringReportDto;
       year?: CategorizedReportOutputDto;
     } = {},
-  ): Promise<{ dashboard: DashboardComponent; root: HTMLElement }> {
+  ): Promise<{ dashboard: DashboardComponent; tiles: FinanceTilesComponent; root: HTMLElement }> {
     const fixture = TestBed.createComponent(DashboardComponent);
     TestBed.tick();
     // The year report would say August cost far more in total; the hint must not use it.
@@ -173,20 +175,26 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Accounts').flush(extra.accounts ?? []);
     http.expectOne('/api/Reports/recurring').flush(extra.recurring ?? EMPTY_RECURRING);
     await fixture.whenStable();
-    return { dashboard: fixture.componentInstance, root: fixture.nativeElement as HTMLElement };
+    return {
+      dashboard: fixture.componentInstance,
+      // The headline tiles, shared with Today.
+      tiles: fixture.debugElement.query(By.directive(FinanceTilesComponent))
+        .componentInstance as FinanceTilesComponent,
+      root: fixture.nativeElement as HTMLElement,
+    };
   }
 
   it('compares this month so far with last month up to the same day', async () => {
-    const { dashboard } = await load(currentMonth(300, 250));
+    const { tiles } = await load(currentMonth(300, 250));
 
-    expect(dashboard.spentHint()).toEqual({ text: '20% more than Aug 1–5', tone: 'bad', up: true });
+    expect(tiles.spentHint()).toEqual({ text: '20% more than Aug 1–5', tone: 'bad', up: true });
   });
 
   it('puts this month against a usual one, the average of the finished months', async () => {
-    const { dashboard } = await load(currentMonth(300, 250));
+    const { tiles } = await load(currentMonth(300, 250));
 
     // September 5th: a usual $2,000 month has cost 5/30 of it, $333.33, by now.
-    expect(dashboard.usualHint()).toEqual({
+    expect(tiles.usualHint()).toEqual({
       text: '$33.33 under a usual month by now',
       tone: 'good',
       up: false,
@@ -195,7 +203,7 @@ describe('DashboardComponent', () => {
 
   it('puts this month against no usual one while it is the only one of the year', async () => {
     // The API averages the running month itself then: this month against itself.
-    const { dashboard } = await load(currentMonth(300, 250), undefined, undefined, undefined, {
+    const { tiles } = await load(currentMonth(300, 250), undefined, undefined, undefined, {
       year: {
         categories: categoryRefs('Dining'),
         averageMonthlyTotal: 300,
@@ -203,11 +211,11 @@ describe('DashboardComponent', () => {
       },
     });
 
-    expect(dashboard.usualHint()).toBeNull();
+    expect(tiles.usualHint()).toBeNull();
   });
 
   it('trusts the API on whether its average is of the running month', async () => {
-    const { dashboard } = await load(currentMonth(300, 250), undefined, undefined, undefined, {
+    const { tiles } = await load(currentMonth(300, 250), undefined, undefined, undefined, {
       year: {
         categories: categoryRefs('Dining'),
         averageMonthlyTotal: 2000,
@@ -216,11 +224,11 @@ describe('DashboardComponent', () => {
       },
     });
 
-    expect(dashboard.usualHint()).toBeNull();
+    expect(tiles.usualHint()).toBeNull();
   });
 
   it('shows no comparison without last month’s figure', async () => {
-    expect((await load(currentMonth(300))).dashboard.spentHint()).toBeNull();
+    expect((await load(currentMonth(300))).tiles.spentHint()).toBeNull();
   });
 
   it('shows income, spending and what was left over per month with their averages', async () => {
@@ -382,7 +390,7 @@ describe('DashboardComponent', () => {
     expect(attention.textContent!.replace(/\s+/g, ' ')).toContain(
       '4 transactions are in Other because no rule names their merchants',
     );
-    expect(attention.querySelector('a')!.getAttribute('href')).toBe('/rules#unsorted');
+    expect(attention.querySelector('a')!.getAttribute('href')).toBe('/money/rules#unsorted');
   });
 
   it('says nothing about Other when every transaction is sorted', async () => {
@@ -421,7 +429,7 @@ describe('DashboardComponent', () => {
     );
     expect(tiles[1]).toBe('Left over this month $1,400.00 Income less spending so far');
     expect(tiles[2]).toContain('Net worth $15,000.00 +$500.00 since last month');
-    expect(root.querySelector('a.stat-link')!.getAttribute('href')).toBe('/net-worth');
+    expect(root.querySelector('a.stat-link')!.getAttribute('href')).toBe('/money/net-worth');
   });
 
   it('lists what needs attention: budgets over, statements not imported, price changes', async () => {

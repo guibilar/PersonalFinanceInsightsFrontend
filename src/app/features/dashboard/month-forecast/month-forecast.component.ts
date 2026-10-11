@@ -86,7 +86,7 @@ const UPCOMING_SHOWN = 4;
             }
           </ul>
           @if (f.upcoming.length > upcomingShown().length) {
-            <a routerLink="/subscriptions" class="small text-decoration-none"
+            <a routerLink="/money/subscriptions" class="small text-decoration-none"
               >and {{ f.upcoming.length - upcomingShown().length }} more</a
             >
           }

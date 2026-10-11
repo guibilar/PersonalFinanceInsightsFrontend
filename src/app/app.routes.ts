@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, signedOutGuard } from './core/auth/auth.guards';
+import { LEGACY_FINANCE_REDIRECTS, MONEY_ROOT } from './features/money/money-paths';
 
 export const routes: Routes = [
   {
@@ -9,81 +10,68 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
-    // Everything else needs a signed-in user and lives inside the sidebar layout.
+    // Everything else needs a signed-in user and lives inside the shell (main menu and modules).
     path: '',
     loadComponent: () =>
       import('./core/layout/shell/shell.component').then((m) => m.ShellComponent),
     canActivate: [authGuard],
     children: [
+      { path: '', pathMatch: 'full', redirectTo: 'today' },
       {
-        path: '',
-        title: 'Dashboard · Personal Finances',
+        path: 'today',
+        title: 'Today · Personal Finances',
         loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          import('./features/today/today.component').then((m) => m.TodayComponent),
       },
       {
-        path: 'transactions',
-        title: 'Transactions · Personal Finances',
+        path: 'timeline',
+        title: 'Timeline · Personal Finances',
         loadComponent: () =>
-          import('./features/transactions/transaction-list/transaction-list.component').then(
-            (m) => m.TransactionListComponent,
+          import('./features/placeholder/placeholder.component').then(
+            (m) => m.PlaceholderComponent,
           ),
+        data: {
+          heading: 'Timeline',
+          summary: 'What happened, from every module, in order',
+          icon: 'history',
+          emptyTitle: 'All quiet so far',
+          emptyText: 'The timeline fills in as the modules record what happens.',
+        },
       },
       {
-        path: 'budgets',
-        title: 'Budgets · Personal Finances',
+        path: 'capture',
+        title: 'Capture · Personal Finances',
         loadComponent: () =>
-          import('./features/budgets/budget-list.component').then((m) => m.BudgetListComponent),
+          import('./features/capture/capture.component').then((m) => m.CaptureComponent),
       },
       {
-        path: 'subscriptions',
-        title: 'Subscriptions · Personal Finances',
+        path: 'modules',
+        title: 'Modules · Personal Finances',
         loadComponent: () =>
-          import('./features/recurring/recurring-list.component').then(
-            (m) => m.RecurringListComponent,
+          import('./features/modules/modules.component').then((m) => m.ModulesComponent),
+      },
+      {
+        path: 'search',
+        title: 'Search · Personal Finances',
+        loadComponent: () =>
+          import('./features/placeholder/placeholder.component').then(
+            (m) => m.PlaceholderComponent,
           ),
+        data: {
+          heading: 'Search',
+          summary: 'One search across every module',
+          icon: 'search',
+          emptyTitle: 'Nothing to search yet',
+          emptyText: 'Search comes later. Transactions has its own search under Money.',
+        },
       },
       {
-        path: 'net-worth',
-        title: 'Net worth · Personal Finances',
-        loadComponent: () =>
-          import('./features/net-worth/net-worth.component').then((m) => m.NetWorthComponent),
+        // The Money module: the finance pages, with their sub-menu.
+        path: MONEY_ROOT.slice(1),
+        loadChildren: () => import('./features/money/money.routes').then((m) => m.MONEY_ROUTES),
       },
-      {
-        path: 'review',
-        title: 'Review · Personal Finances',
-        loadComponent: () =>
-          import('./features/review/review.component').then((m) => m.ReviewComponent),
-      },
-      {
-        path: 'rules',
-        title: 'Rules · Personal Finances',
-        loadComponent: () =>
-          import('./features/rules/rule-list.component').then((m) => m.RuleListComponent),
-      },
-      {
-        path: 'categories',
-        title: 'Categories · Personal Finances',
-        loadComponent: () =>
-          import('./features/categories/category-list.component').then(
-            (m) => m.CategoryListComponent,
-          ),
-      },
-      {
-        path: 'tags',
-        title: 'Tags · Personal Finances',
-        loadComponent: () =>
-          import('./features/tags/tag-list.component').then((m) => m.TagListComponent),
-      },
-      {
-        // The bank accounts statements are imported into; features/account is the user's own account.
-        path: 'accounts',
-        title: 'Accounts · Personal Finances',
-        loadComponent: () =>
-          import('./features/bank-accounts/bank-account-list.component').then(
-            (m) => m.BankAccountListComponent,
-          ),
-      },
+      // The finance pages' old addresses, before Money was a module.
+      ...LEGACY_FINANCE_REDIRECTS,
     ],
   },
   { path: '**', redirectTo: '' },

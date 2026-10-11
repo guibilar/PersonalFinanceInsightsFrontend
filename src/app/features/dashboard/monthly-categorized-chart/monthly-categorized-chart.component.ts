@@ -26,7 +26,7 @@ export class MonthlyCategorizedChartComponent {
       chartTheme(this.theme.theme()),
       new Date(),
       (category, month) =>
-        void this.router.navigate(['/transactions'], {
+        void this.router.navigate(['/money/transactions'], {
           queryParams: categoryLink(category.id, month),
         }),
     ),

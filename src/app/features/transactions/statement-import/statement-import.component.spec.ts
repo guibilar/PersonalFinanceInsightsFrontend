@@ -110,7 +110,7 @@ describe('StatementImportComponent', () => {
 
     expect(root().querySelector('#import-account')).toBeNull();
     expect(root().textContent).toContain('You have no accounts yet.');
-    expect(root().querySelector('a')!.getAttribute('href')).toBe('/accounts');
+    expect(root().querySelector('a')!.getAttribute('href')).toBe('/money/accounts');
   });
 
   it('needs an account and a file before importing', async () => {

@@ -56,7 +56,7 @@ describe('TagListComponent', () => {
 
     expect(rows()).toEqual(['Tax deductible 1 transaction', 'Vacation 2026 3 transactions']);
     const link = root().querySelector<HTMLAnchorElement>('.tag-row a')!;
-    expect(link.getAttribute('href')).toBe('/transactions?tagId=g-tax');
+    expect(link.getAttribute('href')).toBe('/money/transactions?tagId=g-tax');
   });
 
   it('says how to add one when there are none', async () => {

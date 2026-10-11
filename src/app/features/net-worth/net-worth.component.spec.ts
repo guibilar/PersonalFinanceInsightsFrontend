@@ -156,6 +156,6 @@ describe('NetWorthComponent', () => {
     });
 
     expect(root().textContent).toContain('No balances entered yet.');
-    expect(root().querySelector('a[href="/accounts"]')).not.toBeNull();
+    expect(root().querySelector('a[href="/money/accounts"]')).not.toBeNull();
   });
 });

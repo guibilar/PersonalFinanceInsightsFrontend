@@ -18,7 +18,7 @@ import { MoneyPipe } from '../../../shared/pipes/money.pipe';
           <div class="d-flex justify-content-between small">
             <a
               class="category-link"
-              routerLink="/transactions"
+              routerLink="/money/transactions"
               [queryParams]="link(share.category)"
               [title]="'See ' + share.category + ' this month'"
               ><span class="category-dot" [style.background-color]="color(share.category)"></span

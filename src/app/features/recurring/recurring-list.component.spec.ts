@@ -65,7 +65,7 @@ describe('RecurringListComponent', () => {
     const root = await load();
 
     const link = root.querySelector<HTMLAnchorElement>('li a')!;
-    expect(link.getAttribute('href')).toBe('/transactions?description=LANDLORD');
+    expect(link.getAttribute('href')).toBe('/money/transactions?description=LANDLORD');
   });
 
   it('explains when none were found', async () => {

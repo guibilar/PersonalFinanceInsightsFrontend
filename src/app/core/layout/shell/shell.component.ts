@@ -10,7 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { ThemeService } from '../../theme/theme.service';
-import { IconComponent, IconName } from '../../../shared/ui/icon/icon.component';
+import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { BottomBarComponent } from '../bottom-bar/bottom-bar.component';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { AuthService } from '../../auth/auth.service';
@@ -22,25 +23,17 @@ import {
   describeImport,
 } from '../../../features/transactions/statement-import/statement-import.component';
 import { DataChangesService } from '../../data/data-changes.service';
+import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
+import { MAIN_MENU, activeModules } from '../../modules/module-registry';
 import { amountsHidden, toggleAmountsHidden } from '../../../shared/utils/privacy';
 
 const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
 
-interface NavLink {
-  path: string;
-  label: string;
-  icon: IconName;
-  exact: boolean;
-}
-
-interface NavGroup {
-  label: string;
-  links: NavLink[];
-  /** Setup pages: visited now and then, so they sit lower and quieter. */
-  quiet?: boolean;
-}
-
-/** Sidebar layout: collapsible to icons on desktop, a slide-out menu on small screens. */
+/**
+ * The app frame. The main menu (Today, Timeline, Capture, Modules, Search) and the active modules are in a sidebar,
+ * collapsible to icons, on wide screens. Small screens have a bottom bar with the main menu, and a slide-out sidebar
+ * for the modules and the account. A module brings its own sub-menu (Money: the finance pages).
+ */
 @Component({
   selector: 'app-shell',
   imports: [
@@ -48,6 +41,7 @@ interface NavGroup {
     RouterLink,
     RouterLinkActive,
     IconComponent,
+    BottomBarComponent,
     ModalComponent,
     ChangePasswordFormComponent,
     ConfirmDialogComponent,
@@ -64,40 +58,15 @@ export class ShellComponent {
   protected readonly toggleAmountsHidden = toggleAmountsHidden;
   private readonly toasts = inject(ToastService);
 
-  readonly groups: NavGroup[] = [
-    {
-      label: 'Overview',
-      links: [
-        { path: '/', label: 'Dashboard', icon: 'dashboard', exact: true },
-        { path: '/net-worth', label: 'Net worth', icon: 'trending-up', exact: false },
-        { path: '/review', label: 'Review', icon: 'calendar', exact: false },
-      ],
-    },
-    {
-      label: 'Spending',
-      links: [
-        { path: '/transactions', label: 'Transactions', icon: 'transactions', exact: false },
-        { path: '/budgets', label: 'Budgets', icon: 'budgets', exact: false },
-        { path: '/subscriptions', label: 'Subscriptions', icon: 'refresh', exact: false },
-      ],
-    },
-    {
-      label: 'Setup',
-      quiet: true,
-      links: [
-        { path: '/accounts', label: 'Accounts', icon: 'bank', exact: false },
-        { path: '/categories', label: 'Categories', icon: 'tag', exact: false },
-        { path: '/tags', label: 'Tags', icon: 'hash', exact: false },
-        { path: '/rules', label: 'Rules', icon: 'rules', exact: false },
-      ],
-    },
-  ];
+  readonly mainMenu = MAIN_MENU;
+  readonly modules = activeModules();
 
   readonly collapsed = signal(readFlag(COLLAPSED_STORAGE_KEY));
   readonly mobileOpen = signal(false);
   readonly changingPassword = signal(false);
   readonly confirmingSignOutOthers = signal(false);
-  readonly importing = signal(false);
+  /** The import panel opens from Money and Capture; the shell shows it over any page. */
+  protected readonly importer = inject(StatementImportLauncher);
   protected readonly dataChanges = inject(DataChangesService);
 
   constructor() {
@@ -112,7 +81,7 @@ export class ShellComponent {
   }
 
   onImported(summary: ImportSummary): void {
-    this.importing.set(false);
+    this.importer.close();
     this.dataChanges.changed();
     this.toasts.success(describeImport(summary));
   }

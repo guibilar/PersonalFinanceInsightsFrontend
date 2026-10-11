@@ -21,6 +21,7 @@ if echo "$page" | grep -qi '^strict-transport-security'; then fail "HSTS sent ov
 
 # Client-side routes fall back to the app; the theme bootstrap is served and revalidated.
 curl -sf "$BASE/transactions" | grep -q '<app-root>' || fail "SPA fallback for /transactions"
+curl -sf "$BASE/money/transactions" | grep -q '<app-root>' || fail "SPA fallback for /money/transactions"
 header "$BASE/theme.js" | grep -qi '^cache-control: no-cache' || fail "theme.js must be revalidated"
 
 # Statements up to 5 MB must reach the API instead of being rejected by nginx (413).

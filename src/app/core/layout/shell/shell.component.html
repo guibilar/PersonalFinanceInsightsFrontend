@@ -11,7 +11,7 @@
   >
     <app-icon name="menu" />
   </button>
-  <a routerLink="/" class="brand">
+  <a routerLink="/today" class="brand">
     <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
     Personal Finances
   </a>
@@ -38,7 +38,7 @@
   aria-label="Main"
 >
   <div class="sidebar-header">
-    <a routerLink="/" class="brand" [attr.title]="collapsed() ? 'Personal Finances' : null">
+    <a routerLink="/today" class="brand" [attr.title]="collapsed() ? 'Personal Finances' : null">
       <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
       <span class="label">Personal Finances</span>
     </a>
@@ -52,40 +52,43 @@
     </button>
   </div>
 
-  <button
-    type="button"
-    class="btn btn-primary import-button"
-    (click)="importing.set(true)"
-    [attr.title]="collapsed() ? 'Import statements' : null"
-    [attr.aria-label]="collapsed() ? 'Import statements' : null"
-  >
-    <app-icon name="upload" [size]="18" />
-    <span class="label">Import statements</span>
-  </button>
-
   <div class="nav-groups">
-    @for (group of groups; track group.label) {
-      <div class="nav-group" [class.quiet]="group.quiet">
-        <p class="nav-group-label label" [id]="'nav-' + group.label">{{ group.label }}</p>
-        <ul class="nav-list" [attr.aria-labelledby]="'nav-' + group.label">
-          @for (link of group.links; track link.path) {
-            <li>
-              <a
-                class="nav-item"
-                [routerLink]="link.path"
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: link.exact }"
-                ariaCurrentWhenActive="page"
-                [attr.title]="collapsed() ? link.label : null"
-              >
-                <app-icon [name]="link.icon" />
-                <span class="label">{{ link.label }}</span>
-              </a>
-            </li>
-          }
-        </ul>
-      </div>
-    }
+    <ul class="nav-list main-menu" aria-label="Main menu">
+      @for (item of mainMenu; track item.route) {
+        <li>
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            [attr.title]="collapsed() ? item.label : null"
+          >
+            <app-icon [name]="item.icon" />
+            <span class="label">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="nav-group">
+      <p class="nav-group-label label" id="nav-modules">Modules</p>
+      <ul class="nav-list" aria-labelledby="nav-modules">
+        @for (module of modules; track module.id) {
+          <li>
+            <a
+              class="nav-item"
+              [routerLink]="module.route"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              [attr.title]="collapsed() ? module.name : null"
+            >
+              <app-icon [name]="module.icon" />
+              <span class="label">{{ module.name }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </div>
   </div>
 
   <div class="sidebar-footer">
@@ -167,12 +170,15 @@
   </div>
 </main>
 
-@if (importing()) {
-  <app-modal title="Import statements" (closed)="importing.set(false)">
+<!-- Small screens: the main menu as a bottom bar, as on Android. -->
+<app-bottom-bar />
+
+@if (importer.isOpen()) {
+  <app-modal title="Import statements" (closed)="importer.close()">
     <app-statement-import
       (imported)="onImported($event)"
       (progressed)="dataChanges.changed()"
-      (cancelled)="importing.set(false)"
+      (cancelled)="importer.close()"
     />
   </app-modal>
 }

@@ -7,6 +7,7 @@ import { ShellComponent } from './shell.component';
 import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DataChangesService } from '../../data/data-changes.service';
+import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
 import { PRIVACY_STORAGE_KEY, amountsHidden } from '../../../shared/utils/privacy';
 
 describe('ShellComponent', () => {
@@ -18,6 +19,8 @@ describe('ShellComponent', () => {
         provideZonelessChangeDetection(),
         provideRouter([
           { path: 'budgets', children: [] },
+          { path: 'today', children: [] },
+          { path: 'money', children: [] },
           { path: 'login', children: [] },
         ]),
         provideHttpClient(),
@@ -31,30 +34,61 @@ describe('ShellComponent', () => {
     localStorage.removeItem(PRIVACY_STORAGE_KEY);
   });
 
-  it('renders a link per page, in groups', async () => {
+  it('renders the main menu, then the active modules', async () => {
     const fixture = TestBed.createComponent(ShellComponent);
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
+    const labels = (selector: string) =>
+      Array.from(root.querySelectorAll(selector)).map((el) => el.textContent!.trim());
 
-    const groups = Array.from(root.querySelectorAll('.nav-group')).map((group) => [
-      group.querySelector('.nav-group-label')!.textContent!.trim(),
-      Array.from(group.querySelectorAll('.nav-list .label')).map((el) => el.textContent!.trim()),
+    expect(labels('.sidebar .main-menu .label')).toEqual([
+      'Today',
+      'Timeline',
+      'Capture',
+      'Modules',
+      'Search',
     ]);
-    expect(groups).toEqual([
-      ['Overview', ['Dashboard', 'Net worth', 'Review']],
-      ['Spending', ['Transactions', 'Budgets', 'Subscriptions']],
-      ['Setup', ['Accounts', 'Categories', 'Tags', 'Rules']],
+    expect(labels('.sidebar .nav-group .nav-group-label')).toEqual(['Modules']);
+    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual(['Money']);
+    expect(root.querySelector('.sidebar .nav-group .nav-item')!.getAttribute('href')).toBe(
+      '/money',
+    );
+  });
+
+  it('has the main menu as a bottom bar for small screens, with Capture as its centre action', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    await fixture.whenStable();
+    const items = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>(
+        'app-bottom-bar .bottom-item',
+      ),
+    );
+
+    expect(items.map((item) => item.getAttribute('href'))).toEqual([
+      '/today',
+      '/timeline',
+      '/capture',
+      '/modules',
+      '/search',
+    ]);
+    expect(items.map((item) => item.classList.contains('primary'))).toEqual([
+      false,
+      false,
+      true,
+      false,
+      false,
     ]);
   });
 
-  it('imports statements from any page, and says so to the page showing them', async () => {
+  it('imports statements over any page, and says so to the page showing them', async () => {
     const fixture = TestBed.createComponent(ShellComponent);
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
     const changes = TestBed.inject(DataChangesService);
     const before = changes.version();
 
-    root.querySelector<HTMLButtonElement>('.import-button')!.click();
+    // Money and Capture open it.
+    TestBed.inject(StatementImportLauncher).open();
     TestBed.tick();
     // The form's accounts: answered before waiting, or the page never settles.
     TestBed.inject(HttpTestingController).expectOne('/api/Accounts').flush([]);
@@ -65,6 +99,7 @@ describe('ShellComponent', () => {
     await fixture.whenStable();
 
     expect(root.querySelector('app-statement-import')).toBeNull();
+    expect(TestBed.inject(StatementImportLauncher).isOpen()).toBe(false);
     expect(changes.version()).toBe(before + 1);
     expect(TestBed.inject(ToastService).toasts()[0].message).toBe(
       'Imported 4 new transactions from 2 files (1 already imported)',

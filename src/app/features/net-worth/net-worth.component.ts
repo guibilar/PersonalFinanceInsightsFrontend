@@ -119,7 +119,7 @@ export function netWorthChart(
               Enter what each account holds today (what a card owes) on Accounts. From there, the
               transactions you import keep it up to date; enter an investment's value now and then.
             </p>
-            <a routerLink="/accounts" class="btn btn-primary btn-sm">Go to Accounts</a>
+            <a routerLink="/money/accounts" class="btn btn-primary btn-sm">Go to Accounts</a>
           </div>
         </div>
       } @else {
@@ -206,7 +206,7 @@ export function netWorthChart(
                     </div>
                   </div>
                 } @else {
-                  <a routerLink="/accounts" class="small text-nowrap">Add its balance</a>
+                  <a routerLink="/money/accounts" class="small text-nowrap">Add its balance</a>
                 }
               </li>
             }

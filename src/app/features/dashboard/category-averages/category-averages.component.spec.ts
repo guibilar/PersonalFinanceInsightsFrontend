@@ -57,6 +57,6 @@ describe('CategoryAveragesComponent', () => {
     const link = root().querySelector<HTMLAnchorElement>('li a.category-link')!;
 
     expect(link.textContent!.trim()).toBe('Groceries');
-    expect(link.getAttribute('href')).toBe('/transactions?categoryId=c-groceries&overTime=1');
+    expect(link.getAttribute('href')).toBe('/money/transactions?categoryId=c-groceries&overTime=1');
   });
 });
