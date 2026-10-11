@@ -244,6 +244,16 @@ nginx serves the app and proxies `/api/` to `API_UPSTREAM` (default `http://pers
 the API container on the `finance` network). It passes on Tailscale's `X-Forwarded-Proto: https`, so the
 API marks the session cookie `Secure`, and sends HSTS on HTTPS requests.
 
+`API_UPSTREAM` can also point to the Hestia host, [HestiaBackend](https://github.com/guibilar/HestiaBackend)
+(`hestia-api`). The host proxies the finance paths to the finance API unchanged, and serves the Hestia modules.
+The app does not change. To use it:
+
+1. Start the finance backend, then HestiaBackend (`docker compose up -d` in each). Both join the `finance` network.
+2. Check the host: `curl http://localhost:5097/health/ready` answers `Healthy`.
+3. Here, add `API_UPSTREAM=http://hestia-api:8080` to `.env`, then `docker compose up -d`.
+
+To go back, remove the line from `.env` and run `docker compose up -d` again. nginx then calls the finance API directly.
+
 nginx also:
 
 - accepts uploads up to 6 MB on `/api/` (a 5 MB statement plus the form envelope; nginx's default is 1 MB);
