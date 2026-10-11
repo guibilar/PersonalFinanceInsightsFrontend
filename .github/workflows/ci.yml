@@ -26,7 +26,13 @@ jobs:
       - run: npm run format:check
       - name: Browser for the unit tests
         run: npx playwright install --with-deps --only-shell chromium
-      - run: npm run test:ci
+      - name: Unit tests
+        id: tests
+        run: npm run test:ci
+      # Task sessions cannot read the CI log. They can read annotations: the totals and each failed test.
+      - name: Test results as annotations
+        if: always() && steps.tests.outcome != 'skipped'
+        run: python3 scripts/test-annotations.py test-results/junit.xml 'Unit tests'
       - name: Screenshots of failed tests
         if: failure()
         uses: actions/upload-artifact@v7
