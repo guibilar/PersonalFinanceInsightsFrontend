@@ -1,0 +1,102 @@
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+  <div class="col">
+    @if (spent() !== null) {
+      <!-- Against a usual month; against last month so far until a month is finished. -->
+      @let hint = usualHint() ?? spentHint();
+      <app-stat-card
+        label="Spent this month"
+        icon="calendar"
+        [value]="format(spent()!)"
+        [hint]="hint?.text"
+        [hintIcon]="hint ? (hint.up ? 'trending-up' : 'trending-down') : null"
+        [tone]="hint?.tone ?? 'neutral'"
+      />
+    } @else if (monthReport().error()) {
+      <app-stat-card
+        label="Spent this month"
+        icon="calendar"
+        value="—"
+        hint="Could not load this"
+      />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+  <div class="col">
+    @if (leftOver() !== undefined) {
+      <app-stat-card
+        label="Left over this month"
+        icon="wallet"
+        [value]="leftOver() === null ? '—' : format(leftOver()!.net)"
+        [hint]="leftOverHint().text"
+        [tone]="leftOverHint().tone"
+      />
+    } @else if (cashFlow().error()) {
+      <app-stat-card
+        label="Left over this month"
+        icon="wallet"
+        value="—"
+        hint="Could not load this"
+      />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+  <div class="col">
+    @if (netWorthValue(); as report) {
+      <a [routerLink]="netWorthLink" class="stat-link">
+        <app-stat-card
+          label="Net worth"
+          icon="trending-up"
+          [value]="format(report.netWorth)"
+          [hint]="netWorthHint()?.text"
+          [hintIcon]="
+            netWorthHint() && netWorthHint()!.tone !== 'neutral'
+              ? netWorthHint()!.up
+                ? 'trending-up'
+                : 'trending-down'
+              : null
+          "
+          [tone]="netWorthHint()?.tone ?? 'neutral'"
+        />
+      </a>
+    } @else if (netWorth().error()) {
+      <app-stat-card label="Net worth" icon="trending-up" value="—" hint="Could not load this" />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+  <div class="col">
+    @if (budgetSummary(); as summary) {
+      <a [routerLink]="budgetsLink" class="stat-link">
+        <app-stat-card
+          label="Budgets"
+          icon="budgets"
+          [value]="
+            summary.total === 0 ? 'None yet' : summary.over + ' of ' + summary.total + ' over'
+          "
+          [hint]="
+            summary.total === 0
+              ? 'Create one to track a limit'
+              : summary.over === 0
+                ? 'All within limits'
+                : 'Review your budgets'
+          "
+          [tone]="summary.total === 0 ? 'neutral' : summary.over === 0 ? 'good' : 'bad'"
+        />
+      </a>
+    } @else if (budgets().error()) {
+      <app-stat-card label="Budgets" icon="budgets" value="—" hint="Could not load this" />
+    } @else {
+      <div class="card h-100">
+        <div class="card-body"><app-skeleton [lines]="3" /></div>
+      </div>
+    }
+  </div>
+</div>

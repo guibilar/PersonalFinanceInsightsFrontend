@@ -84,7 +84,7 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
     items.push({
       kind: 'budget',
       text: `${budget.name} is over its limit (${Math.round(budget.percentageUsed)}% used)`,
-      link: '/budgets',
+      link: '/money/budgets',
     });
   }
   const last = lastImportDay(inputs.accounts);
@@ -94,7 +94,7 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
       items.push({
         kind: 'statement',
         text: `No statements imported in ${days} days`,
-        link: '/transactions',
+        link: '/money/transactions',
       });
     }
   }
@@ -102,7 +102,7 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
     items.push({
       kind: 'statement',
       text: `${account.name}: statements reach ${formatDay(statementsReach(account)!)}. Import last month's`,
-      link: '/transactions',
+      link: '/money/transactions',
     });
   }
   for (const payment of inputs.recurring?.payments ?? []) {
@@ -113,14 +113,14 @@ export function attentionItems(inputs: AttentionInputs, today: Date): AttentionI
     items.push({
       kind: 'price',
       text: `${payment.name} ${verb} from ${formatCurrency(change.from)} to ${formatCurrency(change.to)}`,
-      link: '/subscriptions',
+      link: '/money/subscriptions',
     });
   }
   if (inputs.unsorted > 0) {
     items.push({
       kind: 'unsorted',
       text: `${inputs.unsorted} ${inputs.unsorted === 1 ? 'transaction is' : 'transactions are'} in Other because no rule names ${inputs.unsorted === 1 ? 'its merchant' : 'their merchants'}`,
-      link: '/rules',
+      link: '/money/rules',
       fragment: 'unsorted',
     });
   }

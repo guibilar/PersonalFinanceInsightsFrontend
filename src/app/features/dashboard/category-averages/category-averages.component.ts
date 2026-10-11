@@ -28,7 +28,7 @@ import { MoneyPipe } from '../../../shared/pipes/money.pipe';
           <div class="d-flex justify-content-between align-items-baseline gap-2 small">
             <a
               class="category-link text-truncate"
-              routerLink="/transactions"
+              routerLink="/money/transactions"
               [queryParams]="link(row.category)"
               [title]="'See ' + row.category + ' over time'"
               ><span class="category-dot" [style.background-color]="color(row.category)"></span

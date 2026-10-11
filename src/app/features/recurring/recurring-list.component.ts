@@ -125,7 +125,7 @@ import { formatCurrency } from '../../shared/utils/format';
           <div class="d-flex flex-wrap align-items-center gap-2">
             <a
               class="fw-medium text-body text-decoration-none text-truncate"
-              routerLink="/transactions"
+              routerLink="/money/transactions"
               [queryParams]="{ description: payment.name }"
               [title]="'List the ' + payment.name + ' transactions'"
               >{{ payment.name }}</a

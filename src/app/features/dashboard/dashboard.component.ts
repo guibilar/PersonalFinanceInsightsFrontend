@@ -21,7 +21,7 @@ import { CardWrapperComponent } from '../../shared/ui/card-wrapper/card-wrapper.
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
-import { StatCardComponent, StatTone } from '../../shared/ui/stat-card/stat-card.component';
+import { FinanceTilesComponent } from './finance-tiles/finance-tiles.component';
 import { MonthlyCategorizedChartComponent } from './monthly-categorized-chart/monthly-categorized-chart.component';
 import { CategoryBreakdownComponent } from './category-breakdown/category-breakdown.component';
 import { BudgetOverviewComponent } from './budget-overview/budget-overview.component';
@@ -29,22 +29,12 @@ import { RecentTransactionsComponent } from './recent-transactions/recent-transa
 import { CategoryAveragesComponent } from './category-averages/category-averages.component';
 import { CashFlowComponent } from './cash-flow/cash-flow.component';
 import { MonthForecastComponent } from './month-forecast/month-forecast.component';
-import {
-  budgetsOverLimit,
-  leftOverThisMonth,
-  usualByNow,
-  netWorthChange,
-  percentChange,
-  previousMonthToDateLabel,
-  spentThisMonth,
-} from './dashboard-stats';
 import { AttentionKind, attentionItems } from './attention';
 import { investments } from './investments';
 import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';
 import { valueOf } from '../../shared/utils/resource-value';
-import { anyMonthFinished } from '../../shared/utils/months';
 import { formatDay, formatCurrency } from '../../shared/utils/format';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
@@ -70,7 +60,7 @@ const RECENT_TRANSACTIONS = 6;
     ErrorStateComponent,
     IconComponent,
     SkeletonComponent,
-    StatCardComponent,
+    FinanceTilesComponent,
     MonthlyCategorizedChartComponent,
     CategoryBreakdownComponent,
     CategoryAveragesComponent,
@@ -81,24 +71,6 @@ const RECENT_TRANSACTIONS = 6;
   ],
   templateUrl: './dashboard.component.html',
   styles: `
-    // A headline number that opens its page: the whole tile is the link.
-    .stat-link {
-      display: block;
-      height: 100%;
-      color: inherit;
-      text-decoration: none;
-      border-radius: var(--bs-card-border-radius);
-
-      &:hover ::ng-deep .card {
-        border-color: var(--bs-primary-border-subtle);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--bs-primary);
-        outline-offset: 2px;
-      }
-    }
-
     .attention {
       border-color: var(--bs-warning-border-subtle);
       background: var(--bs-warning-bg-subtle);
@@ -197,82 +169,6 @@ export class DashboardComponent {
   readonly yearValue = computed(() => valueOf(this.yearReport));
   readonly monthValue = computed(() => valueOf(this.monthReport));
 
-  readonly spent = computed(() => {
-    const month = valueOf(this.monthReport);
-    return month ? spentThisMonth(month) : null;
-  });
-
-  readonly spentHint = computed<{ text: string; tone: StatTone; up: boolean } | null>(() => {
-    const spent = this.spent();
-    const month = valueOf(this.monthReport);
-    if (spent === null || !month) return null;
-    // Like for like: last month up to the same day, not all of it against a month in progress.
-    const change = percentChange(spent, month.previousMonthToDateTotal ?? null);
-    if (change === null) return null;
-    return {
-      text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${previousMonthToDateLabel(this.today())}`,
-      tone: change > 0 ? 'bad' : 'good',
-      up: change >= 0,
-    };
-  });
-
-  /**
-   * This month against a usual one at the same point: the monthly average spread evenly over the month, up to
-   * today. A whole usual month against a few days of this one would always read as far under.
-   */
-  readonly usualHint = computed<{ text: string; tone: StatTone; up: boolean } | null>(() => {
-    const spent = this.spent();
-    const year = valueOf(this.yearReport);
-    if (spent === null || !year || year.averageMonthlyTotal <= 0) return null;
-    // With no month of the year over yet (every January), the API averages the running month itself: this month
-    // against itself. The like-for-like comparison with last month says it instead.
-    const runningMonthOnly =
-      year.averageIncludesCurrentMonth ??
-      !anyMonthFinished(
-        year.monthlyData.map((month) => month.month),
-        this.today(),
-      );
-    if (runningMonthOnly) return null;
-    const expected = usualByNow(year.averageMonthlyTotal, this.today());
-    const difference = spent - expected;
-    return {
-      text: `${this.format(Math.abs(difference))} ${difference > 0 ? 'over' : 'under'} a usual month by now`,
-      tone: difference > 0 ? 'bad' : 'good',
-      up: difference > 0,
-    };
-  });
-
-  readonly leftOver = computed(() => {
-    const report = valueOf(this.cashFlow);
-    return report ? leftOverThisMonth(report, this.today()) : undefined;
-  });
-  readonly leftOverHint = computed<{ text: string; tone: StatTone }>(() => {
-    const month = this.leftOver();
-    if (!month) return { text: 'No income or spending yet', tone: 'neutral' };
-    // Before payday, spending alone isn't a warning.
-    if (month.income === 0) return { text: 'No income yet this month', tone: 'neutral' };
-    return month.net >= 0
-      ? { text: 'Income less spending so far', tone: 'good' }
-      : { text: 'More went out than came in', tone: 'bad' };
-  });
-
-  readonly netWorthValue = computed(() => valueOf(this.netWorth));
-  readonly netWorthHint = computed<{ text: string; tone: StatTone; up: boolean } | null>(() => {
-    const report = this.netWorthValue();
-    if (!report) return null;
-    // Nothing to go on until a balance is entered (or a statement brings one).
-    if (report.months.length === 0) {
-      return { text: 'Enter a balance to start', tone: 'neutral', up: true };
-    }
-    const change = netWorthChange(report.months);
-    if (change === null) return null;
-    return {
-      text: `${change >= 0 ? '+' : '−'}${this.format(Math.abs(change))} since last month`,
-      tone: change > 0 ? 'good' : change < 0 ? 'bad' : 'neutral',
-      up: change >= 0,
-    };
-  });
-
   /** Waits for what it is made of, so items don't appear one by one; a part that failed just adds nothing. */
   readonly attention = computed(() => {
     const parts = [this.uncategorised, this.budgets, this.recurring, this.accounts];
@@ -300,13 +196,6 @@ export class DashboardComponent {
 
   /** The category card shows this month's split, or each category against a usual month. */
   readonly categoryView = signal<'month' | 'usual'>('month');
-
-  readonly budgetSummary = computed(() => {
-    const items = valueOf(this.budgets)?.items;
-    if (!items) return null;
-    const over = budgetsOverLimit(items);
-    return { total: items.length, over };
-  });
 
   format(amount: number): string {
     return formatCurrency(amount);

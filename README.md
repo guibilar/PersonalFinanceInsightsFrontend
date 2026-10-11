@@ -1,15 +1,41 @@
 # Personal Finances Frontend
 
 Angular 22 frontend for the Personal Finance Insights API: where the money goes, what is coming, and what you are
-worth, from the bank statements you import. The sidebar groups the pages:
+worth, from the bank statements you import. The app is growing into Hestia, a personal "everything app": finance is
+its first module, **Money**.
 
-- **Overview:** the Dashboard, Net worth and Review.
+## The shell and the modules
+
+The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, **Modules** and **Search**. On wide
+screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
+round centre action; the menu button at the top opens the modules and the account actions.
+
+| Page        | Path        | What it shows                                                                    |
+| ----------- | ----------- | -------------------------------------------------------------------------------- |
+| Today       | `/today`    | The four Money tiles (as on the Dashboard), then a card per module still to come |
+| Timeline    | `/timeline` | A placeholder for now                                                            |
+| Capture     | `/capture`  | "Import statements"; the other actions are coming soon                           |
+| Modules     | `/modules`  | Every module: Money opens, the others show "Coming soon"                         |
+| Search      | `/search`   | A placeholder for now                                                            |
+| Money       | `/money/…`  | The finance pages below, with their own sub-menu                                 |
+
+`/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
+the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
+
+The Money sub-menu keeps the groups of the old sidebar:
+
+- **Overview:** the Dashboard (`/money`), Net worth and Review.
 - **Spending:** Transactions, Budgets and Subscriptions.
 - **Setup:** Accounts, Categories, Tags and Rules.
 
-"Import statements", at the top of the sidebar, is there on every page.
+"Import statements" is at the top of the Money sub-menu, and on the Capture page.
 
-## The pages
+**Old addresses.** Before Money was a module, the finance pages were at the top level (`/transactions`, `/budgets`,
+`/net-worth` and so on). Each old address opens the same page under `/money`, with its query string and fragment, so
+bookmarks and links from the Android app keep working: `/transactions?categoryId=…` opens
+`/money/transactions?categoryId=…`. The list is `LEGACY_FINANCE_PATHS` in `features/money/money-paths.ts`.
+
+## The Money pages
 
 **Dashboard.** Four tiles: spent this month (against a usual month at the same point of the month), left over
 this month, net worth (and its change since last month) and budgets over their limit. Under them, **Needs attention**
@@ -40,7 +66,7 @@ total over weeks, months, quarters or years, with a running total and the top me
 clicking a bar lists that period.
 
 Links can open the page filtered, as the dashboard's do:
-`/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`. Dates that match a preset show as that
+`/money/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`. Dates that match a preset show as that
 preset.
 
 A transaction can be:
@@ -83,7 +109,7 @@ merchants left in Other because no rule names them; picking a category adds the 
 
 ## Accounts and flows
 
-Statements are imported into an **account** (`/accounts`): a name, a type (chequing, savings, credit card or
+Statements are imported into an **account** (`/money/accounts`): a name, a type (chequing, savings, credit card or
 investment) and its statement format, which the import reads:
 
 - CIBC CSV;
@@ -167,11 +193,14 @@ that `npm test` opens).
 
 ```
 src/app/
-  core/       api/ (repositories), models/, data/ (change notifications), layout/ (the shell and sidebar)
+  core/       api/ (repositories), models/, data/ (change notifications, the import panel), layout/ (the shell,
+              sidebar and bottom bar), modules/ (the module registry and the main menu)
   shared/     ui/ (cards, modal, confirm dialog, toasts, tag picker, skeletons...), charts/ (theme, chart helper),
               utils/ (formatting, months, date presets, flows, problem details...)
-  features/   dashboard/, transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/,
-              categories/, tags/, bank-accounts/ (Accounts)                              (lazy-loaded routes)
+  features/   today/, capture/, modules/, placeholder/ (Timeline, Search)               (lazy-loaded routes)
+              money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
+              transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
+              bank-accounts/ (Accounts)
               account/ is the signed-in user's own account (change password), not a bank account
 ```
 

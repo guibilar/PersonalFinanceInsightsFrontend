@@ -78,7 +78,7 @@
               <div class="fw-medium text-truncate" [title]="tag.name">{{ tag.name }}</div>
               <a
                 class="small"
-                routerLink="/transactions"
+                routerLink="/money/transactions"
                 [queryParams]="{ tagId: tag.id }"
                 [attr.aria-label]="'Show the ' + usage(tag) + ' tagged ' + tag.name"
                 >{{ usage(tag) }}</a

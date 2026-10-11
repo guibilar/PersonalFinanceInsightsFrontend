@@ -1,6 +1,7 @@
 $sidebar-width: 15rem;
 $sidebar-collapsed-width: 4.5rem;
 $md: 768px;
+$bottom-bar-height: 4rem;
 
 :host {
   display: flex;
@@ -76,16 +77,6 @@ $md: 768px;
   padding: 0.25rem 0.5rem 1.25rem;
 }
 
-.import-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  margin-bottom: 1rem;
-  white-space: nowrap;
-}
-
 // Scrolls on short screens, leaving the account buttons in place below.
 .nav-groups {
   display: flex;
@@ -105,10 +96,8 @@ $md: 768px;
   color: var(--bs-secondary-color);
 }
 
-// Setup pages: smaller rows, so the everyday ones stand out.
-.nav-group.quiet .nav-item {
-  padding-block: 0.4375rem;
-  font-size: 0.875rem;
+.main-menu {
+  padding-bottom: 0.25rem;
 }
 
 .nav-list {
@@ -194,13 +183,9 @@ $md: 768px;
     }
 
     // Groups stay apart with a rule where their names were.
-    .nav-group + .nav-group {
+    .nav-groups > * + * {
       padding-top: 0.75rem;
       border-top: 1px solid var(--bs-border-color);
-    }
-
-    .import-button {
-      padding-inline: 0;
     }
 
     .brand,
@@ -268,7 +253,8 @@ $md: 768px;
   }
 
   .content-inner {
-    padding: 1.25rem 1rem 2rem;
+    // Room for the bottom bar, so the end of the page is not under it.
+    padding: 1.25rem 1rem calc(2rem + #{$bottom-bar-height} + env(safe-area-inset-bottom));
   }
 }
 
