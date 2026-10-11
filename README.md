@@ -14,7 +14,7 @@ round centre action; the menu button at the top opens the modules and the accoun
 | ----------- | ----------- | -------------------------------------------------------------------------------- |
 | Today       | `/today`    | The four Money tiles (as on the Dashboard), then a card per module still to come |
 | Timeline    | `/timeline` | A placeholder for now                                                            |
-| Capture     | `/capture`  | "Import statements"; the other actions are coming soon                           |
+| Capture     | `/capture`  | "Add transaction" and "Import statements"; the other actions are coming soon     |
 | Modules     | `/modules`  | Every module: Money opens, the others show "Coming soon"                         |
 | Search      | `/search`   | A placeholder for now                                                            |
 | Money       | `/money/…`  | The finance pages below, with their own sub-menu                                 |
@@ -29,6 +29,11 @@ The Money sub-menu keeps the groups of the old sidebar:
 - **Setup:** Accounts, Categories, Tags and Rules.
 
 "Import statements" is at the top of the Money sub-menu, and on the Capture page.
+
+"Add transaction" is on the Transactions page and on the Capture page (the same as "Expense" on Android). From
+Capture, the form opens over the current page (`TransactionAddLauncher` opens it, and the shell shows it). After a
+save, a notification has a "View" link that opens the new transaction in `/money/transactions`. The next transaction
+starts on the same day and account.
 
 **Old addresses.** Before Money was a module, the finance pages were at the top level (`/transactions`, `/budgets`,
 `/net-worth` and so on). Each old address opens the same page under `/money`, with its query string and fragment, so

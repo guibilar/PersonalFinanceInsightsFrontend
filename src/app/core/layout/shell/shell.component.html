@@ -183,6 +183,16 @@
   </app-modal>
 }
 
+@if (adder.isOpen()) {
+  <app-modal title="Add transaction" (closed)="adder.close()">
+    <app-transaction-add-panel
+      [previous]="adder.lastAdded()"
+      (added)="onTransactionAdded($event)"
+      (cancelled)="adder.close()"
+    />
+  </app-modal>
+}
+
 @if (changingPassword()) {
   <app-modal title="Change password" (closed)="changingPassword.set(false)">
     <app-change-password-form

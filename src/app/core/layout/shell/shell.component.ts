@@ -22,8 +22,14 @@ import {
   StatementImportComponent,
   describeImport,
 } from '../../../features/transactions/statement-import/statement-import.component';
+import {
+  TransactionAddPanel,
+  transactionLink,
+} from '../../../features/transactions/transaction-add-panel/transaction-add-panel';
+import { TransactionOutputDto } from '../../models/outputs/transaction-output-dto';
 import { DataChangesService } from '../../data/data-changes.service';
 import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
+import { TransactionAddLauncher } from '../../data/transaction-add-launcher.service';
 import { MAIN_MENU, activeModules } from '../../modules/module-registry';
 import { amountsHidden, toggleAmountsHidden } from '../../../shared/utils/privacy';
 
@@ -46,6 +52,7 @@ const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
     ChangePasswordFormComponent,
     ConfirmDialogComponent,
     StatementImportComponent,
+    TransactionAddPanel,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -67,6 +74,8 @@ export class ShellComponent {
   readonly confirmingSignOutOthers = signal(false);
   /** The import panel opens from Money and Capture; the shell shows it over any page. */
   protected readonly importer = inject(StatementImportLauncher);
+  /** "Add transaction" opens from Capture; the shell shows it over any page too. */
+  protected readonly adder = inject(TransactionAddLauncher);
   protected readonly dataChanges = inject(DataChangesService);
 
   constructor() {
@@ -84,6 +93,16 @@ export class ShellComponent {
     this.importer.close();
     this.dataChanges.changed();
     this.toasts.success(describeImport(summary));
+  }
+
+  onTransactionAdded(added: TransactionOutputDto): void {
+    this.adder.close();
+    this.adder.lastAdded.set({ date: added.date, accountId: added.accountId });
+    this.dataChanges.changed();
+    this.toasts.success(`Added “${added.description}” to ${added.accountName}`, {
+      label: 'View',
+      ...transactionLink(added),
+    });
   }
 
   onPasswordChanged(): void {
