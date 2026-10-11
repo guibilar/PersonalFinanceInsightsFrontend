@@ -195,7 +195,7 @@ CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on ever
 report to `test-results/junit.xml`, in addition to the normal console output. After the test step, CI
 runs `scripts/test-annotations.py` (Python standard library only). It writes these annotations on the run:
 
-- one notice with the totals, for example `Unit tests: totals` — `512 passed, 0 failed, 3 skipped. Test files: 61.`;
+- one notice with the totals, for example `Unit tests: totals` — `460 passed, 0 failed, 0 skipped. Test files: 70.`;
 - one error for each failed test: the file and the test name in the title, then the first six lines of
   the message. GitHub shows at most 10 errors in a step, so after 9 failed tests one more error gives the
   count of the others;
