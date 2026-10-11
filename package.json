@@ -10,7 +10,7 @@
     "lint": "ng lint",
     "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
-    "test:ci": "ng test --watch=false --headless"
+    "test:ci": "ng test --configuration ci --watch=false --headless"
   },
   "prettier": {
     "printWidth": 100,

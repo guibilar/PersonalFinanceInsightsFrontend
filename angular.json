@@ -96,6 +96,19 @@
             "browsers": [
               "chromium"
             ]
+          },
+          "configurations": {
+            "ci": {
+              "reporters": [
+                "default",
+                [
+                  "junit",
+                  {
+                    "outputFile": "test-results/junit.xml"
+                  }
+                ]
+              ]
+            }
           }
         },
         "lint": {

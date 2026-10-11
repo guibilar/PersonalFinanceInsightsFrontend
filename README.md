@@ -189,6 +189,28 @@ Development, sign in as `dev` / `development-only`.
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR.
 
+### Test results as annotations
+
+`npm run test:ci` uses the `ci` configuration of the `test` target (`angular.json`). It writes a JUnit
+report to `test-results/junit.xml`, in addition to the normal console output. After the test step, CI
+runs `scripts/test-annotations.py` (Python standard library only). It writes these annotations on the run:
+
+- one notice with the totals, for example `Unit tests: totals` — `512 passed, 0 failed, 3 skipped. Test files: 61.`;
+- one error for each failed test: the file and the test name in the title, then the first six lines of
+  the message. GitHub shows at most 10 errors in a step, so after 9 failed tests one more error gives the
+  count of the others;
+- a warning if the report is missing (for example, the test build failed).
+
+The step also runs when the tests fail. It does not run when an earlier step failed. To read the
+annotations without the log:
+
+```bash
+gh api repos/guibilar/PersonalFinanceInsightsFrontend/commits/<sha>/check-runs --jq '.check_runs[] | {name, id}'
+gh api repos/guibilar/PersonalFinanceInsightsFrontend/check-runs/<id>/annotations
+```
+
+Locally: `npm run test:ci`, then `python3 scripts/test-annotations.py`.
+
 The tests run in a real browser (Vitest browser mode through Playwright), because some of them need
 layout and focus behaviour that a simulated DOM doesn't have. Before the first run, download the
 browser once: `npx playwright install chromium-headless-shell` (add `chromium` for the visible browser

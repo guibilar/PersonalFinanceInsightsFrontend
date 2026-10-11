@@ -45,5 +45,6 @@ Thumbs.db
 # Local secrets (Tailscale auth key)
 .env
 
-# Vitest (failure screenshots)
+# Vitest (failure screenshots, JUnit report of test:ci)
 /.vitest
+/test-results
