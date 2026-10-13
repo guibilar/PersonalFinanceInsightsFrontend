@@ -5,7 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
-import { TransactionListComponent } from './transaction-list.component';
+import { LINKED_HIGHLIGHT_MS, TransactionListComponent } from './transaction-list.component';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { TEST_TAGS } from '../../../testing/test-tags';
 import { AccountType } from '../../../core/models/enums/account-type';
@@ -823,15 +823,23 @@ describe('TransactionListComponent, in the address bar', () => {
     hasNextPage: false,
   };
 
-  /** Answers what the page asked for; the totals in the interval they were asked in. */
-  function answer(): { filter?: Record<string, unknown>; breakdown?: Record<string, unknown> } {
+  /**
+   * Answers what the page asked for; the totals in the interval they were asked in. The list gets `listPage` (empty
+   * by default). The look-up of a linked transaction is left to {@link answerLinked}.
+   */
+  function answer(listPage: (body: Record<string, unknown>) => object = () => page): {
+    filter?: Record<string, unknown>;
+    breakdown?: Record<string, unknown>;
+  } {
     TestBed.tick();
     http.match('/api/Budget/Filter').forEach((r) => r.flush(page));
     http.match('/api/Accounts').forEach((r) => r.flush([]));
     http.match('/api/Categories').forEach((r) => r.flush(TEST_CATEGORY_LIST));
     http.match('/api/Tags').forEach((r) => r.flush([]));
-    const filters = http.match('/api/Transaction/Filter').filter((r) => !r.cancelled);
-    filters.forEach((r) => r.flush(page));
+    const filters = http
+      .match((r) => r.url === '/api/Transaction/Filter' && !r.body?.transactionId)
+      .filter((r) => !r.cancelled);
+    filters.forEach((r) => r.flush(listPage(r.request.body)));
     const breakdowns = http.match('/api/Reports/breakdown').filter((r) => !r.cancelled);
     breakdowns.forEach((r) =>
       r.flush({
@@ -855,11 +863,59 @@ describe('TransactionListComponent, in the address bar', () => {
    * Lets the page's own address update finish, answering what it asks for on the way (whenStable would wait for
    * those requests forever).
    */
-  async function settle(): Promise<void> {
+  async function settle(listPage?: (body: Record<string, unknown>) => object): Promise<void> {
     for (let turn = 0; turn < 3; turn++) {
-      answer();
+      answer(listPage);
       await new Promise((resolve) => setTimeout(resolve));
     }
+  }
+
+  const linkedId = '0199f0a2-7c3e-7d41-9a51-3f6e2b8c1d07';
+  const linked: TransactionOutputDto = {
+    id: linkedId,
+    date: '2026-10-09T00:00:00Z',
+    amount: 24.5,
+    description: 'Farmers market',
+    category: TEST_CATEGORIES.other,
+    categoryLocked: false,
+    transactionType: TransactionType.Debit,
+    accountId: 'a1',
+    accountName: 'Visa',
+    accountType: AccountType.CreditCard,
+    flow: Flow.Spending,
+    flowLocked: false,
+    budgetId: '',
+  };
+  const other = (id: string): TransactionOutputDto => ({ ...linked, id, description: id });
+
+  function pageOf(items: TransactionOutputDto[], number = 1, totalPages = 1) {
+    return { ...page, items, page: number, totalCount: items.length, totalPages };
+  }
+
+  /** Answers the look-up of the linked transaction: first the visible ones, then (if needed) the deleted ones. */
+  function answerLinked(
+    visible: TransactionOutputDto | null,
+    deleted?: TransactionOutputDto | null,
+  ) {
+    TestBed.tick();
+    const lookup = (hidden: boolean) =>
+      http.expectOne(
+        (r) =>
+          r.url === '/api/Transaction/Filter' &&
+          r.body?.transactionId === linkedId &&
+          !!r.body?.hidden === hidden,
+      );
+    const first = lookup(false);
+    expect(first.request.body).toEqual({ transactionId: linkedId, page: 1, pageSize: 1 });
+    first.flush(pageOf(visible ? [visible] : []));
+    if (deleted !== undefined) lookup(true).flush(pageOf(deleted ? [deleted] : []));
+  }
+
+  function rowOf(id: string): HTMLElement | null {
+    harness.fixture.detectChanges();
+    return (harness.routeNativeElement as HTMLElement).querySelector<HTMLElement>(
+      `tr[data-transaction-id="${id}"]`,
+    );
   }
 
   beforeEach(async () => {
@@ -951,6 +1007,162 @@ describe('TransactionListComponent, in the address bar', () => {
     await settle();
 
     expect(list.filter().categoryId).toBeUndefined();
+  });
+
+  describe('a link to one transaction', () => {
+    it('shows its day and account, then highlights and focuses it', async () => {
+      const list = await harness.navigateByUrl(
+        `/transactions?id=${linkedId}`,
+        TransactionListComponent,
+      );
+      answer();
+      answerLinked(linked);
+
+      const { filter } = answer(() => pageOf([other('t1'), linked, other('t2')]));
+      expect(filter).toEqual(
+        expect.objectContaining({
+          accountId: 'a1',
+          startDate: '2026-10-09',
+          endDate: '2026-10-09',
+          page: 1,
+        }),
+      );
+      await settle(() => pageOf([other('t1'), linked, other('t2')]));
+
+      expect(list.highlightedId()).toBe(linkedId);
+      const row = rowOf(linkedId)!;
+      expect(row.classList).toContain('is-linked');
+      expect(rowOf('t1')!.classList).not.toContain('is-linked');
+      expect(document.activeElement).toBe(row);
+      expect(list.linkedNotice()).toBeNull();
+      // The address keeps the criteria, not the id: a refresh shows the same day.
+      expect(router.url).toBe('/transactions?accountId=a1&startDate=2026-10-09&endDate=2026-10-09');
+    });
+
+    it('stops the highlight after a short time', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        const list = await harness.navigateByUrl(
+          `/transactions?id=${linkedId}`,
+          TransactionListComponent,
+        );
+        answer();
+        answerLinked(linked);
+        for (let turn = 0; turn < 3; turn++) {
+          answer(() => pageOf([linked]));
+          await vi.advanceTimersByTimeAsync(0);
+        }
+        expect(list.highlightedId()).toBe(linkedId);
+
+        vi.advanceTimersByTime(LINKED_HIGHLIGHT_MS);
+        expect(list.highlightedId()).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('looks on the next page when the day has more transactions than one page', async () => {
+      const list = await harness.navigateByUrl(
+        `/transactions?id=${linkedId}`,
+        TransactionListComponent,
+      );
+      answer();
+      answerLinked(linked);
+
+      await settle((body) =>
+        body['page'] === 2 ? pageOf([linked], 2, 2) : pageOf([other('t1'), other('t2')], 1, 2),
+      );
+
+      expect(list.filter()).toEqual(expect.objectContaining({ accountId: 'a1', page: 2 }));
+      expect(list.highlightedId()).toBe(linkedId);
+    });
+
+    it('applies a link while the page is open, in place of the current filters', async () => {
+      const list = await harness.navigateByUrl(
+        '/transactions?categoryId=c-dining',
+        TransactionListComponent,
+      );
+      answer();
+
+      await harness.navigateByUrl(`/transactions?id=${linkedId}`);
+      answerLinked(linked);
+      await settle(() => pageOf([linked]));
+
+      expect(list.filter().categoryId).toBeUndefined();
+      expect(list.filter().accountId).toBe('a1');
+      expect(list.highlightedId()).toBe(linkedId);
+    });
+
+    it('says when it does not exist, and shows the normal list', async () => {
+      const list = await harness.navigateByUrl(
+        '/transactions?categoryId=c-dining',
+        TransactionListComponent,
+      );
+      answer();
+
+      await harness.navigateByUrl(`/transactions?id=${linkedId}`);
+      answerLinked(null, null);
+      await settle();
+
+      expect(list.linkedNotice()).toBe('missing');
+      expect(list.filter().categoryId).toBeUndefined();
+      expect(list.highlightedId()).toBeNull();
+      harness.fixture.detectChanges();
+      const alert = (harness.routeNativeElement as HTMLElement).querySelector('.alert')!;
+      expect(alert.textContent).toContain('The linked transaction does not exist.');
+      expect(router.url).toBe('/transactions');
+    });
+
+    it('says when it is deleted, and offers the deleted transactions', async () => {
+      const list = await harness.navigateByUrl(
+        `/transactions?id=${linkedId}`,
+        TransactionListComponent,
+      );
+      answer();
+      answerLinked(null, { ...linked, hidden: true });
+      await settle();
+
+      expect(list.linkedNotice()).toBe('deleted');
+      harness.fixture.detectChanges();
+      const root = harness.routeNativeElement as HTMLElement;
+      expect(root.querySelector('.alert')!.textContent).toContain(
+        'The linked transaction is deleted.',
+      );
+      [...root.querySelectorAll<HTMLButtonElement>('.alert button')]
+        .find((b) => b.textContent?.includes('Show deleted transactions'))!
+        .click();
+      await settle();
+
+      expect(list.showDeleted()).toBe(true);
+      expect(list.linkedNotice()).toBeNull();
+    });
+
+    it('does not ask the API about an id that is not a transaction id', async () => {
+      const list = await harness.navigateByUrl(
+        '/transactions?id=not-an-id',
+        TransactionListComponent,
+      );
+      await settle();
+
+      expect(list.linkedNotice()).toBe('missing');
+      expect(router.url).toBe('/transactions');
+    });
+
+    it('says when the look-up fails, and keeps the list', async () => {
+      const list = await harness.navigateByUrl(
+        `/transactions?id=${linkedId}`,
+        TransactionListComponent,
+      );
+      answer();
+      TestBed.tick();
+      http
+        .expectOne((r) => r.body?.transactionId === linkedId)
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(list.linkedNotice()).toBe('failed');
+      expect(list.transactions.error()).toBeFalsy();
+    });
   });
 
   it('shows the interval the totals were charted in, when the asked one has too many periods', async () => {

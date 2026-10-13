@@ -22,10 +22,8 @@ import {
   StatementImportComponent,
   describeImport,
 } from '../../../features/transactions/statement-import/statement-import.component';
-import {
-  TransactionAddPanel,
-  transactionLink,
-} from '../../../features/transactions/transaction-add-panel/transaction-add-panel';
+import { TransactionAddPanel } from '../../../features/transactions/transaction-add-panel/transaction-add-panel';
+import { transactionLink } from '../../../features/transactions/transaction-list/transaction-list-query';
 import { TransactionOutputDto } from '../../models/outputs/transaction-output-dto';
 import { DataChangesService } from '../../data/data-changes.service';
 import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
@@ -101,7 +99,7 @@ export class ShellComponent {
     this.dataChanges.changed();
     this.toasts.success(`Added “${added.description}” to ${added.accountName}`, {
       label: 'View',
-      ...transactionLink(added),
+      ...transactionLink(added.id),
     });
   }
 

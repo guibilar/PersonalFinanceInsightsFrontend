@@ -103,3 +103,33 @@
   width: 2.5rem;
   padding-left: 1rem;
 }
+
+// A transaction opened from a link (`?id=…`): it lights up, then fades back to the other rows.
+@keyframes linked-fade {
+  from {
+    box-shadow: inset 0 0 0 9999px var(--bs-primary-bg-subtle);
+  }
+
+  to {
+    box-shadow: inset 0 0 0 9999px transparent;
+  }
+}
+
+.tx-table tr.is-linked > td {
+  animation: linked-fade 3s ease-in forwards;
+}
+
+.tx-table tr:focus {
+  outline: none;
+}
+
+.tx-table tr:focus-visible > td {
+  box-shadow: inset 0 0 0 9999px var(--bs-primary-bg-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-table tr.is-linked > td {
+    animation: none;
+    box-shadow: inset 0 0 0 9999px var(--bs-primary-bg-subtle);
+  }
+}

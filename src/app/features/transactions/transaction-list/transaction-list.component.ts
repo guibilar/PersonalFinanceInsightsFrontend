@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -14,6 +15,7 @@ import {
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription, map, of, switchMap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { BudgetRepository } from '../../../core/api/budget-repository';
@@ -61,6 +63,7 @@ import {
   sameCriteria,
   intervalFromQuery,
   OWN_NAVIGATION,
+  TRANSACTION_ID_KEY,
 } from './transaction-list-query';
 import { BulkChange, TransactionBulkBar } from '../transaction-bulk-bar/transaction-bulk-bar';
 import { StatementImportComponent } from '../statement-import/statement-import.component';
@@ -68,6 +71,14 @@ import { TransactionBreakdownComponent } from '../transaction-breakdown/transact
 import { valueOf } from '../../../shared/utils/resource-value';
 import { TransactionActions } from './transaction-actions';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
+
+/** Why a link to one transaction (`?id=…`) shows the normal list instead. */
+export type LinkedNotice = 'missing' | 'deleted' | 'failed';
+
+/** How long a linked transaction stays highlighted. */
+export const LINKED_HIGHLIGHT_MS = 3000;
+
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface SortableColumn {
   field: TransactionSortField;
@@ -137,6 +148,24 @@ export class TransactionListComponent {
     ...criteriaFromQuery(this.route.snapshot.queryParamMap),
   });
   readonly showImport = signal(false);
+  /** Why the linked transaction is not shown, until dismissed or the criteria change. */
+  readonly linkedNotice = signal<LinkedNotice | null>(null);
+  readonly linkedMessages: Record<LinkedNotice, string> = {
+    missing: 'The linked transaction does not exist.',
+    deleted: 'The linked transaction is deleted.',
+    failed: 'Could not load the linked transaction.',
+  };
+  /** The linked transaction, highlighted for a short time once it is on screen. */
+  readonly highlightedId = signal<string | null>(null);
+  /** The linked transaction that the list still has to show, and the criteria that show it. */
+  private readonly pendingLinked = signal<{ id: string; criteria: TransactionCriteria } | null>(
+    null,
+  );
+  private linkedLookup?: Subscription;
+  private highlightTimer?: ReturnType<typeof setTimeout>;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** Makes the address effect run again, to drop a handled `?id=` that changed no criteria. */
+  private readonly addressCheck = signal(0);
   /** Ticked for a bulk change; cleared when the list shows other transactions. */
   private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
   private readonly injector = inject(Injector);
@@ -252,6 +281,7 @@ export class TransactionListComponent {
     });
     // The address follows the criteria, so a refresh, the back button or a copied link shows the same list...
     effect(() => {
+      this.addressCheck();
       const queryParams = this.urlQuery();
       untracked(() => {
         const current = this.route.snapshot.queryParamMap;
@@ -275,8 +305,14 @@ export class TransactionListComponent {
       // person's, and the list follows the address they land on.
       const navigation = this.router.currentNavigation();
       if (navigation?.trigger !== 'popstate' && navigation?.extras.state?.[OWN_NAVIGATION]) return;
-      const criteria = criteriaFromQuery(query);
-      if (!sameCriteria(criteria, this.filter())) this.onCriteriaChange(criteria);
+      // A link to one transaction: its own criteria come once it is found.
+      const linkedId = query.get(TRANSACTION_ID_KEY);
+      if (linkedId) {
+        this.openLinked(linkedId);
+      } else {
+        const criteria = criteriaFromQuery(query);
+        if (!sameCriteria(criteria, this.filter())) this.onCriteriaChange(criteria);
+      }
       this.breakdownOpen.set(query.get('overTime') === '1');
       this.breakdownInterval.set(intervalFromQuery(query) ?? 'Month');
     });
@@ -294,6 +330,31 @@ export class TransactionListComponent {
       if ([...selected].some((id) => !ids.has(id))) {
         this.selected.set(new Set([...selected].filter((id) => ids.has(id))));
       }
+    });
+    // The linked transaction: once the list that should hold it is loaded, highlight it. A day with more transactions
+    // than one page holds can put it on a later page.
+    effect(() => {
+      const pending = this.pendingLinked();
+      if (!pending || this.transactions.isLoading()) return;
+      const page = valueOf(this.transactions);
+      const filter = this.filter();
+      untracked(() => {
+        if (!page || filter.hidden || !sameCriteria(filter, pending.criteria)) {
+          // Failed, or the person changed the list meanwhile.
+          this.pendingLinked.set(null);
+        } else if (page.items.some((t) => t.id === pending.id)) {
+          this.pendingLinked.set(null);
+          this.highlight(pending.id);
+        } else if (page.page < page.totalPages) {
+          this.onPageChange(page.page + 1);
+        } else {
+          this.pendingLinked.set(null);
+        }
+      });
+    });
+    inject(DestroyRef).onDestroy(() => {
+      this.linkedLookup?.unsubscribe();
+      clearTimeout(this.highlightTimer);
     });
     // Years of weeks are charted by month (or longer) instead: the buttons and the address say what is shown.
     effect(() => {
@@ -327,6 +388,7 @@ export class TransactionListComponent {
   }
 
   onCriteriaChange(criteria: TransactionCriteria): void {
+    this.linkedNotice.set(null);
     this.filter.update(({ pageSize, sortBy, sortDirection, hidden }) => ({
       ...criteria,
       pageSize,
@@ -345,11 +407,91 @@ export class TransactionListComponent {
 
   /** Switches between the transactions and the deleted ones, keeping search and sort. */
   toggleDeleted(): void {
+    this.linkedNotice.set(null);
     this.filter.update((filter) => ({
       ...filter,
       hidden: filter.hidden ? undefined : true,
       page: 1,
     }));
+  }
+
+  /**
+   * A link to one transaction (`?id=…`): find it, show its day and account, and highlight it. A deleted or unknown
+   * one gives a short message and the normal list.
+   */
+  private openLinked(id: string): void {
+    this.linkedLookup?.unsubscribe();
+    this.linkedNotice.set(null);
+    this.pendingLinked.set(null);
+    this.addressCheck.update((n) => n + 1);
+    if (!GUID.test(id)) {
+      this.showNormalList('missing');
+      return;
+    }
+    this.linkedLookup = this.transactionRepository
+      .find(id)
+      .pipe(
+        switchMap((transaction) =>
+          transaction
+            ? of({ transaction, deleted: false })
+            : this.transactionRepository
+                .find(id, true)
+                .pipe(map((deleted) => (deleted ? { transaction: deleted, deleted: true } : null))),
+        ),
+      )
+      .subscribe({
+        next: (found) => {
+          if (!found) this.showNormalList('missing');
+          else if (found.deleted) this.showNormalList('deleted');
+          else this.showLinked(found.transaction);
+        },
+        error: () => this.linkedNotice.set('failed'),
+      });
+  }
+
+  private showLinked(transaction: TransactionOutputDto): void {
+    const day = transaction.date.slice(0, 10);
+    const criteria: TransactionCriteria = {
+      accountId: transaction.accountId,
+      startDate: day,
+      endDate: day,
+    };
+    this.pendingLinked.set({ id: transaction.id, criteria });
+    this.showCriteria(criteria);
+  }
+
+  private showNormalList(notice: LinkedNotice): void {
+    this.linkedNotice.set(notice);
+    this.showCriteria({});
+  }
+
+  /** These criteria on the first page, out of the deleted view; the page size and sort stay. */
+  private showCriteria(criteria: TransactionCriteria): void {
+    this.filter.update(({ pageSize, sortBy, sortDirection }) => ({
+      ...criteria,
+      pageSize,
+      sortBy,
+      sortDirection,
+      page: 1,
+    }));
+  }
+
+  private highlight(id: string): void {
+    clearTimeout(this.highlightTimer);
+    this.highlightedId.set(id);
+    afterNextRender(
+      () => {
+        const row = this.host.nativeElement.querySelector<HTMLElement>(
+          `tr[data-transaction-id="${CSS.escape(id)}"]`,
+        );
+        if (!row) return;
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        row.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+        row.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
+    this.highlightTimer = setTimeout(() => this.highlightedId.set(null), LINKED_HIGHLIGHT_MS);
   }
 
   onPageChange(page: number): void {
