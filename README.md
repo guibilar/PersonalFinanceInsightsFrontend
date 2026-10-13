@@ -207,6 +207,14 @@ Development, sign in as `dev` / `development-only`.
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR.
 
+### CI artifacts
+
+Artifacts count against the storage quota of the GitHub account. When the quota is full, every upload fails.
+CI uploads one artifact only: `test-failure-screenshots`, when the unit tests fail. It keeps 7 days.
+A failed upload does not hide the test result. The step **Warn about a failed upload** writes a warning
+annotation (`Artifact upload failed`). The usual cause is a full quota: delete old artifacts in the
+**Actions** tab. Each new upload step must set `retention-days` and `continue-on-error: true`, with a warning step.
+
 ### Test results as annotations
 
 `npm run test:ci` uses the `ci` configuration of the `test` target (`angular.json`). It writes a JUnit
