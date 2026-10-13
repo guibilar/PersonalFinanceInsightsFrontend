@@ -1,0 +1,163 @@
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Documents</h1>
+    <p class="text-body-secondary mb-0">Receipts, warranties, leases and the dates they expire</p>
+  </div>
+  <a class="btn btn-primary d-inline-flex align-items-center gap-2" routerLink="/documents/new">
+    <app-icon name="plus" [size]="16" /> Add document
+  </a>
+</div>
+
+<div class="kind-filters d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Kind">
+  <button
+    type="button"
+    class="btn btn-sm rounded-pill kind-chip"
+    [class.active]="kind() === null"
+    [attr.aria-pressed]="kind() === null"
+    (click)="selectKind(null)"
+  >
+    All
+  </button>
+  @for (k of kinds; track k) {
+    <button
+      type="button"
+      class="btn btn-sm rounded-pill kind-chip"
+      [class.active]="kind() === k"
+      [attr.aria-pressed]="kind() === k"
+      (click)="selectKind(k)"
+    >
+      {{ kindLabels[k] }}
+    </button>
+  }
+</div>
+
+<form class="search mb-4" role="search" (submit)="$event.preventDefault()">
+  <label for="document-search" class="visually-hidden">Search documents</label>
+  <app-icon name="search" [size]="16" class="search-icon text-body-secondary" />
+  <input
+    type="search"
+    id="document-search"
+    class="form-control"
+    placeholder="Search titles, tags, notes and the text of the files"
+    autocomplete="off"
+    [formControl]="search"
+    (keydown.escape)="clearSearch()"
+  />
+</form>
+
+@if (!q() && expiringSoon().length > 0) {
+  <section class="mb-4" aria-labelledby="expire-soon-heading">
+    <h2 id="expire-soon-heading" class="section-label mb-2">Expire soon</h2>
+    <div class="card">
+      <ul class="list-group list-group-flush" data-testid="expire-soon">
+        @for (document of expiringSoon(); track document.id) {
+          <li class="list-group-item p-0">
+            <a class="document-row" [routerLink]="['/documents', document.id]">
+              <span class="flex-grow-1 min-w-0">
+                <span class="d-block fw-medium text-truncate">{{ document.title }}</span>
+                <span class="d-block small text-body-secondary">{{ subtitle(document) }}</span>
+              </span>
+              <span
+                class="badge expiry-badge"
+                [class.text-bg-warning]="expiresVerySoon(document)"
+                [class.text-bg-light]="!expiresVerySoon(document)"
+                >{{ expiry(document) }}</span
+              >
+            </a>
+          </li>
+        }
+      </ul>
+    </div>
+  </section>
+}
+
+<section aria-labelledby="all-heading">
+  <h2 id="all-heading" class="section-label mb-2">
+    {{ q() ? 'Search results' : kind() ? kindLabels[kind()!] : 'All documents' }}
+  </h2>
+
+  @if (documents.error()) {
+    <app-error-state message="Could not load the documents." (retry)="documents.reload()" />
+  } @else if (!result()) {
+    <div class="card">
+      <div class="card-body"><app-skeleton [lines]="5" height="2.25rem" /></div>
+    </div>
+  } @else {
+    <app-paginated-content
+      [data]="result()"
+      [contentTemplate]="rows"
+      (pageChange)="goToPage($event)"
+    />
+    <ng-template #rows let-items="items">
+      @if (items.length === 0) {
+        <div class="card">
+          <div class="card-body text-center text-body-secondary py-5">
+            @if (q()) {
+              <p class="mb-1">No document matches “{{ q() }}”.</p>
+              <p class="small mb-0">Try other words, or search all kinds.</p>
+            } @else if (kind()) {
+              <p class="mb-0">No {{ kindLabels[kind()!].toLowerCase() }} yet.</p>
+            } @else {
+              <p class="mb-1">No documents yet.</p>
+              <p class="small mb-0">
+                Add a scan or a photo of a receipt, a warranty or a lease. The app reads its text,
+                so a search finds it later.
+              </p>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="card">
+          <ul
+            class="list-group list-group-flush"
+            data-testid="documents"
+            [class.is-reloading]="documents.isLoading()"
+          >
+            @for (document of items; track document.id) {
+              <li class="list-group-item p-0">
+                <a class="document-row" [routerLink]="['/documents', document.id]">
+                  <span class="file-icon"><app-icon name="file-text" [size]="18" /></span>
+                  <span class="flex-grow-1 min-w-0">
+                    <span class="d-block fw-medium text-truncate">{{ document.title }}</span>
+                    <span class="d-block small text-body-secondary">
+                      {{ subtitle(document) }}
+                      @if (document.files.length > 1) {
+                        · {{ document.files.length }} files
+                      }
+                      @if (document.links.length > 0) {
+                        · <span class="text-primary-emphasis">Linked</span>
+                      }
+                    </span>
+                    @if (document.tags.length > 0) {
+                      <span class="d-flex flex-wrap gap-1 mt-1">
+                        @for (tag of document.tags; track tag) {
+                          <span class="badge rounded-pill text-bg-light fw-normal">#{{ tag }}</span>
+                        }
+                      </span>
+                    }
+                  </span>
+                  <span class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                    @if (ocr(document); as label) {
+                      <span
+                        class="badge ocr-badge"
+                        [class.text-bg-danger]="document.ocrStatus === 'Failed'"
+                        [class.text-bg-secondary]="document.ocrStatus === 'Pending'"
+                        [attr.data-ocr]="document.ocrStatus"
+                        >{{ label }}</span
+                      >
+                    }
+                    @if (document.expiresOn) {
+                      <span class="small text-body-secondary text-nowrap">{{
+                        expiry(document)
+                      }}</span>
+                    }
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </ng-template>
+  }
+</section>

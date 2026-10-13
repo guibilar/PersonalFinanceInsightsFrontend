@@ -32,7 +32,7 @@ export const MODULES: readonly AppModule[] = [
     description: 'Scans, receipts and the dates they expire',
     icon: 'file-text',
     route: '/documents',
-    status: 'coming-soon',
+    status: 'active',
   },
   {
     id: 'home',

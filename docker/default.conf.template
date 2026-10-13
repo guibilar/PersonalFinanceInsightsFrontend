@@ -36,6 +36,23 @@ server {
         include /etc/nginx/snippets/security-headers.conf;
     }
 
+    # Documents (Hestia.Api): one upload can hold several files, up to the module's limit of 100 MB for the request
+    # (the app checks the files before it sends them). Everything else under /api/ keeps the 6 MB above.
+    # A large upload over a slow link takes time, and the host hashes and stores the files before it answers, so
+    # the timeouts are longer than nginx's default of 60 seconds. client_body_timeout is the longest pause between
+    # two reads of the body, not the time for the whole upload.
+    location ^~ /api/documents {
+        client_max_body_size 100m;
+        client_body_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
     # Files without a content hash in their name must be revalidated, or updates never reach browsers.
     location ~ ^/(theme\.js|favicon\.ico)$ {
         add_header Cache-Control "no-cache";

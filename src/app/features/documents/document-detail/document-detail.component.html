@@ -1,0 +1,296 @@
+<a class="back-link small d-inline-flex align-items-center gap-1 mb-2" routerLink="/documents">
+  ← Documents
+</a>
+
+@if (notFound()) {
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <p class="mb-1">This document does not exist any more.</p>
+      <a class="small" routerLink="/documents">See all documents</a>
+    </div>
+  </div>
+} @else if (documentResource.error() && !document()) {
+  <app-error-state message="Could not load the document." (retry)="reload()" />
+} @else if (!document()) {
+  <app-skeleton [lines]="2" height="2rem" />
+  <div class="card mt-3">
+    <div class="card-body"><app-skeleton [lines]="5" /></div>
+  </div>
+} @else {
+  @let doc = document()!;
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div class="min-w-0">
+      <h1 class="h3 mb-1 text-break">{{ doc.title }}</h1>
+      <p class="text-body-secondary mb-0 d-flex flex-wrap align-items-center gap-2">
+        <span class="badge rounded-pill text-bg-light">{{ doc.kind }}</span>
+        <span>Added {{ day(doc.createdAt) }}</span>
+        @if (doc.expiresOn) {
+          <span data-testid="expiry">· {{ expiry(doc) }} ({{ day(doc.expiresOn) }})</span>
+        }
+      </p>
+    </div>
+    <button
+      type="button"
+      class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
+      [disabled]="busy()"
+      (click)="confirmingDelete.set(true)"
+    >
+      <app-icon name="trash" [size]="16" /> Delete
+    </button>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+      <!-- Details -->
+      <section class="card" aria-labelledby="details-heading">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 id="details-heading" class="h6 mb-0">Details</h2>
+            @if (!editing()) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                (click)="startEdit(doc)"
+              >
+                <app-icon name="pencil" [size]="14" /> Edit
+              </button>
+            }
+          </div>
+          @if (editing() && form(); as form) {
+            <form novalidate (submit)="$event.preventDefault(); save()">
+              <app-document-details-fields [form]="form" />
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" [disabled]="busy()">
+                  {{ busy() ? 'Saving…' : 'Save' }}
+                </button>
+              </div>
+            </form>
+          } @else {
+            <dl class="details mb-0" data-testid="details">
+              <dt>Issued on</dt>
+              <dd>{{ doc.issuedOn ? day(doc.issuedOn) : '—' }}</dd>
+              <dt>Expires on</dt>
+              <dd>{{ doc.expiresOn ? day(doc.expiresOn) : '—' }}</dd>
+              <dt>Tags</dt>
+              <dd>
+                @for (tag of doc.tags; track tag) {
+                  <span class="badge rounded-pill text-bg-light fw-normal me-1">#{{ tag }}</span>
+                } @empty {
+                  —
+                }
+              </dd>
+              <dt>Notes</dt>
+              <dd class="notes">{{ doc.notes || '—' }}</dd>
+            </dl>
+          }
+        </div>
+      </section>
+
+      <!-- Files -->
+      <section class="card" aria-labelledby="files-heading">
+        <div class="card-body">
+          <h2 id="files-heading" class="h6 mb-3">
+            {{ doc.files.length === 1 ? 'File' : doc.files.length + ' files' }}
+          </h2>
+          <ul class="list-unstyled d-flex flex-column gap-3 mb-0" data-testid="files">
+            @for (file of doc.files; track file.id) {
+              <li class="file">
+                @if (preview(file) === 'image') {
+                  <a [href]="fileUrl(file, true)" target="_blank" rel="noopener">
+                    <img
+                      class="file-preview"
+                      loading="lazy"
+                      [src]="fileUrl(file, true)"
+                      [alt]="'Preview of ' + file.fileName"
+                    />
+                  </a>
+                }
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <app-icon [name]="icon(file)" [size]="16" class="text-body-secondary" />
+                  <span class="flex-grow-1 min-w-0 text-truncate" [title]="file.fileName">{{
+                    file.fileName
+                  }}</span>
+                  <span class="small text-body-secondary text-nowrap">{{ size(file.size) }}</span>
+                  @if (preview(file)) {
+                    <a
+                      class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                      target="_blank"
+                      rel="noopener"
+                      [href]="fileUrl(file, true)"
+                      [attr.aria-label]="'Open ' + file.fileName"
+                    >
+                      <app-icon name="external-link" [size]="14" /> Open
+                    </a>
+                  }
+                  <a
+                    class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                    [href]="fileUrl(file)"
+                    [attr.download]="file.fileName"
+                    [attr.aria-label]="'Download ' + file.fileName"
+                  >
+                    <app-icon name="download" [size]="14" /> Download
+                  </a>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+      <!-- Text read from the files -->
+      <section class="card" aria-labelledby="text-heading" data-testid="ocr">
+        <div class="card-body">
+          <h2 id="text-heading" class="h6 mb-3">Text</h2>
+          @switch (doc.ocrStatus) {
+            @case ('Pending') {
+              @if (stoppedPolling()) {
+                <p class="mb-2">The text is still being read. This can take a few minutes.</p>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="reload()">
+                  Check again
+                </button>
+              } @else {
+                <p class="mb-0 d-flex align-items-center gap-2" role="status">
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  Reading the text of the files…
+                </p>
+              }
+            }
+            @case ('Failed') {
+              <div class="alert alert-danger mb-3" role="alert">
+                <p class="mb-1 fw-medium">The text could not be read.</p>
+                @if (doc.ocrError) {
+                  <p class="small mb-0 text-break">{{ doc.ocrError }}</p>
+                }
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                [disabled]="busy()"
+                (click)="retryOcr()"
+              >
+                <app-icon name="refresh" [size]="14" /> Run OCR again
+              </button>
+            }
+            @case ('NotNeeded') {
+              <p class="text-body-secondary mb-0">
+                Text recognition was off when this document was added.
+              </p>
+            }
+          }
+          @if (doc.ocrText) {
+            <details class="ocr-text" [class.mt-3]="doc.ocrStatus !== 'Done'">
+              <summary>Show the text ({{ doc.ocrText.length }} characters)</summary>
+              <pre class="mt-2 mb-0">{{ doc.ocrText }}</pre>
+            </details>
+          } @else if (doc.ocrStatus === 'Done') {
+            <p class="text-body-secondary mb-0">The files have no text.</p>
+          }
+        </div>
+      </section>
+
+      <!-- Links -->
+      <section class="card" aria-labelledby="links-heading">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 id="links-heading" class="h6 mb-0">Linked transactions</h2>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+              [disabled]="busy()"
+              (click)="picking.set(true)"
+            >
+              <app-icon name="link" [size]="14" /> Link to a transaction
+            </button>
+          </div>
+          @if (doc.links.length === 0) {
+            <p class="text-body-secondary small mb-0">
+              Link a receipt to its purchase, so each finds the other.
+            </p>
+          } @else if (linkViews.error()) {
+            <app-error-state message="Could not load the links." (retry)="linkViews.reload()" />
+          } @else if (!linkViews.hasValue()) {
+            <app-skeleton [lines]="doc.links.length" height="2.5rem" />
+          } @else {
+            <ul class="list-group" data-testid="links">
+              @for (view of linkViews.value(); track view.link.id) {
+                <li class="list-group-item d-flex align-items-center gap-2">
+                  @if (view.transaction; as t) {
+                    @let target = transactionLink(t.id);
+                    <a
+                      class="flex-grow-1 min-w-0 link-target"
+                      [routerLink]="target.route"
+                      [queryParams]="target.queryParams"
+                    >
+                      <span class="d-block text-truncate fw-medium">{{ t.description }}</span>
+                      <span class="d-block small text-body-secondary">
+                        {{ day(t.date) }} · {{ t.accountName }}
+                        @if (t.hidden) {
+                          · Deleted
+                        }
+                      </span>
+                    </a>
+                    <span class="text-nowrap fw-medium">{{ t.amount | money }}</span>
+                  } @else if (view.link.kind === 'Money.Transaction') {
+                    <span class="flex-grow-1 text-body-secondary small"
+                      >A transaction that Money does not know any more</span
+                    >
+                  } @else {
+                    <span class="flex-grow-1 text-body-secondary small text-break"
+                      >{{ view.link.kind }} {{ view.link.targetId }}</span
+                    >
+                  }
+                  <button
+                    type="button"
+                    class="btn btn-icon btn-icon-danger"
+                    title="Unlink"
+                    [attr.aria-label]="'Unlink ' + linkName(view)"
+                    [disabled]="busy()"
+                    (click)="unlinking.set(view)"
+                  >
+                    <app-icon name="close" [size]="16" />
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+
+  @if (confirmingDelete()) {
+    <app-confirm-dialog
+      [title]="'Delete “' + doc.title + '”?'"
+      message="Its files, its text and its links go too. This cannot be undone."
+      [confirmLabel]="busy() ? 'Deleting…' : 'Delete'"
+      [danger]="true"
+      (confirmed)="confirmDelete(doc)"
+      (cancelled)="confirmingDelete.set(false)"
+    />
+  }
+
+  @if (unlinking(); as view) {
+    <app-confirm-dialog
+      title="Unlink the transaction?"
+      [message]="'The document stays, and so does ' + linkName(view) + '.'"
+      [confirmLabel]="busy() ? 'Unlinking…' : 'Unlink'"
+      [danger]="true"
+      (confirmed)="confirmUnlink(view)"
+      (cancelled)="unlinking.set(null)"
+    />
+  }
+
+  @if (picking()) {
+    <app-transaction-picker
+      [linkedIds]="linkedTransactionIds()"
+      [busy]="busy()"
+      (picked)="link($event)"
+      (closed)="picking.set(false)"
+    />
+  }
+}

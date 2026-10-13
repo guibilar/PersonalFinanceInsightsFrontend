@@ -11,7 +11,7 @@ describe('ModulesComponent', () => {
     });
   });
 
-  it('opens Money and shows the other modules as coming soon', async () => {
+  it('opens Money and Documents, and shows the other modules as coming soon', async () => {
     const fixture = TestBed.createComponent(ModulesComponent);
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
@@ -19,10 +19,12 @@ describe('ModulesComponent', () => {
     const money = root.querySelector<HTMLAnchorElement>('a[data-module="money"]')!;
     expect(money.getAttribute('href')).toBe('/money');
     expect(money.textContent).not.toContain('Coming soon');
+    const documents = root.querySelector<HTMLAnchorElement>('a[data-module="documents"]')!;
+    expect(documents.getAttribute('href')).toBe('/documents');
+    expect(documents.textContent).not.toContain('Coming soon');
 
     const comingSoon = Array.from(root.querySelectorAll('.coming-soon'));
     expect(comingSoon.map((card) => card.getAttribute('data-module'))).toEqual([
-      'documents',
       'home',
       'people',
       'journal',

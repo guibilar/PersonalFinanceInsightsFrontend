@@ -14,10 +14,11 @@ round centre action; the menu button at the top opens the modules and the accoun
 | ----------- | ----------- | -------------------------------------------------------------------------------- |
 | Today       | `/today`    | Cards from the Today API: Money tiles, "Needs attention", modules still to come  |
 | Timeline    | `/timeline` | A placeholder for now                                                            |
-| Capture     | `/capture`  | "Add transaction" and "Import statements"; the other actions are coming soon     |
-| Modules     | `/modules`  | Every module: Money opens, the others show "Coming soon"                         |
+| Capture     | `/capture`  | "Add transaction", "Import statements" and "Add document"; the others are coming soon |
+| Modules     | `/modules`  | Every module: Money and Documents open, the others show "Coming soon"            |
 | Search      | `/search`   | A placeholder for now                                                            |
 | Money       | `/money/…`  | The finance pages below, with their own sub-menu                                 |
+| Documents   | `/documents/…` | Receipts, warranties, leases and other papers (below)                         |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -132,6 +133,41 @@ merchants left in Other because no rule names them; picking a category adds the 
 
 **Categories and tags.** Names and colours, used everywhere they show. Tags are your own labels across categories
 ("Vacation 2026"); a tag on a row filters the list by it.
+
+## Documents
+
+The Documents module keeps scans and photos of receipts, warranties, leases, tax slips, insurance policies and
+manuals. It needs Hestia.Api (`/api/documents`, the Documents module of HestiaBackend); the finance backend alone does
+not have it.
+
+| Page   | Path              | What it shows                                                                      |
+| ------ | ----------------- | ---------------------------------------------------------------------------------- |
+| List   | `/documents`      | Kind filters, a search, "Expire soon" (the next 30 days), and all documents         |
+| Add    | `/documents/new`  | The upload: files (pick or drop) and details                                       |
+| Detail | `/documents/<id>` | Details (edit), files (view, download), the text read from them, links, delete     |
+
+- **List.** The kind filters and the search are in the address (`/documents?kind=Warranty&q=kettle&page=2`), so the
+  way back from a document keeps them. The search is the server's full-text search: titles, tags, notes and the text
+  read from the files, best match first. A small label shows a document whose text is still being read, or could not
+  be read.
+- **Add.** One document can have several files (for example the pages of a lease): PDF, JPEG, PNG, HEIC or WebP, up to
+  25 MB each and 100 MB together. The browser checks the type and the size before the upload; the server checks them
+  again, and its reason shows when it refuses. The title starts as the name of the first file. After the upload, the
+  document opens. "Add document" is also on the Capture page.
+- **Detail.** Images show on the page. PDFs and images open in a new tab (`?inline=true`), and every file can be
+  downloaded. HEIC files are a download only, because most browsers do not show them. The page cannot show a PDF in a
+  frame: the security headers forbid frames. The server reads the text of the files in the background (OCR). While it
+  does, the page loads the document again every 3 seconds, for at most 2 minutes. When the OCR failed, the page shows
+  why, with "Run OCR again".
+- **Links.** "Link to a transaction" lists the recent transactions, or the ones whose description matches a search.
+  Each link shows the transaction (description, day, account, amount) and opens it in Money (`transactionLink(id)`).
+  A deleted transaction shows as "Deleted".
+- **Today.** The Documents "Needs attention" items ("expires soon") link to `/documents/<id>`.
+- A read-only user can only read. The web app cannot tell such a user from the sign-in, so a refused change says
+  "This account can only read documents." (403).
+
+The models are in `core/models/outputs/document-output-dto.ts`, written by hand from the HestiaBackend contracts
+(`DocumentDtos.cs`). The pages are in `features/documents/`.
 
 ## Accounts and flows
 
@@ -258,6 +294,7 @@ src/app/
   shared/     ui/ (cards, modal, confirm dialog, toasts, tag picker, skeletons...), charts/ (theme, chart helper),
               utils/ (formatting, months, date presets, flows, problem details...)
   features/   today/, capture/, modules/, placeholder/ (Timeline, Search)               (lazy-loaded routes)
+              documents/ (the Documents module: list, upload, detail, transaction picker)
               money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
               transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
               bank-accounts/ (Accounts)
@@ -294,7 +331,8 @@ also on `http://localhost:5095`. Troubleshooting: `docker compose logs tailscale
 per service.
 
 `docker/smoke-test.sh [base-url]` checks a running container: security headers, HSTS only over HTTPS,
-SPA routing, and that uploads over 1 MB get past nginx. CI builds the image and runs it on every change.
+SPA routing, and the upload limits: a 2 MB statement gets past nginx and a 7 MB one does not; a 20 MB document gets
+past nginx and a 101 MB one does not. CI builds the image and runs it on every change.
 
 The image is `nginxinc/nginx-unprivileged:stable-alpine`: nginx runs as uid 101, not root, on the
 stable branch. The tag moves with each stable release, so rebuild now and then with
@@ -316,7 +354,8 @@ To go back, remove the line from `.env` and run `docker compose up -d` again. ng
 
 nginx also:
 
-- accepts uploads up to 6 MB on `/api/` (a 5 MB statement plus the form envelope; nginx's default is 1 MB);
+- accepts uploads up to 6 MB on `/api/` (a 5 MB statement plus the form envelope; nginx's default is 1 MB), and up to
+  100 MB on `/api/documents` (the Documents limit), with 5-minute timeouts for a slow upload;
 - sends security headers on every response (`docker/security-headers.conf`): a Content-Security-Policy that
   only allows this origin's scripts, no framing, `nosniff`, a same-origin referrer policy;
 - hides its version, and caches hashed bundles for a year while `index.html`, `theme.js` and the favicon

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { StatementImportLauncher } from '../../core/data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../core/data/transaction-add-launcher.service';
+import { RouterLink } from '@angular/router';
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 
 interface CaptureAction {
@@ -11,18 +12,17 @@ interface CaptureAction {
 
 /** Capture actions still to come, the same as on Android. The Inbox (T18) makes them work. */
 export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
-  { label: 'Document', hint: 'A scan or a photo', icon: 'file-text' },
   { label: 'Note', hint: 'A quick thought', icon: 'note' },
   { label: 'Task', hint: 'Something to do', icon: 'list-checks' },
 ];
 
 /**
  * Capture: one place to add something to any module. For now it adds a transaction or imports bank statements into
- * Money, and shows the other actions as coming soon.
+ * Money, adds a document (a scan or a photo), and shows the other actions as coming soon.
  */
 @Component({
   selector: 'app-capture',
-  imports: [IconComponent],
+  imports: [IconComponent, RouterLink],
   template: `
     <div class="mb-4">
       <h1 class="h3 mb-1">Capture</h1>
@@ -54,6 +54,19 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
           </span>
         </button>
       </div>
+      <div class="col">
+        <a class="card h-100 w-100 capture-action" routerLink="/documents/new">
+          <span class="card-body d-flex gap-3 align-items-center text-start">
+            <span class="action-icon"><app-icon name="file-text" /></span>
+            <span class="min-w-0">
+              <span class="d-block fw-semibold">Add document</span>
+              <span class="d-block small text-body-secondary"
+                >A scan or a photo: a receipt, a warranty, a lease</span
+              >
+            </span>
+          </span>
+        </a>
+      </div>
       @for (action of comingActions; track action.label) {
         <div class="col">
           <button type="button" class="card h-100 w-100 capture-action" disabled>
@@ -76,6 +89,7 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
     .capture-action {
       padding: 0;
       color: inherit;
+      text-decoration: none;
 
       &:not(:disabled):hover {
         border-color: var(--bs-primary-border-subtle);

@@ -54,10 +54,12 @@ describe('ShellComponent', () => {
       'Search',
     ]);
     expect(labels('.sidebar .nav-group .nav-group-label')).toEqual(['Modules']);
-    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual(['Money']);
-    expect(root.querySelector('.sidebar .nav-group .nav-item')!.getAttribute('href')).toBe(
-      '/money',
-    );
+    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual(['Money', 'Documents']);
+    expect(
+      Array.from(root.querySelectorAll('.sidebar .nav-group .nav-item')).map((item) =>
+        item.getAttribute('href'),
+      ),
+    ).toEqual(['/money', '/documents']);
   });
 
   it('has the main menu as a bottom bar for small screens, with Capture as its centre action', async () => {
