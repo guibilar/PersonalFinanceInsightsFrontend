@@ -33,13 +33,24 @@ jobs:
       - name: Test results as annotations
         if: always() && steps.tests.outcome != 'skipped'
         run: python3 scripts/test-annotations.py test-results/junit.xml 'Unit tests'
+      # Artifacts count against the account's storage quota. See "CI artifacts" in the README for the policy.
+      # A failed upload (usually a full quota) does not hide the test result: the next step writes a warning.
       - name: Screenshots of failed tests
+        id: upload-screenshots
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: test-failure-screenshots
           path: .vitest/attachments
           if-no-files-found: ignore
+          retention-days: 7
+      - name: Warn about a failed upload
+        if: failure() && steps.upload-screenshots.outcome == 'failure'
+        shell: bash
+        run: >-
+          echo "::warning title=Artifact upload failed::The upload of the test screenshots failed.
+          The usual cause is a full artifact storage quota. Delete old artifacts (README, CI artifacts)."
       - run: npm run build
 
   docker:
