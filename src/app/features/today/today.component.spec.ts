@@ -187,7 +187,7 @@ describe('TodayComponent', () => {
     expect(items[0].querySelector('[data-severity="Bad"]')).not.toBeNull();
 
     expect(root().querySelector('[data-module-status]')).toBeNull();
-    expect(placeholders()).toEqual(['documents', 'home', 'people', 'journal', 'tasks']);
+    expect(placeholders()).toEqual(['home', 'people', 'journal', 'tasks']);
     expect(root().textContent).toContain('Tuesday, October 13');
   });
 
@@ -241,8 +241,9 @@ describe('TodayComponent', () => {
 
     expect(root().textContent).toContain('Money could not load.');
     expect(tileLabels()).toEqual(['Expiring soon']);
-    // Documents now has cards, so it is not a placeholder any more.
+    // Documents is active, so it is never a placeholder; with cards it links to its module.
     expect(placeholders()).toEqual(['home', 'people', 'journal', 'tasks']);
+    expect(root().querySelector('a[href="/documents"]')!.textContent).toContain('Open Documents');
 
     clickButton('Retry');
     await answer(completeAnswer(), '/api/today?refresh=true');
@@ -254,7 +255,7 @@ describe('TodayComponent', () => {
     await fixture.whenStable();
 
     expect(root().textContent).toContain('Could not load Today.');
-    expect(placeholders().length).toBe(5);
+    expect(placeholders().length).toBe(4);
 
     clickButton('Retry');
     await answer(completeAnswer(), '/api/today?refresh=true');
@@ -295,6 +296,25 @@ describe('TodayComponent', () => {
     expect(root().querySelector('[data-card="money.budgets"]')!.textContent).toContain(
       '1 of 3 over',
     );
+  });
+
+  it('opens the document of a Documents "expires soon" item', async () => {
+    const body = completeAnswer();
+    body.modules.push({ module: 'Documents', status: 'Complete' });
+    body.cards = [
+      attention({
+        id: 'documents.expiring.d1',
+        module: 'Documents',
+        kind: 'expiring',
+        text: 'Dishwasher warranty expires soon',
+        link: '/documents/d1',
+      }),
+    ];
+    await answer(body);
+
+    const link = root().querySelector('.attention a')!;
+    expect(link.textContent).toContain('Dishwasher warranty expires soon');
+    expect(link.getAttribute('href')).toBe('/documents/d1');
   });
 
   it('gives no link for a path outside the app', async () => {

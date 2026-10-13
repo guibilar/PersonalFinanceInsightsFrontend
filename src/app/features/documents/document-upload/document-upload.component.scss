@@ -1,0 +1,59 @@
+.back-link {
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+  }
+}
+
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+  color: var(--bs-secondary-color);
+  text-align: center;
+  cursor: pointer;
+
+  .fw-medium {
+    color: var(--bs-body-color);
+  }
+
+  &:hover,
+  &.dragging {
+    border-color: var(--bs-primary);
+    background: var(--bs-primary-bg-subtle);
+  }
+}
+
+// The hidden input keeps the keyboard focus: show it on the zone.
+input:focus-visible + .drop-zone,
+.drop-zone:has(+ input:focus-visible) {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.chosen-file {
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-tertiary-bg);
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.btn-icon {
+  display: inline-flex;
+  padding: 0.3125rem;
+  color: var(--bs-secondary-color);
+
+  &:hover {
+    color: var(--bs-emphasis-color);
+    background: var(--bs-secondary-bg);
+  }
+}

@@ -70,6 +70,12 @@ export const routes: Routes = [
         path: MONEY_ROOT.slice(1),
         loadChildren: () => import('./features/money/money.routes').then((m) => m.MONEY_ROUTES),
       },
+      {
+        // The Documents module (Hestia.Api): the list, the upload and one document.
+        path: 'documents',
+        loadChildren: () =>
+          import('./features/documents/documents.routes').then((m) => m.DOCUMENTS_ROUTES),
+      },
       // The finance pages' old addresses, before Money was a module.
       ...LEGACY_FINANCE_REDIRECTS,
     ],

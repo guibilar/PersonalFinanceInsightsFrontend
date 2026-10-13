@@ -31,4 +31,17 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -F "file=@$tmp;filename=statemen
 rm -f "$tmp"
 [ "$status" != 413 ] || fail "a 2 MB upload was rejected by nginx (413)"
 
+# Other API paths keep the 6 MB limit.
+upload() { # size in MiB (nginx's "m"), path, file name
+  file=$(mktemp)
+  head -c "$(($1 * 1048576))" /dev/zero > "$file"
+  curl -s -o /dev/null -w '%{http_code}' -F "files=@$file;filename=$3" "$BASE$2"
+  rm -f "$file"
+}
+[ "$(upload 7 /api/Transaction/Import statement.csv)" = 413 ] || fail "a 7 MB statement got past nginx (6 MB limit)"
+
+# Documents take up to 100 MB in one upload: a 20 MB PDF reaches the API, 101 MB does not.
+[ "$(upload 20 /api/documents scan.pdf)" != 413 ] || fail "a 20 MB document was rejected by nginx (413)"
+[ "$(upload 101 /api/documents scan.pdf)" = 413 ] || fail "a 101 MB document got past nginx (100 MB limit)"
+
 echo "Smoke test passed ($BASE)"

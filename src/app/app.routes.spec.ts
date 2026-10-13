@@ -67,6 +67,13 @@ describe('app routes', () => {
     expect(await open(url)).toBe(url);
   });
 
+  it.each(['/documents', '/documents/new', '/documents/0199f1a0-1111-7000-8000-000000000001'])(
+    'opens %s in the Documents module',
+    async (url) => {
+      expect(await open(url)).toBe(url);
+    },
+  );
+
   it('signs in first, then returns to the new address of an old link', async () => {
     user = null;
 
