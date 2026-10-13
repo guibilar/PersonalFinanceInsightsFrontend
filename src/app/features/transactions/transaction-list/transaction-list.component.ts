@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subscription, map, of, switchMap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
@@ -74,6 +74,9 @@ import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 /** Why a link to one transaction (`?id=…`) shows the normal list instead. */
 export type LinkedNotice = 'missing' | 'deleted' | 'failed';
+
+/** The address fragment that opens the statement import, as in `/money/transactions#import` (Today, T57). */
+export const IMPORT_FRAGMENT = 'import';
 
 /** How long a linked transaction stays highlighted. */
 export const LINKED_HIGHLIGHT_MS = 3000;
@@ -148,6 +151,9 @@ export class TransactionListComponent {
     ...criteriaFromQuery(this.route.snapshot.queryParamMap),
   });
   readonly showImport = signal(false);
+  private readonly fragment = toSignal(this.route.fragment, {
+    initialValue: this.route.snapshot.fragment,
+  });
   /** Why the linked transaction is not shown, until dismissed or the criteria change. */
   readonly linkedNotice = signal<LinkedNotice | null>(null);
   readonly linkedMessages: Record<LinkedNotice, string> = {
@@ -278,6 +284,20 @@ export class TransactionListComponent {
     const seen = changes();
     effect(() => {
       if (changes() !== seen) untracked(() => this.reload());
+    });
+    // A link with "#import" (Today's statement items) opens the import, as the button does. Then the fragment goes
+    // from the address, so a refresh or the back button does not open it again.
+    effect(() => {
+      if (this.fragment() !== IMPORT_FRAGMENT) return;
+      untracked(() => {
+        this.showImport.set(true);
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParamsHandling: 'preserve',
+          replaceUrl: true,
+          state: { [OWN_NAVIGATION]: true },
+        });
+      });
     });
     // The address follows the criteria, so a refresh, the back button or a copied link shows the same list...
     effect(() => {

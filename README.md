@@ -33,6 +33,8 @@ only shows them:
 - "Refresh" asks the server for a new answer (`?refresh=true`), past its 30-second cache. A statement import or a
   new transaction from this app does the same.
 - A module in the registry that the server has no cards for shows a "Coming soon" card.
+- A card link is a route of this app. The page keeps its query string and its fragment, for example
+  `/money/rules#unsorted` or `/money/transactions#import`.
 
 The models are in `core/models/outputs/today-output-dto.ts`, written by hand from the Hestia OpenAPI document.
 
@@ -94,6 +96,10 @@ preset.
 account, scrolls to it and highlights it for 3 seconds. The keyboard focus goes to its row. The address then keeps the
 day and account, not the id. If the transaction does not exist or is deleted, a short message shows over the normal
 list; for a deleted one, the message links to "Deleted". Today, Timeline, Search and notifications can use this link.
+
+**A link that opens the import:** `/money/transactions#import` opens the statement import, as the "Import statement"
+button does. Today's statement items ("No recent import", "Statement to import") use it (T57). The page then removes
+the fragment from the address and keeps the query string, so a refresh does not open the import again.
 
 A transaction can be:
 

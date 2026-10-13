@@ -88,7 +88,7 @@ function completeAnswer(): TodayDto {
           account: { type: 'Text', text: 'Chequing' },
           reach: { type: 'Date', date: '2026-08-31' },
         },
-        link: '/money/transactions',
+        link: '/money/transactions#import',
       }),
       attention({
         id: 'money.unsorted',
@@ -181,7 +181,7 @@ describe('TodayComponent', () => {
     ]);
     expect(items.map((item) => item.querySelector('a')!.getAttribute('href'))).toEqual([
       '/money/budgets',
-      '/money/transactions',
+      '/money/transactions#import',
       '/money/rules#unsorted',
     ]);
     expect(items[0].querySelector('[data-severity="Bad"]')).not.toBeNull();
@@ -189,6 +189,16 @@ describe('TodayComponent', () => {
     expect(root().querySelector('[data-module-status]')).toBeNull();
     expect(placeholders()).toEqual(['documents', 'home', 'people', 'journal', 'tasks']);
     expect(root().textContent).toContain('Tuesday, October 13');
+  });
+
+  it('keeps the fragment of a link, so a statement item opens the import', async () => {
+    await answer(completeAnswer());
+    const card = completeAnswer().cards.find((c) => c.kind === 'statements-behind')!;
+
+    const tree = fixture.componentInstance.linkOf(card)!;
+
+    expect(tree.fragment).toBe('import');
+    expect(tree.toString()).toBe('/money/transactions#import');
   });
 
   it('shows no "Needs attention" list when nothing needs a look', async () => {
