@@ -32,9 +32,9 @@ rm -f "$tmp"
 [ "$status" != 413 ] || fail "a 2 MB upload was rejected by nginx (413)"
 
 # Other API paths keep the 6 MB limit.
-upload() { # size in MB, path, file name
+upload() { # size in MiB (nginx's "m"), path, file name
   file=$(mktemp)
-  head -c "$(($1 * 1000000))" /dev/zero > "$file"
+  head -c "$(($1 * 1048576))" /dev/zero > "$file"
   curl -s -o /dev/null -w '%{http_code}' -F "files=@$file;filename=$3" "$BASE$2"
   rm -f "$file"
 }

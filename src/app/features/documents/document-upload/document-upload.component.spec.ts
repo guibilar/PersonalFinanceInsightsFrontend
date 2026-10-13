@@ -28,7 +28,8 @@ describe('DocumentUploadComponent', () => {
   }
 
   async function render(): Promise<void> {
-    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
     fixture.detectChanges();
   }
 

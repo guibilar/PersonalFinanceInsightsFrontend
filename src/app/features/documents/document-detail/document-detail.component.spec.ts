@@ -51,7 +51,8 @@ describe('DocumentDetailComponent', () => {
     )!;
 
   async function render(): Promise<void> {
-    await harness.fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
     harness.fixture.detectChanges();
   }
 

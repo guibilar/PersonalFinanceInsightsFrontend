@@ -43,14 +43,16 @@ describe('DocumentListComponent', () => {
     const page = Number(requests.page?.request.params.get('page') ?? 1);
     requests.page?.flush(testPage(items, page, totalCount));
     requests.expiring?.flush(testPage(expiring));
-    await harness.fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
     harness.fixture.detectChanges();
     return requests;
   }
 
   async function settle(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve));
-    await harness.fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
   }
 
   function addDays(days: number): string {
@@ -221,7 +223,8 @@ describe('DocumentListComponent', () => {
     const requests = pending();
     requests.page!.flush(null, { status: 502, statusText: 'Bad Gateway' });
     requests.expiring!.flush(testPage([]));
-    await harness.fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
 
     expect(root().textContent).toContain('Could not load the documents.');
     root().querySelector<HTMLButtonElement>('app-error-state button')!.click();
