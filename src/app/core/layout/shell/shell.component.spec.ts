@@ -154,12 +154,7 @@ describe('ShellComponent', () => {
     expect(toast.link).toEqual({
       label: 'View',
       route: '/money/transactions',
-      queryParams: {
-        description: 'Farmers market',
-        accountId: 'a1',
-        startDate: '2026-10-09',
-        endDate: '2026-10-09',
-      },
+      queryParams: { id: 't9' },
     });
   });
 

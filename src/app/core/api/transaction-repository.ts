@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import { TransactionFilterInputDto } from '../models/inputs/transaction-filter-input-dto';
 import { TransactionOutputDto } from '../models/outputs/transaction-output-dto';
@@ -78,6 +78,19 @@ export class TransactionRepository {
 
   restore(id: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/${id}/Restore`, null);
+  }
+
+  /**
+   * One transaction by id, or null when there is none. The API has no "get by id": this is the filter with
+   * `transactionId`. Deleted (hidden) transactions are found only with `hidden`.
+   */
+  find(id: string, hidden = false): Observable<TransactionOutputDto | null> {
+    return this.filter({
+      transactionId: id,
+      ...(hidden ? { hidden: true } : {}),
+      page: 1,
+      pageSize: 1,
+    }).pipe(map((result) => result.items[0] ?? null));
   }
 
   filter(filterDto: TransactionFilterInputDto): Observable<PaginatedResult<TransactionOutputDto>> {

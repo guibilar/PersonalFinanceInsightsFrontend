@@ -71,6 +71,23 @@
   />
 }
 
+@if (linkedNotice(); as notice) {
+  <div class="alert alert-warning d-flex align-items-center gap-2 py-2" role="status">
+    <span>{{ linkedMessages[notice] }}</span>
+    @if (notice === 'deleted') {
+      <button type="button" class="btn btn-link btn-sm p-0" (click)="toggleDeleted()">
+        Show deleted transactions
+      </button>
+    }
+    <button
+      type="button"
+      class="btn-close ms-auto"
+      aria-label="Dismiss"
+      (click)="linkedNotice.set(null)"
+    ></button>
+  </div>
+}
+
 <div class="card">
   @if (transactions.error()) {
     <div class="card-body">
@@ -195,7 +212,13 @@
         </thead>
         <tbody>
           @for (transaction of items; track transaction.id) {
-            <tr [class.table-active]="isSelected(transaction.id)">
+            <!-- tabindex -1: a linked transaction gets the focus, so the keyboard continues from it. -->
+            <tr
+              tabindex="-1"
+              [attr.data-transaction-id]="transaction.id"
+              [class.table-active]="isSelected(transaction.id)"
+              [class.is-linked]="highlightedId() === transaction.id"
+            >
               @if (!showDeleted()) {
                 <td class="select-col">
                   <input

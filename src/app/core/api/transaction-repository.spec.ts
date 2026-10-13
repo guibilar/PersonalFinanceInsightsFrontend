@@ -23,6 +23,25 @@ describe('TransactionRepository', () => {
 
   afterEach(() => http.verify());
 
+  it('finds one transaction by id with the filter, and null when there is none', () => {
+    const found: unknown[] = [];
+    repository.find('t1').subscribe((t) => found.push(t));
+    repository.find('t2', true).subscribe((t) => found.push(t));
+
+    const [visible, deleted] = http.match('/api/Transaction/Filter');
+    expect(visible.request.body).toEqual({ transactionId: 't1', page: 1, pageSize: 1 });
+    expect(deleted.request.body).toEqual({
+      transactionId: 't2',
+      hidden: true,
+      page: 1,
+      pageSize: 1,
+    });
+    visible.flush({ items: [{ id: 't1' }], page: 1, pageSize: 1, totalCount: 1, totalPages: 1 });
+    deleted.flush({ items: [], page: 1, pageSize: 1, totalCount: 0, totalPages: 0 });
+
+    expect(found).toEqual([{ id: 't1' }, null]);
+  });
+
   it('links a transaction to a budget', () => {
     repository.linkTransaction({ transactionId: 't1', budgetId: 'b1' }).subscribe();
 

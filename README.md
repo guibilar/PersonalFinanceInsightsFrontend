@@ -46,8 +46,8 @@ The Money sub-menu keeps the groups of the old sidebar:
 
 "Add transaction" is on the Transactions page and on the Capture page (the same as "Expense" on Android). From
 Capture, the form opens over the current page (`TransactionAddLauncher` opens it, and the shell shows it). After a
-save, a notification has a "View" link that opens the new transaction in `/money/transactions`. The next transaction
-starts on the same day and account.
+save, a notification has a "View" link that opens the new transaction in `/money/transactions` (a link to one
+transaction, below). The next transaction starts on the same day and account.
 
 **Old addresses.** Before Money was a module, the finance pages were at the top level (`/transactions`, `/budgets`,
 `/net-worth` and so on). Each old address opens the same page under `/money`, with its query string and fragment, so
@@ -87,6 +87,13 @@ clicking a bar lists that period.
 Links can open the page filtered, as the dashboard's do:
 `/money/transactions?categoryId=…&startDate=…&endDate=…&interval=Week&overTime=1`. Dates that match a preset show as that
 preset.
+
+**A link to one transaction:** `/money/transactions?id=<transaction id>` (make it with `transactionLink(id)` in
+`features/transactions/transaction-list/transaction-list-query.ts`). The page finds the transaction
+(`POST /api/Transaction/Filter` with `transactionId`; the API has no "get by id"), sets the filters to its day and
+account, scrolls to it and highlights it for 3 seconds. The keyboard focus goes to its row. The address then keeps the
+day and account, not the id. If the transaction does not exist or is deleted, a short message shows over the normal
+list; for a deleted one, the message links to "Deleted". Today, Timeline, Search and notifications can use this link.
 
 A transaction can be:
 

@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { TransactionAddPanel, transactionLink } from './transaction-add-panel';
+import { TransactionAddPanel } from './transaction-add-panel';
 import { AccountType } from '../../../core/models/enums/account-type';
 import { Flow } from '../../../core/models/enums/flow';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
@@ -155,19 +155,5 @@ describe('TransactionAddPanel', () => {
 
     expect(TestBed.inject(ToastService).toasts()[0].message).toBe('Could not add the transaction.');
     expect(added).toEqual([]);
-  });
-});
-
-describe('transactionLink', () => {
-  it('opens the transactions page filtered to the transaction', () => {
-    expect(transactionLink(saved)).toEqual({
-      route: '/money/transactions',
-      queryParams: {
-        description: 'Farmers market',
-        accountId: 'a1',
-        startDate: '2026-10-09',
-        endDate: '2026-10-09',
-      },
-    });
   });
 });

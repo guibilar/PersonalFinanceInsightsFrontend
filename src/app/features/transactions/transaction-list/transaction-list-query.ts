@@ -1,4 +1,4 @@
-import { ParamMap } from '@angular/router';
+import { ParamMap, Params } from '@angular/router';
 import { Flow } from '../../../core/models/enums/flow';
 import { BreakdownInterval } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { TransactionCriteria } from '../transaction-toolbar/transaction-toolbar.component';
@@ -53,6 +53,17 @@ export function sameCriteria(a: TransactionCriteria, b: TransactionCriteria): bo
 export function intervalFromQuery(query: ParamMap): BreakdownInterval | null {
   const value = query.get('interval');
   return value && value in CLOSER ? (value as BreakdownInterval) : null;
+}
+
+/** The query key of a link to one transaction: `/money/transactions?id=…`. */
+export const TRANSACTION_ID_KEY = 'id';
+
+/**
+ * A link to one transaction. The page finds it, shows its day and account, scrolls to it and highlights it; then the
+ * address keeps those criteria, not the id.
+ */
+export function transactionLink(id: string): { route: string; queryParams: Params } {
+  return { route: '/money/transactions', queryParams: { [TRANSACTION_ID_KEY]: id } };
 }
 
 /** Marks the navigations the list makes itself to keep the address up to date, so it doesn't apply them back. */

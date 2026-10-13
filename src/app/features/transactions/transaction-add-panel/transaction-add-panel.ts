@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Params, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AccountRepository } from '../../../core/api/account-repository';
 import { CategoryRepository } from '../../../core/api/category-repository';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
@@ -9,22 +9,6 @@ import { TransactionOutputDto } from '../../../core/models/outputs/transaction-o
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { conflictDetail, validationDetail } from '../../../shared/utils/problem-detail';
 import { TransactionAddForm } from '../transaction-add-form/transaction-add-form';
-
-/** The transactions page filtered down to one transaction: its description, account and day. */
-export function transactionLink(transaction: TransactionOutputDto): {
-  route: string;
-  queryParams: Params;
-} {
-  return {
-    route: '/money/transactions',
-    queryParams: {
-      description: transaction.description,
-      accountId: transaction.accountId,
-      startDate: transaction.date,
-      endDate: transaction.date,
-    },
-  };
-}
 
 /**
  * "Add transaction" outside the transactions page: the add form with the accounts and categories it needs, and the
