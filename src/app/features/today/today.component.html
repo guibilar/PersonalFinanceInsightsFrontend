@@ -1,0 +1,135 @@
+<div class="d-flex align-items-start gap-2 mb-4">
+  <div class="min-w-0">
+    <h1 class="h3 mb-1">Today</h1>
+    <p class="text-body-secondary mb-0">{{ dateLabel() }}</p>
+  </div>
+  <button
+    type="button"
+    class="btn btn-sm btn-outline-secondary ms-auto d-inline-flex align-items-center gap-1"
+    [disabled]="todayResource.isLoading()"
+    [attr.aria-busy]="todayResource.isLoading()"
+    (click)="refresh()"
+  >
+    <app-icon name="refresh" [size]="14" /> Refresh
+  </button>
+</div>
+
+@if (today()) {
+  @for (section of sections(); track section.id) {
+    <section class="mb-4" [attr.aria-labelledby]="'today-' + section.id">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <h2 [id]="'today-' + section.id" class="h6 mb-0">{{ section.name }}</h2>
+        @if (section.route) {
+          <a [routerLink]="section.route" class="small ms-auto text-decoration-none"
+            >Open {{ section.name }}</a
+          >
+        }
+      </div>
+
+      @if (section.status === 'Failed') {
+        <app-error-state
+          [message]="section.name + ' could not load.'"
+          (retry)="refresh()"
+          [attr.data-module-status]="section.id"
+        />
+      } @else {
+        @if (section.status === 'Partial') {
+          <p
+            class="small text-warning-emphasis mb-2 d-flex align-items-center gap-1"
+            [attr.data-module-status]="section.id"
+          >
+            <app-icon name="alert-circle" [size]="14" />
+            Some {{ section.name }} figures could not load.
+          </p>
+        }
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+          @for (card of section.tiles; track card.id) {
+            <div class="col" [attr.data-card]="card.id">
+              @let tile = linkOf(card);
+              @if (tile) {
+                <a [routerLink]="tile" class="stat-link">
+                  <app-stat-card
+                    [label]="card.title"
+                    [icon]="tileIcon(card)"
+                    [value]="valueText(card)"
+                    [hint]="text(card) || null"
+                    [hintIcon]="trendIcon(card)"
+                    [tone]="tone(card)"
+                  />
+                </a>
+              } @else {
+                <app-stat-card
+                  [label]="card.title"
+                  [icon]="tileIcon(card)"
+                  [value]="valueText(card)"
+                  [hint]="text(card) || null"
+                  [hintIcon]="trendIcon(card)"
+                  [tone]="tone(card)"
+                />
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (attention().length > 0) {
+    <section class="card attention mb-4" aria-labelledby="today-attention">
+      <div class="card-body py-3">
+        <h2 id="today-attention" class="h6 mb-2">Needs attention</h2>
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+          @for (item of attention(); track item.id) {
+            <li class="d-flex align-items-center gap-2" [attr.data-card]="item.id">
+              <span class="attention-icon" [attr.data-severity]="item.severity">
+                <app-icon [name]="attentionIcon(item)" [size]="14" />
+              </span>
+              @let target = linkOf(item);
+              @if (target) {
+                <a [routerLink]="target" class="attention-link flex-grow-1">{{ text(item) }}</a>
+                <app-icon name="arrow-right" [size]="14" class="text-body-secondary" />
+              } @else {
+                <span class="flex-grow-1">{{ text(item) }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+} @else if (todayResource.error()) {
+  <app-error-state message="Could not load Today." (retry)="refresh()" />
+} @else {
+  <section class="mb-4" aria-label="Loading">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+      @for (n of [1, 2, 3, 4]; track n) {
+        <div class="col">
+          <div class="card h-100">
+            <div class="card-body"><app-skeleton [lines]="3" /></div>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+}
+
+@if (comingSoon().length > 0) {
+  <section aria-labelledby="today-more">
+    <h2 id="today-more" class="h6 mb-2">From the other modules</h2>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
+      @for (module of comingSoon(); track module.id) {
+        <div class="col">
+          <div class="card h-100 placeholder-card" [attr.data-module]="module.id">
+            <div class="card-body d-flex gap-3 align-items-start">
+              <span class="module-icon"><app-icon [name]="module.icon" /></span>
+              <div class="min-w-0">
+                <p class="fw-semibold mb-1">{{ module.name }}</p>
+                <p class="small text-body-secondary mb-0">Coming soon. Its cards will show here.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+}

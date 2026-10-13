@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IconComponent, IconName } from '../icon/icon.component';
 
-export type StatTone = 'good' | 'bad' | 'neutral';
+export type StatTone = 'good' | 'bad' | 'warning' | 'neutral';
 
 /** A headline number (KPI) with an icon and an optional coloured hint line. */
 @Component({
@@ -19,6 +19,7 @@ export type StatTone = 'good' | 'bad' | 'neutral';
               class="small mb-0 d-flex align-items-center gap-1"
               [class.text-success]="tone() === 'good'"
               [class.text-danger]="tone() === 'bad'"
+              [class.text-warning-emphasis]="tone() === 'warning'"
               [class.text-body-secondary]="tone() === 'neutral'"
             >
               @if (hintIcon(); as hintIcon) {
