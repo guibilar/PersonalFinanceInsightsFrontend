@@ -28,9 +28,9 @@ interface Hint {
 }
 
 /**
- * The four headline numbers of Money: spent this month, left over, net worth and budgets over their limit. The
- * Dashboard and Today show them; each page loads the reports and passes them in, so the Dashboard asks once for
- * what its other cards also use.
+ * The four headline numbers of Money: spent this month, left over, net worth and budgets over their limit, on the
+ * Dashboard. The page loads the reports and passes them in, so it asks once for what its other cards also use.
+ * Today shows the same tiles from the Today API of Hestia.Api (T10); the server has a copy of these rules.
  */
 @Component({
   selector: 'app-finance-tiles',

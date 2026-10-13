@@ -12,7 +12,7 @@ round centre action; the menu button at the top opens the modules and the accoun
 
 | Page        | Path        | What it shows                                                                    |
 | ----------- | ----------- | -------------------------------------------------------------------------------- |
-| Today       | `/today`    | The four Money tiles (as on the Dashboard), then a card per module still to come |
+| Today       | `/today`    | Cards from the Today API: Money tiles, "Needs attention", modules still to come  |
 | Timeline    | `/timeline` | A placeholder for now                                                            |
 | Capture     | `/capture`  | "Add transaction" and "Import statements"; the other actions are coming soon     |
 | Modules     | `/modules`  | Every module: Money opens, the others show "Coming soon"                         |
@@ -21,6 +21,20 @@ round centre action; the menu button at the top opens the modules and the accoun
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
+
+**Today** reads `GET /api/today` (Hestia.Api, Today module). The server makes all cards and their rules; the page
+only shows them:
+
+- The tiles of each module in a grid (Money first), then one "Needs attention" list for all modules.
+- The server sends raw values. A card text has placeholders such as `{difference}`, and `features/today/today-text.ts`
+  fills them with the app's formats: amounts as on every page (hidden in privacy mode), days as "Jun 30, 2026".
+- A module with the status `Partial` shows a short note above its tiles. A module with the status `Failed` shows an
+  error with "Retry". The other modules keep their cards.
+- "Refresh" asks the server for a new answer (`?refresh=true`), past its 30-second cache. A statement import or a
+  new transaction from this app does the same.
+- A module in the registry that the server has no cards for shows a "Coming soon" card.
+
+The models are in `core/models/outputs/today-output-dto.ts`, written by hand from the Hestia OpenAPI document.
 
 The Money sub-menu keeps the groups of the old sidebar:
 
@@ -166,6 +180,10 @@ npm start          # http://localhost:4200
 The app calls a relative `/api`. During development, `ng serve` forwards it to the
 backend using [`proxy.conf.json`](proxy.conf.json); change the target there if your
 backend runs elsewhere.
+
+Today needs Hestia.Api (`GET /api/today`). The finance backend alone does not have it, so Today shows "Could not load
+Today." To try Today, run HestiaBackend and set the target in `proxy.conf.json` to `http://localhost:5097`; the host
+signs you in and forwards the finance requests.
 
 ## Signing in
 
