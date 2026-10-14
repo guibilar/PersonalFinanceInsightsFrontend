@@ -15,6 +15,8 @@ import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { TransactionBreakdownOutputDto } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { DataChangesService } from '../../../core/data/data-changes.service';
+import { TransactionAddLauncher } from '../../../core/data/transaction-add-launcher.service';
 
 describe('TransactionListComponent', () => {
   let fixture: ComponentFixture<TransactionListComponent>;
@@ -656,93 +658,32 @@ describe('TransactionListComponent', () => {
   });
 
   describe('adding by hand', () => {
-    const input = {
-      date: '2026-09-10',
-      description: 'COFFEE',
-      amount: 4.5,
-      transactionType: TransactionType.Debit,
-      accountId: 'a2',
-    };
+    const root = () => fixture.nativeElement as HTMLElement;
 
     beforeEach(async () => {
       lastFilterRequest();
       await fixture.whenStable();
     });
 
-    it('adds, closes the form, reloads and confirms', () => {
-      component.actions.openAdd();
-      component.actions.onAddSubmit(input);
-      expect(component.actions.savingAdd()).toBe(true);
-      http.expectOne({ method: 'POST', url: '/api/Transaction' }).flush({
-        id: 't9',
-        description: 'COFFEE',
-        accountName: 'Visa',
-      });
+    it('opens the same add panel as Capture, and saves nothing itself', () => {
+      const adder = TestBed.inject(TransactionAddLauncher);
+      const button = Array.from(root().querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Add transaction',
+      )!;
 
-      expect(component.actions.showAdd()).toBe(false);
-      expect(component.actions.savingAdd()).toBe(false);
-      expect(component.actions.lastAdded()).toEqual({ date: '2026-09-10', accountId: 'a2' });
-      lastFilterRequest();
-      expect(
-        TestBed.inject(ToastService)
-          .toasts()
-          .map((t) => t.message),
-      ).toEqual(['Added “COFFEE” to Visa']);
+      button.click();
+
+      expect(adder.isOpen()).toBe(true);
+      // The shell shows the panel; the page has no add form of its own.
+      expect(root().querySelector('app-transaction-add-form')).toBeNull();
+      http.expectNone({ method: 'POST', url: '/api/Transaction' });
     });
 
-    it('keeps the form open on a duplicate, and adds it anyway when asked', () => {
-      component.actions.openAdd();
-      component.actions.onAddSubmit(input);
-      http
-        .expectOne({ method: 'POST', url: '/api/Transaction' })
-        .flush(
-          { status: 409, detail: 'An identical transaction already exists.' },
-          { status: 409, statusText: 'Conflict' },
-        );
+    it('reloads when a transaction is added over the page', () => {
+      TestBed.inject(DataChangesService).changed();
 
-      expect(component.actions.showAdd()).toBe(true);
-      expect(component.actions.addDuplicate()).toBe('An identical transaction already exists.');
-
-      component.actions.onAddSubmit({ ...input, allowDuplicate: true });
-      const again = http.expectOne({ method: 'POST', url: '/api/Transaction' });
-      expect(again.request.body).toEqual({ ...input, allowDuplicate: true });
-      expect(component.actions.addDuplicate()).toBeNull();
-      again.flush({ id: 't10', description: 'COFFEE', accountName: 'Visa' });
-      expect(component.actions.showAdd()).toBe(false);
-    });
-
-    it('keeps the form open and says so when adding fails', () => {
-      component.actions.openAdd();
-      component.actions.onAddSubmit(input);
-      http
-        .expectOne({ method: 'POST', url: '/api/Transaction' })
-        .flush(null, { status: 500, statusText: 'Error' });
-
-      expect(component.actions.showAdd()).toBe(true);
-      expect(component.actions.savingAdd()).toBe(false);
-      expect(
-        TestBed.inject(ToastService)
-          .toasts()
-          .map((t) => t.message),
-      ).toEqual(['Could not add the transaction.']);
-    });
-
-    it('says why the API refused it', () => {
-      component.actions.openAdd();
-      component.actions.onAddSubmit(input);
-      http
-        .expectOne({ method: 'POST', url: '/api/Transaction' })
-        .flush(
-          { status: 400, errors: { categoryId: ["That category doesn't exist."] } },
-          { status: 400, statusText: 'Bad Request' },
-        );
-
-      expect(component.actions.showAdd()).toBe(true);
-      expect(
-        TestBed.inject(ToastService)
-          .toasts()
-          .map((t) => t.message),
-      ).toEqual(["That category doesn't exist."]);
+      // Throws when the page asks for nothing.
+      expect(lastFilterRequest()).toEqual(expect.objectContaining({ page: 1 }));
     });
   });
 

@@ -35,6 +35,7 @@ import {
 } from '../../../core/models/outputs/transaction-breakdown-output-dto';
 import { ImportSummary, describeImport } from '../statement-import/statement-import.component';
 import { DataChangesService } from '../../../core/data/data-changes.service';
+import { TransactionAddLauncher } from '../../../core/data/transaction-add-launcher.service';
 import { Status } from '../../../core/models/enums/status';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
 import { Flow } from '../../../core/models/enums/flow';
@@ -55,7 +56,6 @@ import {
 } from '../transaction-toolbar/transaction-toolbar.component';
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
 import { TransactionEditForm } from '../transaction-edit-form/transaction-edit-form';
-import { TransactionAddForm } from '../transaction-add-form/transaction-add-form';
 import {
   CLOSER,
   criteriaFromQuery,
@@ -107,7 +107,6 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
     TransactionToolbarComponent,
     TransactionLinkForm,
     TransactionEditForm,
-    TransactionAddForm,
     TransactionBulkBar,
     StatementImportComponent,
     TransactionBreakdownComponent,
@@ -133,6 +132,8 @@ export class TransactionListComponent {
   private readonly toasts = inject(ToastService);
   /** Add, edit, link, delete and restore, with their dialogs. */
   readonly actions = inject(TransactionActions);
+  /** "Add transaction" opens the same panel as Capture; the shell shows it and saves the transaction. */
+  protected readonly adder = inject(TransactionAddLauncher);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly columns: Record<'date' | 'description' | 'category' | 'amount', SortableColumn> = {
@@ -279,7 +280,7 @@ export class TransactionListComponent {
         { injector: this.injector },
       );
     });
-    // A statement imported from the sidebar while the list is open: show what it added.
+    // A transaction added or a statement imported over the page (from this page, Capture or the sidebar): show it.
     const changes = inject(DataChangesService).version;
     const seen = changes();
     effect(() => {

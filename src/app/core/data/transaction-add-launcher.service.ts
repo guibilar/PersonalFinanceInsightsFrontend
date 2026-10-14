@@ -1,8 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 
 /**
- * Opens the "Add transaction" panel. The shell shows the panel; Capture has the button that opens it, so a
- * transaction can be added from every page, the same as "Expense" on Android.
+ * Opens the "Add transaction" panel. The shell shows the panel; Capture and the Transactions page have the buttons
+ * that open it, so a transaction can be added from every page with one save path, the same as "Expense" on Android.
  */
 @Injectable({ providedIn: 'root' })
 export class TransactionAddLauncher {

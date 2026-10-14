@@ -156,4 +156,33 @@ describe('TransactionAddPanel', () => {
     expect(TestBed.inject(ToastService).toasts()[0].message).toBe('Could not add the transaction.');
     expect(added).toEqual([]);
   });
+
+  it('says why the API refused it', async () => {
+    await load();
+
+    component.onSubmit(input);
+    http
+      .expectOne({ method: 'POST', url: '/api/Transaction' })
+      .flush(
+        { status: 400, errors: { categoryId: ["That category doesn't exist."] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(component.saving()).toBe(false);
+    expect(TestBed.inject(ToastService).toasts()[0].message).toBe("That category doesn't exist.");
+    expect(added).toEqual([]);
+  });
+
+  it('adds a duplicate when asked, and clears the warning', async () => {
+    await load();
+    component.duplicate.set('An identical transaction already exists.');
+
+    component.onSubmit({ ...input, allowDuplicate: true });
+    expect(component.duplicate()).toBeNull();
+    const request = http.expectOne({ method: 'POST', url: '/api/Transaction' });
+    expect(request.request.body).toEqual({ ...input, allowDuplicate: true });
+    request.flush(saved);
+
+    expect(added).toEqual([saved]);
+  });
 });
