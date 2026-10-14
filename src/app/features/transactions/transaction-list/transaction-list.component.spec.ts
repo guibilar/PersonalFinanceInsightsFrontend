@@ -6,6 +6,8 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { LINKED_HIGHLIGHT_MS, TransactionListComponent } from './transaction-list.component';
+import { StatementImportComponent } from '../statement-import/statement-import.component';
+import { By } from '@angular/platform-browser';
 import { TEST_CATEGORIES, TEST_CATEGORY_LIST } from '../../../testing/test-categories';
 import { TEST_TAGS } from '../../../testing/test-tags';
 import { AccountType } from '../../../core/models/enums/account-type';
@@ -1136,6 +1138,37 @@ describe('TransactionListComponent, in the address bar', () => {
       expect(list.showImport()).toBe(true);
       expect(list.filter().accountId).toBe('a1');
       expect(router.url).toBe('/transactions?accountId=a1');
+    });
+
+    it('selects the account of the link, then takes importAccount from the address too', async () => {
+      const list = await harness.navigateByUrl(
+        '/transactions?accountId=a1&importAccount=a2#import',
+        TransactionListComponent,
+      );
+      await settle();
+      harness.fixture.detectChanges();
+
+      expect(list.showImport()).toBe(true);
+      const dialog = harness.fixture.debugElement.query(By.directive(StatementImportComponent));
+      expect((dialog.componentInstance as StatementImportComponent).accountId()).toBe('a2');
+      // The filter stays; the import account is for this one opening.
+      expect(list.filter().accountId).toBe('a1');
+      expect(router.url).toBe('/transactions?accountId=a1');
+
+      list.showImport.set(false);
+      await settle();
+      expect(list.importAccount()).toBeNull();
+    });
+
+    it('ignores importAccount without the fragment', async () => {
+      const list = await harness.navigateByUrl(
+        '/transactions?importAccount=a2',
+        TransactionListComponent,
+      );
+      await settle();
+
+      expect(list.showImport()).toBe(false);
+      expect(list.importAccount()).toBeNull();
     });
 
     it('opens the import from a link while the page is open', async () => {

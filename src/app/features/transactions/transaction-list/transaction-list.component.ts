@@ -79,6 +79,12 @@ export type LinkedNotice = 'missing' | 'deleted' | 'failed';
 /** The address fragment that opens the statement import, as in `/money/transactions#import` (Today, T57). */
 export const IMPORT_FRAGMENT = 'import';
 
+/**
+ * With {@link IMPORT_FRAGMENT}: the account to select in the import, as in
+ * `/money/transactions?importAccount=<id>#import` (Today's "Statement to import", T63).
+ */
+export const IMPORT_ACCOUNT_KEY = 'importAccount';
+
 /** How long a linked transaction stays highlighted. */
 export const LINKED_HIGHLIGHT_MS = 3000;
 
@@ -154,6 +160,8 @@ export class TransactionListComponent {
     ...criteriaFromQuery(this.route.snapshot.queryParamMap),
   });
   readonly showImport = signal(false);
+  /** The account that a "#import" link asked for (T63); null for the import buttons. */
+  readonly importAccount = signal<string | null>(null);
   private readonly fragment = toSignal(this.route.fragment, {
     initialValue: this.route.snapshot.fragment,
   });
@@ -288,19 +296,26 @@ export class TransactionListComponent {
     effect(() => {
       if (changes() !== seen) untracked(() => this.reload());
     });
-    // A link with "#import" (Today's statement items) opens the import, as the button does. Then the fragment goes
-    // from the address, so a refresh or the back button does not open it again.
+    // A link with "#import" (Today's statement items) opens the import, as the button does, with the account of
+    // "importAccount" selected (T63). Then the fragment and "importAccount" go from the address, so a refresh or the
+    // back button does not open it again.
     effect(() => {
       if (this.fragment() !== IMPORT_FRAGMENT) return;
       untracked(() => {
+        this.importAccount.set(this.route.snapshot.queryParamMap.get(IMPORT_ACCOUNT_KEY));
         this.showImport.set(true);
         void this.router.navigate([], {
           relativeTo: this.route,
-          queryParamsHandling: 'preserve',
+          queryParams: { [IMPORT_ACCOUNT_KEY]: null },
+          queryParamsHandling: 'merge',
           replaceUrl: true,
           state: { [OWN_NAVIGATION]: true },
         });
       });
+    });
+    // The asked account is for that one opening: the import buttons open it with no account.
+    effect(() => {
+      if (!this.showImport()) this.importAccount.set(null);
     });
     // The address follows the criteria, so a refresh, the back button or a copied link shows the same list...
     effect(() => {

@@ -5,8 +5,10 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -59,6 +61,11 @@ export class StatementImportComponent {
   /** Some files are in and others need attention: the list behind can show what was added meanwhile. */
   readonly progressed = output<void>();
   readonly cancelled = output<void>();
+  /**
+   * The account to select when the accounts load, for example from a "Statement to import" link (T63). An id that is
+   * not in the list (deleted, or without statement files) selects nothing.
+   */
+  readonly accountId = input<string | null>(null);
 
   // Accounts without statement files have nothing to import into.
   readonly accounts = rxResource({
@@ -84,6 +91,16 @@ export class StatementImportComponent {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => (this.closed = true));
+    // Selects the asked account once its list is in. A choice made before that stays.
+    effect(() => {
+      const wanted = this.accountId();
+      const list = this.accounts.value();
+      if (!wanted || !list) return;
+      untracked(() => {
+        const account = this.form.controls.accountId;
+        if (account.value === null && list.some((a) => a.id === wanted)) account.setValue(wanted);
+      });
+    });
     // The files go to the account chosen when Import was pressed: switching it meanwhile would show another.
     effect(() => {
       const account = this.form.controls.accountId;

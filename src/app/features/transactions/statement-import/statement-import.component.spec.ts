@@ -105,6 +105,31 @@ describe('StatementImportComponent', () => {
     expect(options).toEqual(['Select the account', 'Chequing · Chequing', 'Visa · Credit card']);
   });
 
+  it('selects the asked account once the accounts load (T63)', async () => {
+    fixture.componentRef.setInput('accountId', 'a2');
+    await loadAccounts();
+    fixture.detectChanges();
+
+    expect(component.form.controls.accountId.value).toBe('a2');
+    const select = root().querySelector<HTMLSelectElement>('#import-account')!;
+    expect(select.selectedOptions[0].textContent!.trim()).toBe('Visa · Credit card');
+  });
+
+  it('selects nothing for an account that is not in the list', async () => {
+    fixture.componentRef.setInput('accountId', 'gone');
+    await loadAccounts();
+
+    expect(component.form.controls.accountId.value).toBeNull();
+  });
+
+  it('keeps an account chosen before the list loaded', async () => {
+    component.form.controls.accountId.setValue('a1');
+    fixture.componentRef.setInput('accountId', 'a2');
+    await loadAccounts();
+
+    expect(component.form.controls.accountId.value).toBe('a1');
+  });
+
   it('sends to the accounts page when there are none', async () => {
     await loadAccounts([]);
 
