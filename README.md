@@ -116,6 +116,9 @@ list; for a deleted one, the message links to "Deleted". Today, Timeline, Search
 **A link that opens the import:** `/money/transactions#import` opens the statement import, as the "Import statement"
 button does. Today's statement items ("No recent import", "Statement to import") use it (T57). The page then removes
 the fragment from the address and keeps the query string, so a refresh does not open the import again.
+"Statement to import" adds the account: `/money/transactions?importAccount=<id>#import` opens the import with that
+account selected (T63). An account that is not in the list selects nothing. The page also removes `importAccount`
+from the address.
 
 A transaction can be:
 

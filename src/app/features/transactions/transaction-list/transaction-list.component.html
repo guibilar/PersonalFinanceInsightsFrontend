@@ -391,6 +391,7 @@
 @if (showImport()) {
   <app-modal title="Import statements" (closed)="showImport.set(false)">
     <app-statement-import
+      [accountId]="importAccount()"
       (imported)="onImported($event)"
       (progressed)="reload()"
       (cancelled)="showImport.set(false)"
