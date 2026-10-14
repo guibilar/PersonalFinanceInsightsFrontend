@@ -14,6 +14,7 @@ import {
   testTransaction,
 } from '../../../testing/test-documents';
 import { signInAsReadOnly } from '../../../testing/test-auth';
+import { ITEM_ID, testItem } from '../../../testing/test-home';
 
 describe('DocumentUploadComponent', () => {
   let fixture: ComponentFixture<DocumentUploadComponent>;
@@ -335,5 +336,84 @@ describe('DocumentUploadComponent from a transaction', () => {
     expect(component.transactionId).toBeNull();
     expect(root().querySelector('[data-testid="link-target"]')).toBeNull();
     expect(root().querySelector('a.back-link')!.getAttribute('href')).toBe('/documents');
+  });
+});
+
+describe('DocumentUploadComponent from a Home item', () => {
+  let fixture: ComponentFixture<DocumentUploadComponent>;
+  let component: DocumentUploadComponent;
+  let http: HttpTestingController;
+  let router: Router;
+
+  const root = () => fixture.nativeElement as HTMLElement;
+  const messages = () =>
+    TestBed.inject(ToastService)
+      .toasts()
+      .map((t) => t.message);
+
+  async function render(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+    fixture.detectChanges();
+  }
+
+  async function opened(): Promise<void> {
+    TestBed.configureTestingModule({
+      imports: [DocumentUploadComponent],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ homeItemId: ITEM_ID }) } },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(DocumentUploadComponent);
+    component = fixture.componentInstance;
+    http = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    await render();
+    http.expectOne(`/api/home/items/${ITEM_ID}`).flush(testItem());
+    await render();
+  }
+
+  afterEach(() => http.verify());
+
+  it('names the item, starts as a receipt, and goes back to the item', async () => {
+    await opened();
+
+    expect(root().querySelector('[data-testid="link-target"]')!.textContent).toContain(
+      'Dishwasher',
+    );
+    expect(component.form.controls.kind.value).toBe('Receipt');
+    const back = root().querySelector<HTMLAnchorElement>('a.back-link')!;
+    expect(back.textContent).toContain('Item');
+    expect(back.getAttribute('href')).toBe(`/home/items/${ITEM_ID}`);
+  });
+
+  it('links the new document to the item (Home.Item), then opens the item', async () => {
+    await opened();
+    component.add([new File(['%PDF-1.7'], 'receipt.pdf', { type: 'application/pdf' })]);
+    await render();
+    root().querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    http
+      .expectOne({ method: 'POST', url: '/api/documents' })
+      .flush(testDocument({ title: 'receipt', kind: 'Receipt' }), {
+        status: 201,
+        statusText: 'Created',
+      });
+    await render();
+
+    const link = http.expectOne({ method: 'POST', url: `/api/documents/${DOC_ID}/links` });
+    expect(link.request.body).toEqual({ kind: 'Home.Item', targetId: ITEM_ID });
+    link.flush({ id: 'l1', kind: 'Home.Item', targetId: ITEM_ID, createdAt: '' });
+    await render();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/home/items', ITEM_ID]);
+    expect(messages()).toEqual(['Added “receipt” to the item']);
   });
 });

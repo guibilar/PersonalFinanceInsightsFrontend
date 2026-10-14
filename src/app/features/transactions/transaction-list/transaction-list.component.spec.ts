@@ -98,9 +98,9 @@ describe('TransactionListComponent', () => {
       .match('/api/Tags')
       .filter((r) => !r.cancelled)
       .forEach((r) => r.flush(TEST_TAGS));
-    // The documents of an open edit; tested in TransactionDocumentsComponent.
+    // The documents and the Home items of an open edit; tested in their own components.
     http
-      .match((r) => r.url === '/api/documents/by-link')
+      .match((r) => r.url === '/api/documents/by-link' || r.url === '/api/home/items/by-link')
       .filter((r) => !r.cancelled)
       .forEach((r) => r.flush([]));
   }

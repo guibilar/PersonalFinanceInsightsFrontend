@@ -1,0 +1,146 @@
+<a class="back-link small d-inline-flex align-items-center gap-1 mb-2" routerLink="/home">
+  ← Home
+</a>
+
+@if (notFound()) {
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <p class="mb-1">This room does not exist any more.</p>
+      <a class="small" routerLink="/home">See all rooms</a>
+    </div>
+  </div>
+} @else if (roomsResource.error() && !rooms()) {
+  <app-error-state message="Could not load the room." (retry)="roomsResource.reload()" />
+} @else if (!rooms()) {
+  <app-skeleton [lines]="2" height="2rem" />
+} @else {
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div class="min-w-0">
+      @if (renaming() && room(); as r) {
+        <form
+          class="d-flex flex-wrap gap-2 mb-1"
+          novalidate
+          (submit)="$event.preventDefault(); rename(r)"
+        >
+          <label for="room-name" class="visually-hidden">Room name</label>
+          <input
+            type="text"
+            id="room-name"
+            class="form-control rename-input"
+            autocomplete="off"
+            [maxlength]="roomLimit"
+            [formControl]="name"
+            [class.is-invalid]="name.touched && name.invalid"
+          />
+          <button type="submit" class="btn btn-primary" [disabled]="busy()">
+            {{ busy() ? 'Saving…' : 'Save' }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="renaming.set(false)">
+            Cancel
+          </button>
+        </form>
+      } @else {
+        <h1 class="h3 mb-1 text-break">{{ title() }}</h1>
+      }
+      @if (totals(); as t) {
+        <p class="text-body-secondary mb-0" data-testid="room-totals">
+          {{ count(t.count) }} · {{ t.value | money }}
+        </p>
+      }
+    </div>
+    @if (canWrite()) {
+      <div class="d-flex flex-wrap gap-2">
+        <a
+          class="btn btn-primary d-inline-flex align-items-center gap-2"
+          routerLink="/home/items/new"
+          [queryParams]="room() ? { roomId: room()!.id } : {}"
+        >
+          <app-icon name="plus" [size]="16" /> Add item
+        </a>
+        @if (room(); as r) {
+          @if (!renaming()) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+              (click)="startRename(r)"
+            >
+              <app-icon name="pencil" [size]="16" /> Rename
+            </button>
+          }
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            title="Move up in the list"
+            aria-label="Move the room up in the list"
+            [disabled]="busy() || index() <= 0"
+            (click)="move(-1)"
+          >
+            <app-icon name="arrow-up" [size]="16" />
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            title="Move down in the list"
+            aria-label="Move the room down in the list"
+            [disabled]="busy() || index() >= rooms()!.length - 1"
+            (click)="move(1)"
+          >
+            <app-icon name="arrow-down" [size]="16" />
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
+            [disabled]="busy() || r.itemCount > 0"
+            [title]="r.itemCount > 0 ? 'Move or delete its items first' : 'Delete the room'"
+            (click)="confirmingDelete.set(true)"
+          >
+            <app-icon name="trash" [size]="16" /> Delete
+          </button>
+        }
+      </div>
+    }
+  </div>
+  @if (canWrite() && room() && room()!.itemCount > 0) {
+    <p class="small text-body-secondary" data-testid="delete-note">
+      Only an empty room can be deleted. Move its items to another room first.
+    </p>
+  }
+
+  <section class="card" aria-labelledby="items-heading">
+    <div class="card-body">
+      <h2 id="items-heading" class="h6 mb-3">Items</h2>
+      @if (itemsResource.error() && !items()) {
+        <app-error-state message="Could not load the items." (retry)="itemsResource.reload()" />
+      } @else if (!items()) {
+        <app-skeleton [lines]="3" height="2.5rem" />
+      } @else if (items()!.items.length === 0) {
+        <p class="text-body-secondary small mb-0" data-testid="no-items">No items in this room.</p>
+      } @else {
+        <ul class="list-group" data-testid="items">
+          @for (item of items()!.items; track item.id) {
+            <li class="list-group-item p-0">
+              <app-item-row [item]="item" [today]="today" />
+            </li>
+          }
+        </ul>
+        @if (items()!.totalCount > items()!.items.length) {
+          <p class="small text-body-secondary mt-2 mb-0">
+            The first {{ items()!.items.length }} of {{ items()!.totalCount }}, by name. Search on
+            the Home page to find the others.
+          </p>
+        }
+      }
+    </div>
+  </section>
+
+  @if (confirmingDelete() && room(); as r) {
+    <app-confirm-dialog
+      [title]="'Delete the room “' + r.name + '”?'"
+      message="The room is empty. This cannot be undone."
+      [confirmLabel]="busy() ? 'Deleting…' : 'Delete'"
+      [danger]="true"
+      (confirmed)="confirmDelete(r)"
+      (cancelled)="confirmingDelete.set(false)"
+    />
+  }
+}

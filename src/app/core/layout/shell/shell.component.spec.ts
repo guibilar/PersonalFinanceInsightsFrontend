@@ -60,12 +60,17 @@ describe('ShellComponent', () => {
       'Search',
     ]);
     expect(labels('.sidebar .nav-group .nav-group-label')).toEqual(['Modules']);
-    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual(['Money', 'Documents', 'Tasks']);
+    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual([
+      'Money',
+      'Documents',
+      'Tasks',
+      'Home',
+    ]);
     expect(
       Array.from(root.querySelectorAll('.sidebar .nav-group .nav-item')).map((item) =>
         item.getAttribute('href'),
       ),
-    ).toEqual(['/money', '/documents', '/tasks']);
+    ).toEqual(['/money', '/documents', '/tasks', '/home']);
     expect(root.querySelector('[data-testid="overdue-badge"]')).toBeNull();
   });
 

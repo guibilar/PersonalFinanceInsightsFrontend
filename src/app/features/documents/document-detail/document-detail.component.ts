@@ -22,6 +22,7 @@ import {
   DocumentLinkDto,
   MONEY_TRANSACTION_LINK,
 } from '../../../core/models/outputs/document-output-dto';
+import { HOME_ITEM_LINK } from '../../../core/models/outputs/home-output-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
@@ -40,6 +41,7 @@ import {
 } from '../document-details-fields/document-details-fields.component';
 import { TransactionPickerComponent } from '../transaction-picker/transaction-picker.component';
 import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
+import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
 import {
   DOCUMENT_POLLING,
   changeError,
@@ -49,6 +51,11 @@ import {
   formatSize,
   previewKind,
 } from '../documents';
+
+/** The links that the "Linked transactions" section shows: all but the Home items. */
+function notHomeItem(link: DocumentLinkDto): boolean {
+  return link.kind !== HOME_ITEM_LINK;
+}
 
 /** A link as the page shows it: a transaction (found, deleted, or not found), or another kind as plain text. */
 export interface LinkView {
@@ -70,6 +77,7 @@ export interface LinkView {
     DocumentDetailsFieldsComponent,
     DocumentTasksComponent,
     ErrorStateComponent,
+    LinkedItemsComponent,
     IconComponent,
     SkeletonComponent,
     TransactionPickerComponent,
@@ -117,8 +125,11 @@ export class DocumentDetailComponent {
   readonly unlinking = signal<LinkView | null>(null);
   readonly picking = signal(false);
 
-  /** The links; the same list again (a poll) is not a change, so finance is not asked again. */
-  private readonly links = computed(() => this.document()?.links, {
+  /**
+   * The links of this section: all but the Home items, which show in their own section. The same list again (a poll)
+   * is not a change, so finance is not asked again.
+   */
+  private readonly links = computed(() => this.document()?.links.filter(notHomeItem), {
     equal: (a, b) => a?.map((l) => l.id).join() === b?.map((l) => l.id).join(),
   });
 
@@ -133,6 +144,8 @@ export class DocumentDetailComponent {
         ? of([] as LinkView[])
         : forkJoin(params.links.map((link) => this.viewOf(link))),
   });
+  /** The number of links in the "Linked transactions" section. */
+  readonly linkCount = computed(() => this.links()?.length ?? 0);
   readonly linkedTransactionIds = computed(() =>
     (this.document()?.links ?? [])
       .filter((link) => link.kind === MONEY_TRANSACTION_LINK)

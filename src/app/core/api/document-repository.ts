@@ -84,6 +84,11 @@ export class DocumentRepository {
     });
   }
 
+  /** Links the document to something in another module, for example a Home item (`Home.Item`). */
+  addLink(id: string, kind: string, targetId: string): Observable<DocumentLinkDto> {
+    return this.http.post<DocumentLinkDto>(`${this.baseUrl}/${id}/links`, { kind, targetId });
+  }
+
   unlink(id: string, linkId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}/links/${linkId}`);
   }

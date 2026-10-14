@@ -15,7 +15,7 @@ describe('CaptureComponent', () => {
     });
   });
 
-  it('adds a transaction, a document or a task, imports statements, and shows the other actions as coming soon', async () => {
+  it('adds a transaction, a document, a task or an item, imports statements, and shows the other actions as coming soon', async () => {
     const fixture = TestBed.createComponent(CaptureComponent);
     await fixture.whenStable();
     const buttons = Array.from(
@@ -44,6 +44,7 @@ describe('CaptureComponent', () => {
     ).toEqual([
       ['Add document', '/documents/new'],
       ['Add task', '/tasks/new'],
+      ['Add item', '/home/items/new'],
     ]);
 
     buttons[0].click();
@@ -74,6 +75,7 @@ describe('CaptureComponent', () => {
       ['Import statements', true],
       ['Add document', true],
       ['Add task', true],
+      ['Add item', true],
       ['Note', true],
     ]);
     expect(root.querySelector('a.capture-action')).toBeNull();

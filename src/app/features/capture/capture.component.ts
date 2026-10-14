@@ -19,7 +19,7 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
 
 /**
  * Capture: one place to add something to any module. For now it adds a transaction or imports bank statements into
- * Money, adds a document (a scan or a photo) or a task, and shows the other actions as coming soon. A read-only user (T60) sees
+ * Money, adds a document (a scan or a photo), a task, or a home item, and shows the other actions as coming soon. A read-only user (T60) sees
  * the actions disabled.
  */
 @Component({
@@ -111,6 +111,28 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
               <span class="d-block fw-semibold">Add task</span>
               <span class="d-block small text-body-secondary"
                 >Something to do, once or again and again</span
+              >
+            </span>
+          </span>
+        </ng-template>
+      </div>
+      <div class="col">
+        @if (canWrite()) {
+          <a class="card h-100 w-100 capture-action" routerLink="/home/items/new">
+            <ng-container *ngTemplateOutlet="addItem" />
+          </a>
+        } @else {
+          <button type="button" class="card h-100 w-100 capture-action" disabled>
+            <ng-container *ngTemplateOutlet="addItem" />
+          </button>
+        }
+        <ng-template #addItem>
+          <span class="card-body d-flex gap-3 align-items-center text-start">
+            <span class="action-icon"><app-icon name="house" /></span>
+            <span class="min-w-0">
+              <span class="d-block fw-semibold">Add item</span>
+              <span class="d-block small text-body-secondary"
+                >A thing in the home, for the inventory</span
               >
             </span>
           </span>

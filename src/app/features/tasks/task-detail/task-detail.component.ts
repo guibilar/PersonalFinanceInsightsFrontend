@@ -17,6 +17,7 @@ import {
   TaskLinkDto,
 } from '../../../core/models/outputs/task-output-dto';
 import { TaskLinkInputDto } from '../../../core/models/inputs/task-input-dto';
+import { HOME_ITEM_LINK } from '../../../core/models/outputs/home-output-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
@@ -28,6 +29,7 @@ import { formatDay } from '../../../shared/utils/format';
 import { keptValueOf } from '../../../shared/utils/resource-value';
 import { DocumentPickerComponent } from '../../documents/document-picker/document-picker.component';
 import { TransactionPickerComponent } from '../../documents/transaction-picker/transaction-picker.component';
+import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
 import { transactionLink } from '../../transactions/transaction-list/transaction-list-query';
 import { TaskDoneService } from '../task-done.service';
 import {
@@ -58,6 +60,7 @@ export interface TaskLinkView {
     DocumentPickerComponent,
     ErrorStateComponent,
     IconComponent,
+    LinkedItemsComponent,
     SkeletonComponent,
     TaskFieldsComponent,
     TransactionPickerComponent,
@@ -100,10 +103,18 @@ export class TaskDetailComponent {
   readonly unlinking = signal<TaskLinkView | null>(null);
   readonly picking = signal<'document' | 'transaction' | null>(null);
 
-  /** The links; the same list again is not a change, so the linked items are not asked for again. */
-  private readonly links = computed(() => this.task()?.links, {
-    equal: (a, b) => a?.map((l) => l.id).join() === b?.map((l) => l.id).join(),
-  });
+  /**
+   * The links of the "Links" section: all but the Home items, which show in their own section. The same list again is
+   * not a change, so the linked things are not asked for again.
+   */
+  private readonly links = computed(
+    () => this.task()?.links.filter((link) => link.kind !== HOME_ITEM_LINK),
+    {
+      equal: (a, b) => a?.map((l) => l.id).join() === b?.map((l) => l.id).join(),
+    },
+  );
+  /** The number of links in the "Links" section. */
+  readonly linkCount = computed(() => this.links()?.length ?? 0);
 
   /** The links, each with its document or transaction. */
   readonly linkViews = rxResource({

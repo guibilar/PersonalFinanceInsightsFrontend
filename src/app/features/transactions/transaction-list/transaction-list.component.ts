@@ -58,6 +58,7 @@ import {
 import { TransactionLinkForm } from '../transaction-link-form/transaction-link-form';
 import { TransactionEditForm } from '../transaction-edit-form/transaction-edit-form';
 import { TransactionDocumentsComponent } from '../../documents/transaction-documents/transaction-documents.component';
+import { TransactionItemsComponent } from '../../home/transaction-items/transaction-items.component';
 import {
   CLOSER,
   criteriaFromQuery,
@@ -116,6 +117,7 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
     TransactionLinkForm,
     TransactionEditForm,
     TransactionDocumentsComponent,
+    TransactionItemsComponent,
     TransactionBulkBar,
     StatementImportComponent,
     TransactionBreakdownComponent,

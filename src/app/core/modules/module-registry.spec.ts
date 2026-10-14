@@ -1,12 +1,12 @@
 import { AppModule, MAIN_MENU, MODULES, activeModules } from './module-registry';
 
 describe('module registry', () => {
-  it('has Money, Documents and Tasks active and the planned modules coming soon', () => {
+  it('has Money, Documents, Tasks and Home active and the planned modules coming soon', () => {
     expect(MODULES.map((module) => [module.name, module.status])).toEqual([
       ['Money', 'active'],
       ['Documents', 'active'],
       ['Tasks', 'active'],
-      ['Home', 'coming-soon'],
+      ['Home', 'active'],
       ['People', 'coming-soon'],
       ['Journal', 'coming-soon'],
     ]);
@@ -21,11 +21,12 @@ describe('module registry', () => {
     for (const route of routes) expect(route).toMatch(/^\/[a-z-]+$/);
   });
 
-  it('opens Money at /money, Documents at /documents and Tasks at /tasks', () => {
+  it('opens Money, Documents, Tasks and Home at their routes', () => {
     expect(activeModules().map((module) => module.route)).toEqual([
       '/money',
       '/documents',
       '/tasks',
+      '/home',
     ]);
   });
 

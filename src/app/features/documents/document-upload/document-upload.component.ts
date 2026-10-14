@@ -12,6 +12,8 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Subscription, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentRepository } from '../../../core/api/document-repository';
+import { HomeRepository } from '../../../core/api/home-repository';
+import { HOME_ITEM_LINK } from '../../../core/models/outputs/home-output-dto';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { DocumentDto } from '../../../core/models/outputs/document-output-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
@@ -41,6 +43,9 @@ import {
  *
  * With `?transactionId=<id>` (from the "Documents" section of a transaction in Money), the new document is a receipt by
  * default, and the page links it to that transaction after the upload, then goes back to the transaction.
+ *
+ * With `?homeItemId=<id>` ("Add receipt or photo" on a Home item), the page links the new document to the item
+ * (`Home.Item`) after the upload, then goes back to the item.
  */
 @Component({
   selector: 'app-document-upload',
@@ -55,23 +60,33 @@ export class DocumentUploadComponent implements OnDestroy {
   private readonly toasts = inject(ToastService);
   private readonly dataChanges = inject(DataChangesService);
   private readonly transactions = inject(TransactionRepository);
+  private readonly home = inject(HomeRepository);
   /** A read-only user (T60) sees why, in place of the form. */
   readonly canWrite = inject(AuthService).canWrite;
 
+  private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
   /** The transaction to link the new document to, from `?transactionId=`; null without one (or with a bad one). */
-  readonly transactionId = linkTarget(
-    inject(ActivatedRoute).snapshot.queryParamMap.get('transactionId'),
-  );
-  /** Where "back" and "Cancel" go: the transaction, or the Documents list. */
+  readonly transactionId = linkTarget(this.query.get('transactionId'));
+  /** The Home item to link the new document to, from `?homeItemId=` (only without a transaction). */
+  readonly homeItemId = this.transactionId ? null : linkTarget(this.query.get('homeItemId'));
+  /** Where "back" and "Cancel" go: the transaction, the item, or the Documents list. */
   readonly back = this.transactionId
-    ? transactionLink(this.transactionId)
-    : { route: '/documents', queryParams: {} };
+    ? { ...transactionLink(this.transactionId), label: 'Transaction' }
+    : this.homeItemId
+      ? { route: `/home/items/${this.homeItemId}`, queryParams: {}, label: 'Item' }
+      : { route: '/documents', queryParams: {}, label: 'Documents' };
   /** The transaction, to show what the document will be linked to. */
   readonly transaction = rxResource({
     params: () => this.transactionId ?? undefined,
     stream: ({ params }) => (params ? this.transactions.find(params) : of(null)),
   });
   readonly transactionValue = computed(() => valueOf(this.transaction) ?? null);
+  /** The item, to show what the document will be linked to. */
+  private readonly item = rxResource({
+    params: () => this.homeItemId ?? undefined,
+    stream: ({ params }) => this.home.get(params),
+  });
+  readonly itemName = computed(() => valueOf(this.item)?.name ?? null);
 
   readonly accept = ACCEPTED_FILES;
   readonly form = createDetailsForm();
@@ -91,7 +106,7 @@ export class DocumentUploadComponent implements OnDestroy {
   readonly day = formatDay;
 
   constructor() {
-    if (this.transactionId) this.form.controls.kind.setValue('Receipt');
+    if (this.transactionId || this.homeItemId) this.form.controls.kind.setValue('Receipt');
   }
 
   add(list: ArrayLike<File> | null | undefined): void {
@@ -154,6 +169,8 @@ export class DocumentUploadComponent implements OnDestroy {
           this.dataChanges.changed();
           if (this.transactionId) {
             this.linkToTransaction(document, this.transactionId);
+          } else if (this.homeItemId) {
+            this.linkToItem(document, this.homeItemId);
           } else {
             this.progress.set(null);
             this.toasts.success(`Added “${document.title}”`);
@@ -182,6 +199,27 @@ export class DocumentUploadComponent implements OnDestroy {
         const readOnly = error instanceof HttpErrorResponse && error.status === 403;
         this.toasts.error(
           `Added “${document.title}”, but could not link it to the transaction.` +
+            (readOnly ? ' This account can only read documents.' : ' Link it from its page.'),
+        );
+        void this.router.navigate(['/documents', document.id]);
+      },
+    });
+  }
+
+  /** The second step of an upload from a Home item. A failed link keeps the document: its page can link it. */
+  private linkToItem(document: DocumentDto, itemId: string): void {
+    this.upload = this.repository.addLink(document.id, HOME_ITEM_LINK, itemId).subscribe({
+      next: () => {
+        this.progress.set(null);
+        this.dataChanges.changed();
+        this.toasts.success(`Added “${document.title}” to the item`);
+        void this.router.navigate(['/home/items', itemId]);
+      },
+      error: (error: unknown) => {
+        this.progress.set(null);
+        const readOnly = error instanceof HttpErrorResponse && error.status === 403;
+        this.toasts.error(
+          `Added “${document.title}”, but could not link it to the item.` +
             (readOnly ? ' This account can only read documents.' : ' Link it from its page.'),
         );
         void this.router.navigate(['/documents', document.id]);

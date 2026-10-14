@@ -213,14 +213,14 @@
               </button>
             }
           </div>
-          @if (doc.links.length === 0) {
+          @if (linkCount() === 0) {
             <p class="text-body-secondary small mb-0">
               Link a receipt to its purchase, so each finds the other.
             </p>
           } @else if (linkViews.error()) {
             <app-error-state message="Could not load the links." (retry)="linkViews.reload()" />
           } @else if (!linkViews.hasValue()) {
-            <app-skeleton [lines]="doc.links.length" height="2.5rem" />
+            <app-skeleton [lines]="linkCount()" height="2.5rem" />
           } @else {
             <ul class="list-group" data-testid="links">
               @for (view of linkViews.value(); track view.link.id) {
@@ -271,6 +271,14 @@
 
       <!-- Tasks -->
       <app-document-tasks [document]="doc" />
+
+      <!-- Home items -->
+      <app-linked-items
+        kind="Documents.Document"
+        [ownerId]="doc.id"
+        [ownerLinks]="doc.links"
+        (changed)="reload()"
+      />
     </div>
   </div>
 

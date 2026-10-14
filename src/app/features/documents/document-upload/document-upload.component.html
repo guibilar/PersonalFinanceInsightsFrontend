@@ -3,7 +3,7 @@
   [routerLink]="back.route"
   [queryParams]="back.queryParams"
 >
-  ← {{ transactionId ? 'Transaction' : 'Documents' }}
+  ← {{ back.label }}
 </a>
 <div class="mb-4">
   <h1 class="h3 mb-1">Add document</h1>
@@ -25,6 +25,19 @@
         @if (transactionValue(); as transaction) {
           <strong>{{ transaction.description }}</strong> ({{ day(transaction.date) }},
           {{ transaction.amount | money }}).
+        } @else {
+          that you came from.
+        }
+      </span>
+    </div>
+  } @else if (homeItemId) {
+    <div class="alert alert-info d-flex align-items-start gap-2" data-testid="link-target">
+      <app-icon name="link" [size]="16" class="mt-1" />
+      <span>
+        After the upload, the document is linked to the item
+        @if (itemName(); as name) {
+          <strong>{{ name }}</strong
+          >.
         } @else {
           that you came from.
         }
