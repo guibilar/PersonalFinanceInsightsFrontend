@@ -4,6 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:hestia": "ng serve --proxy-config proxy.conf.hestia.json",
+    "start:finance": "ng serve --proxy-config proxy.conf.finance.json",
     "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
