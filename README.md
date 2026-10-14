@@ -246,20 +246,27 @@ transactions, rules, budgets and reports carry each category's name and colour, 
 
 ## Getting started
 
-Requires Node 24 (or 22.22.3+) and the backend (`FinanceApi`) running on `http://localhost:5096`.
+Requires Node 24 (or 22.22.3+) and a backend. Choose one of the two commands:
 
 ```bash
 npm ci
-npm start          # http://localhost:4200
+npm start                # Hestia.Api on http://localhost:5097 (the default)
+npm run start:finance    # the finance backend (FinanceApi) alone, on http://localhost:5096
 ```
 
-The app calls a relative `/api`. During development, `ng serve` forwards it to the
-backend using [`proxy.conf.json`](proxy.conf.json); change the target there if your
-backend runs elsewhere.
+Both open the app on `http://localhost:4200`. `npm run start:hestia` is the same as `npm start`.
 
-Today needs Hestia.Api (`GET /api/today`). The finance backend alone does not have it, so Today shows "Could not load
-Today." To try Today, run HestiaBackend and set the target in `proxy.conf.json` to `http://localhost:5097`; the host
-signs you in and forwards the finance requests.
+The app calls a relative `/api`. During development, `ng serve` forwards it to the backend with a proxy file:
+
+| Command                 | Proxy file                                           | Target                  |
+| ----------------------- | ---------------------------------------------------- | ----------------------- |
+| `npm start`             | [`proxy.conf.hestia.json`](proxy.conf.hestia.json)   | `http://localhost:5097` |
+| `npm run start:finance` | [`proxy.conf.finance.json`](proxy.conf.finance.json) | `http://localhost:5096` |
+
+Hestia.Api is the default because it is the target setup: it signs you in and forwards the finance requests, and
+Today and the module pages (for example Documents) need it. Run HestiaBackend and the finance backend for this setup.
+With the finance backend alone, the Money pages work, but Today shows "Could not load Today." and the module pages
+fail. If your backend runs on a different address, change the target in the proxy file.
 
 ## Signing in
 
@@ -277,15 +284,17 @@ Transactions. A missing `scope` (an older Hestia.Api) counts as `full`. Tests si
 
 ## Scripts
 
-| Command                | What it does                                    |
-| ---------------------- | ----------------------------------------------- |
-| `npm start`            | Dev server with the API proxy                   |
-| `npm run build`        | Production build into `dist/`                   |
-| `npm test`             | Unit tests (Vitest in Chromium, watch mode)     |
-| `npm run test:ci`      | Unit tests once, headless Chromium              |
-| `npm run lint`         | ESLint (angular-eslint) for TypeScript and HTML |
-| `npm run format`       | Format with Prettier                            |
-| `npm run format:check` | Check formatting (used in CI)                   |
+| Command                 | What it does                                    |
+| ----------------------- | ----------------------------------------------- |
+| `npm start`             | Dev server, `/api` to Hestia.Api (port 5097)    |
+| `npm run start:hestia`  | The same as `npm start`                         |
+| `npm run start:finance` | Dev server, `/api` to finance only (port 5096)  |
+| `npm run build`         | Production build into `dist/`                   |
+| `npm test`              | Unit tests (Vitest in Chromium, watch mode)     |
+| `npm run test:ci`       | Unit tests once, headless Chromium              |
+| `npm run lint`          | ESLint (angular-eslint) for TypeScript and HTML |
+| `npm run format`        | Format with Prettier                            |
+| `npm run format:check`  | Check formatting (used in CI)                   |
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, tests and build on every PR.
 
