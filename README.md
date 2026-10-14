@@ -10,15 +10,15 @@ The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, *
 screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
 round centre action; the menu button at the top opens the modules and the account actions.
 
-| Page        | Path        | What it shows                                                                    |
-| ----------- | ----------- | -------------------------------------------------------------------------------- |
-| Today       | `/today`    | Cards from the Today API: Money tiles, "Needs attention", modules still to come  |
-| Timeline    | `/timeline` | A placeholder for now                                                            |
-| Capture     | `/capture`  | "Add transaction", "Import statements" and "Add document"; the others are coming soon |
-| Modules     | `/modules`  | Every module: Money and Documents open, the others show "Coming soon"            |
-| Search      | `/search`   | A placeholder for now                                                            |
-| Money       | `/money/…`  | The finance pages below, with their own sub-menu                                 |
-| Documents   | `/documents/…` | Receipts, warranties, leases and other papers (below)                         |
+| Page      | Path           | What it shows                                                                         |
+| --------- | -------------- | ------------------------------------------------------------------------------------- |
+| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come       |
+| Timeline  | `/timeline`    | A placeholder for now                                                                 |
+| Capture   | `/capture`     | "Add transaction", "Import statements" and "Add document"; the others are coming soon |
+| Modules   | `/modules`     | Every module: Money and Documents open, the others show "Coming soon"                 |
+| Search    | `/search`      | A placeholder for now                                                                 |
+| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                      |
+| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                 |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -63,13 +63,26 @@ bookmarks and links from the Android app keep working: `/transactions?categoryId
 
 **Dashboard.** Four tiles: spent this month (against a usual month at the same point of the month), left over
 this month, net worth (and its change since last month) and budgets over their limit. Under them, **Needs attention**
-lists what wants a look, most pressing first, each linking to where it is dealt with:
+lists what wants a look, each linking to where it is dealt with:
 
 - budgets over their limit;
 - no statement imported for more than a week;
 - an account whose statements stop before last month;
 - a subscription whose price changed;
 - transactions left in Other because no rule names their merchant.
+
+The server makes these items (`GET /api/alerts`, the Alerts module of HestiaBackend), so the dashboard and Today show
+the same ones; the web app has no copy of the rules. The dashboard shows the alerts of the Money module, in the
+server's order (most severe first, then newest), with the same list as Today (`features/today/attention-list/`):
+
+- After a statement import or a new transaction from this app, it asks for a new check (`?refresh=true`).
+- When the last check was `Partial`, a short note shows above the stored items. When it `Failed`, the list shows an
+  error with "Retry" (a new check). The rest of the dashboard still shows.
+- Against the finance backend alone, `/api/alerts` does not exist (404): the list does not show, and there is no
+  error.
+
+The models are in `core/models/outputs/alert-output-dto.ts`, written by hand from the HestiaBackend contracts
+(`IAlertQueries.cs`).
 
 Then:
 
@@ -149,11 +162,11 @@ The Documents module keeps scans and photos of receipts, warranties, leases, tax
 manuals. It needs Hestia.Api (`/api/documents`, the Documents module of HestiaBackend); the finance backend alone does
 not have it.
 
-| Page   | Path              | What it shows                                                                      |
-| ------ | ----------------- | ---------------------------------------------------------------------------------- |
-| List   | `/documents`      | Kind filters, a search, "Expire soon" (the next 30 days), and all documents         |
-| Add    | `/documents/new`  | The upload: files (pick or drop) and details                                       |
-| Detail | `/documents/<id>` | Details (edit), files (view, download), the text read from them, links, delete     |
+| Page   | Path              | What it shows                                                                  |
+| ------ | ----------------- | ------------------------------------------------------------------------------ |
+| List   | `/documents`      | Kind filters, a search, "Expire soon" (the next 30 days), and all documents    |
+| Add    | `/documents/new`  | The upload: files (pick or drop) and details                                   |
+| Detail | `/documents/<id>` | Details (edit), files (view, download), the text read from them, links, delete |
 
 - **List.** The kind filters and the search are in the address (`/documents?kind=Warranty&q=kettle&page=2`), so the
   way back from a document keeps them. The search is the server's full-text search: titles, tags, notes and the text

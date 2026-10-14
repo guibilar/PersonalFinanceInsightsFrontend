@@ -75,27 +75,7 @@
   }
 
   @if (attention().length > 0) {
-    <section class="card attention mb-4" aria-labelledby="today-attention">
-      <div class="card-body py-3">
-        <h2 id="today-attention" class="h6 mb-2">Needs attention</h2>
-        <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
-          @for (item of attention(); track item.id) {
-            <li class="d-flex align-items-center gap-2" [attr.data-card]="item.id">
-              <span class="attention-icon" [attr.data-severity]="item.severity">
-                <app-icon [name]="attentionIcon(item)" [size]="14" />
-              </span>
-              @let target = linkOf(item);
-              @if (target) {
-                <a [routerLink]="target" class="attention-link flex-grow-1">{{ text(item) }}</a>
-                <app-icon name="arrow-right" [size]="14" class="text-body-secondary" />
-              } @else {
-                <span class="flex-grow-1">{{ text(item) }}</span>
-              }
-            </li>
-          }
-        </ul>
-      </div>
-    </section>
+    <app-attention-list class="d-block mb-4" [items]="attention()" headingId="today-attention" />
   }
 } @else if (todayResource.error()) {
   <app-error-state message="Could not load Today." (retry)="refresh()" />

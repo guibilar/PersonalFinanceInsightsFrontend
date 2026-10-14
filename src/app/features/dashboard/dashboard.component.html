@@ -14,29 +14,26 @@
   [today]="today()"
 />
 
-<!-- What needs a look: only when something does -->
-@if (attention().length > 0) {
-  <section class="card attention mb-3" aria-labelledby="attention-title">
-    <div class="card-body py-3">
-      <h2 id="attention-title" class="h6 mb-2">Needs attention</h2>
-      <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
-        @for (item of attention(); track item.text) {
-          <li class="d-flex align-items-center gap-2">
-            <span class="attention-icon" [attr.data-kind]="item.kind">
-              <app-icon [name]="attentionIcons[item.kind]" [size]="14" />
-            </span>
-            <a
-              [routerLink]="item.link"
-              [fragment]="item.fragment"
-              class="attention-link flex-grow-1"
-              >{{ item.text }}</a
-            >
-            <app-icon name="arrow-right" [size]="14" class="text-body-secondary" />
-          </li>
-        }
-      </ul>
-    </div>
-  </section>
+<!-- What needs a look: only when something does, or when the check did not work -->
+@if (attentionError() || attentionStatus() === 'Failed') {
+  <app-error-state
+    class="d-block mb-3"
+    message="Could not check what needs attention."
+    (retry)="retryAttention()"
+    data-attention-status="failed"
+  />
+} @else if (attention().length > 0 || attentionStatus() === 'Partial') {
+  <app-attention-list class="d-block mb-3" [items]="attention()">
+    @if (attentionStatus() === 'Partial') {
+      <p
+        class="small text-warning-emphasis mb-2 d-flex align-items-center gap-1"
+        data-attention-status="partial"
+      >
+        <app-icon name="alert-circle" [size]="14" />
+        Some checks could not run, so this list can be out of date.
+      </p>
+    }
+  </app-attention-list>
 }
 
 <!-- Where the month is heading -->
