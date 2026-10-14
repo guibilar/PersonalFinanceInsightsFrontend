@@ -11,6 +11,7 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DOC_ID, testDocument } from '../../../testing/test-documents';
 import { provideReadOnlyUser } from '../../../testing/test-auth';
 import { testTask } from '../../../testing/test-tasks';
+import { ITEM_ID, testItem } from '../../../testing/test-home';
 
 describe('TaskNewComponent', () => {
   let http: HttpTestingController;
@@ -40,6 +41,7 @@ describe('TaskNewComponent', () => {
           { path: 'tasks/new', component: TaskNewComponent },
           { path: 'tasks', children: [] },
           { path: 'documents/:id', children: [] },
+          { path: 'home/items/:id', children: [] },
         ]),
         provideLocationMocks(),
         ...(extra as []),
@@ -116,6 +118,35 @@ describe('TaskNewComponent', () => {
     await render();
 
     expect(router.url).toBe(`/documents/${DOC_ID}`);
+  });
+
+  it('starts maintenance from a Home item: a monthly repeat and the link, then goes back to it', async () => {
+    configure();
+    harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`/tasks/new?homeItemId=${ITEM_ID}`, TaskNewComponent);
+    TestBed.tick();
+    http.expectOne(`/api/home/items/${ITEM_ID}`).flush(testItem());
+    await render();
+
+    expect(root().querySelector('[data-testid="link-note"]')!.textContent).toContain(
+      '“Dishwasher”',
+    );
+    expect(root().querySelector('a.back-link')!.getAttribute('href')).toBe(
+      `/home/items/${ITEM_ID}`,
+    );
+    expect(field('input[formcontrolname="repeats"]').checked).toBe(true);
+
+    const title = field('input[formcontrolname="title"]');
+    title.value = 'Clean the filter';
+    title.dispatchEvent(new Event('input'));
+    submit().click();
+    const post = http.expectOne({ method: 'POST', url: '/api/tasks' });
+    expect(post.request.body.repeat).toEqual({ every: 1, unit: 'Months', mode: 'FromCompletion' });
+    expect(post.request.body.links).toEqual([{ kind: 'Home.Item', targetId: ITEM_ID }]);
+    post.flush(testTask({ title: 'Clean the filter' }));
+    await render();
+
+    expect(router.url).toBe(`/home/items/${ITEM_ID}`);
   });
 
   it('ignores a document id that is not one, and a day that is not one', async () => {

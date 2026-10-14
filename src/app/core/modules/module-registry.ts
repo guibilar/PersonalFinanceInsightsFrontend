@@ -48,7 +48,7 @@ export const MODULES: readonly AppModule[] = [
     description: 'The home, what is in it, and its upkeep',
     icon: 'house',
     route: '/home',
-    status: 'coming-soon',
+    status: 'active',
   },
   {
     id: 'people',

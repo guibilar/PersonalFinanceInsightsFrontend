@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, input, output, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import {
@@ -23,6 +23,19 @@ import {
 } from '../../../testing/test-documents';
 import { signInAsReadOnly } from '../../../testing/test-auth';
 import { TASK_ID, TODAY, testTask } from '../../../testing/test-tasks';
+import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
+
+/** The Home items section has its own tests (LinkedItemsComponent); here it only shows what it got. */
+@Component({
+  selector: 'app-linked-items',
+  template: '<span data-testid="linked-items-stub">{{ kind() }} {{ ownerId() }}</span>',
+})
+class LinkedItemsStub {
+  readonly kind = input.required<string>();
+  readonly ownerId = input.required<string>();
+  readonly ownerLinks = input<unknown[]>([]);
+  readonly changed = output<void>();
+}
 
 const DOC_LINK: TaskLinkDto = {
   id: 'link-doc',
@@ -83,6 +96,10 @@ describe('TaskDetailComponent', () => {
   }
 
   beforeEach(async () => {
+    TestBed.overrideComponent(TaskDetailComponent, {
+      remove: { imports: [LinkedItemsComponent] },
+      add: { imports: [LinkedItemsStub] },
+    });
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -104,6 +121,16 @@ describe('TaskDetailComponent', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('shows a Home item link in the Home items section, not with the other links', async () => {
+    await open(
+      testTask({ links: [{ id: 'l-home', kind: 'Home.Item', targetId: 'item-1', createdAt: '' }] }),
+    );
+
+    expect(lookups()).toEqual([]);
+    expect(root().querySelector('[data-testid="links"]')).toBeNull();
+    expect(text('[data-testid="linked-items-stub"]')).toBe(`Tasks.Task ${TASK_ID}`);
+  });
 
   it('shows the details, the repeat, and the last times it was done', async () => {
     await open(

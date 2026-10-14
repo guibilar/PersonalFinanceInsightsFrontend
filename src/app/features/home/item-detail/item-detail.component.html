@@ -1,0 +1,367 @@
+@let current = item();
+<a
+  class="back-link small d-inline-flex align-items-center gap-1 mb-2"
+  [routerLink]="current?.roomId ? ['/home/rooms', current!.roomId] : ['/home']"
+>
+  ← {{ current?.roomName ?? 'Home' }}
+</a>
+
+@if (notFound()) {
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <p class="mb-1">This item does not exist any more.</p>
+      <a class="small" routerLink="/home">See the home inventory</a>
+    </div>
+  </div>
+} @else if (itemResource.error() && !current) {
+  <app-error-state message="Could not load the item." (retry)="itemResource.reload()" />
+} @else if (!current) {
+  <app-skeleton [lines]="2" height="2rem" />
+  <div class="card mt-3">
+    <div class="card-body"><app-skeleton [lines]="5" /></div>
+  </div>
+} @else {
+  @let it = current!;
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div class="min-w-0">
+      <h1 class="h3 mb-1 text-break">{{ it.name }}</h1>
+      <p class="text-body-secondary mb-0 d-flex flex-wrap align-items-center gap-2">
+        <span class="fw-medium text-body" data-testid="item-value">{{ it.value | money }}</span>
+        @if (warranty(); as w) {
+          <span [class]="warrantyClass()" data-testid="warranty">{{ w.text }}</span>
+        } @else {
+          <span class="small">No warranty</span>
+        }
+      </p>
+    </div>
+    @if (canWrite()) {
+      <button
+        type="button"
+        class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
+        [disabled]="busy()"
+        (click)="confirmingDelete.set(true)"
+      >
+        <app-icon name="trash" [size]="16" /> Delete
+      </button>
+    }
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+      <!-- Details -->
+      <section class="card" aria-labelledby="details-heading">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 id="details-heading" class="h6 mb-0">Details</h2>
+            @if (!editing() && canWrite()) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                (click)="startEdit(it)"
+              >
+                <app-icon name="pencil" [size]="14" /> Edit
+              </button>
+            }
+          </div>
+          @if (editing() && form(); as form) {
+            <form novalidate (submit)="$event.preventDefault(); save(it)">
+              <app-item-fields [form]="form" [rooms]="rooms()" />
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" [disabled]="busy()">
+                  {{ busy() ? 'Saving…' : 'Save' }}
+                </button>
+              </div>
+            </form>
+          } @else {
+            <dl class="details mb-0" data-testid="details">
+              <dt>Room</dt>
+              <dd>
+                @if (it.roomId) {
+                  <a [routerLink]="['/home/rooms', it.roomId]">{{ it.roomName }}</a>
+                } @else {
+                  —
+                }
+              </dd>
+              <dt>Category</dt>
+              <dd>{{ it.category || '—' }}</dd>
+              <dt>Brand and model</dt>
+              <dd>{{ maker(it) || '—' }}</dd>
+              <dt>Serial number</dt>
+              <dd class="text-break">{{ it.serialNumber || '—' }}</dd>
+              <dt>Quantity</dt>
+              <dd>{{ it.quantity }}</dd>
+              <dt>Bought on</dt>
+              <dd>{{ it.purchasedOn ? day(it.purchasedOn) : '—' }}</dd>
+              <dt>Price (each)</dt>
+              <dd>{{ it.purchasePrice === null ? '—' : (it.purchasePrice | money) }}</dd>
+              <dt>Value now (each)</dt>
+              <dd>
+                {{ it.currentValue === null ? 'The price counts' : (it.currentValue | money) }}
+              </dd>
+              <dt>Warranty until</dt>
+              <dd>{{ it.warrantyUntil ? day(it.warrantyUntil) : '—' }}</dd>
+              <dt>Tags</dt>
+              <dd>
+                @for (tag of it.tags; track tag) {
+                  <span class="badge rounded-pill text-bg-light fw-normal me-1">#{{ tag }}</span>
+                } @empty {
+                  —
+                }
+              </dd>
+              <dt>Notes</dt>
+              <dd class="notes">{{ it.notes || '—' }}</dd>
+            </dl>
+          }
+        </div>
+      </section>
+
+      <!-- Maintenance -->
+      <section class="card" aria-labelledby="maintenance-heading">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+            <h2 id="maintenance-heading" class="h6 mb-0">Maintenance</h2>
+            @if (canWrite()) {
+              <a
+                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                routerLink="/tasks/new"
+                [queryParams]="{ homeItemId: it.id }"
+                data-testid="add-maintenance"
+              >
+                <app-icon name="plus" [size]="14" /> Add maintenance
+              </a>
+            }
+          </div>
+          @if (it.maintenance.length === 0) {
+            <p class="text-body-secondary small mb-0">
+              No maintenance. Add a repeated task, for example “Clean the filter, every month”.
+            </p>
+          } @else {
+            <ul class="list-group" data-testid="item-maintenance">
+              @for (task of it.maintenance; track task.id) {
+                <li class="list-group-item">
+                  <a class="link-target d-block" [routerLink]="['/tasks', task.id]">
+                    <span class="d-block fw-medium text-break">{{ task.title }}</span>
+                    <span class="d-block small text-body-secondary">
+                      {{ rule(task) }} ·
+                      <span [class.text-danger]="late(task)">Next: {{ next(task) }}</span>
+                    </span>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </section>
+    </div>
+
+    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+      <!-- Documents -->
+      <section class="card" aria-labelledby="documents-heading">
+        <div class="card-body">
+          <h2 id="documents-heading" class="h6 mb-3">Receipts, photos and manuals</h2>
+          @if (it.documents.length === 0) {
+            <p class="text-body-secondary small mb-3">
+              Add the receipt, a photo, or the manual, so they are at hand for a claim.
+            </p>
+          } @else if (documentViews.error()) {
+            <app-error-state
+              message="Could not load the documents."
+              (retry)="documentViews.reload()"
+            />
+          } @else if (!documentViews.hasValue()) {
+            <app-skeleton [lines]="it.documents.length" height="2.5rem" />
+          } @else {
+            <ul class="list-unstyled d-flex flex-column gap-3 mb-3" data-testid="item-documents">
+              @for (view of documentViews.value(); track view.document.id) {
+                <li>
+                  @if (view.photo; as photo) {
+                    <a [routerLink]="['/documents', view.document.id]">
+                      <img
+                        class="photo"
+                        loading="lazy"
+                        [src]="fileUrl(view.document.id, photo)"
+                        [alt]="'Photo: ' + view.document.title"
+                      />
+                    </a>
+                  }
+                  <div class="d-flex align-items-center gap-2" [class.mt-2]="view.photo">
+                    <app-icon
+                      [name]="view.photo ? 'image' : 'file-text'"
+                      [size]="16"
+                      class="text-body-secondary"
+                    />
+                    <a
+                      class="flex-grow-1 min-w-0 link-target"
+                      [routerLink]="['/documents', view.document.id]"
+                    >
+                      <span class="d-block text-truncate fw-medium">{{ view.document.title }}</span>
+                      <span class="d-block small text-body-secondary">
+                        {{ view.document.kind }}
+                        @if (view.document.expiresOn) {
+                          · expires {{ day(view.document.expiresOn) }}
+                        }
+                      </span>
+                    </a>
+                    @if (canWrite()) {
+                      <button
+                        type="button"
+                        class="btn btn-icon btn-icon-danger"
+                        title="Unlink"
+                        [attr.aria-label]="'Unlink “' + view.document.title + '”'"
+                        [disabled]="busy()"
+                        (click)="unlinkingDocument.set(view)"
+                      >
+                        <app-icon name="close" [size]="16" />
+                      </button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+          @if (canWrite()) {
+            <div class="d-flex flex-wrap gap-2">
+              <a
+                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                routerLink="/documents/new"
+                [queryParams]="{ homeItemId: it.id }"
+                data-testid="add-document"
+              >
+                <app-icon name="upload" [size]="14" /> Add receipt or photo
+              </a>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                [disabled]="busy()"
+                (click)="picking.set('document')"
+              >
+                <app-icon name="link" [size]="14" /> Link a document
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Purchase -->
+      <section class="card" aria-labelledby="purchase-heading">
+        <div class="card-body">
+          <h2 id="purchase-heading" class="h6 mb-3">Purchase</h2>
+          @if (linkedIds().transactions.length === 0) {
+            <p class="text-body-secondary small mb-3">
+              Link the payment in Money, so each finds the other.
+            </p>
+          } @else if (purchases.error()) {
+            <app-error-state message="Could not load the purchase." (retry)="purchases.reload()" />
+          } @else if (!purchases.hasValue()) {
+            <app-skeleton [lines]="1" height="2.5rem" />
+          } @else {
+            <ul class="list-group mb-3" data-testid="purchases">
+              @for (view of purchases.value(); track view.link.id) {
+                <li class="list-group-item d-flex align-items-center gap-2">
+                  @if (view.transaction; as tx) {
+                    @let target = transactionLink(tx.id);
+                    <app-icon name="banknote" [size]="16" class="text-body-secondary" />
+                    <a
+                      class="flex-grow-1 min-w-0 link-target"
+                      [routerLink]="target.route"
+                      [queryParams]="target.queryParams"
+                    >
+                      <span class="d-block text-truncate fw-medium">{{ tx.description }}</span>
+                      <span class="d-block small text-body-secondary">
+                        {{ day(tx.date) }} · {{ tx.accountName }}
+                        @if (tx.hidden) {
+                          · Deleted
+                        }
+                      </span>
+                    </a>
+                    <span class="text-nowrap fw-medium">{{ tx.amount | money }}</span>
+                  } @else {
+                    <span class="flex-grow-1 text-body-secondary small"
+                      >A transaction that Money does not know any more</span
+                    >
+                  }
+                  @if (canWrite()) {
+                    <button
+                      type="button"
+                      class="btn btn-icon btn-icon-danger"
+                      title="Unlink"
+                      [attr.aria-label]="'Unlink ' + purchaseName(view)"
+                      [disabled]="busy()"
+                      (click)="unlinkingPurchase.set(view)"
+                    >
+                      <app-icon name="close" [size]="16" />
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+          @if (canWrite()) {
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+              [disabled]="busy()"
+              (click)="picking.set('transaction')"
+            >
+              <app-icon name="banknote" [size]="14" /> Link the purchase
+            </button>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+
+  @if (confirmingDelete()) {
+    <app-confirm-dialog
+      [title]="'Delete “' + it.name + '”?'"
+      message="Its links go too. The linked documents, tasks and transactions stay. This cannot be undone."
+      [confirmLabel]="busy() ? 'Deleting…' : 'Delete'"
+      [danger]="true"
+      (confirmed)="confirmDelete(it)"
+      (cancelled)="confirmingDelete.set(false)"
+    />
+  }
+
+  @if (unlinkingDocument(); as view) {
+    <app-confirm-dialog
+      title="Remove the link?"
+      [message]="'The item stays, and so does “' + view.document.title + '”.'"
+      [confirmLabel]="busy() ? 'Unlinking…' : 'Unlink'"
+      [danger]="true"
+      (confirmed)="confirmUnlinkDocument(view)"
+      (cancelled)="unlinkingDocument.set(null)"
+    />
+  }
+
+  @if (unlinkingPurchase(); as view) {
+    <app-confirm-dialog
+      title="Remove the link?"
+      [message]="'The item stays, and so does ' + purchaseName(view) + '.'"
+      [confirmLabel]="busy() ? 'Unlinking…' : 'Unlink'"
+      [danger]="true"
+      (confirmed)="confirmUnlinkPurchase(view)"
+      (cancelled)="unlinkingPurchase.set(null)"
+    />
+  }
+
+  @if (picking() === 'document') {
+    <app-document-picker
+      [linkedIds]="linkedIds().documents"
+      [busy]="busy()"
+      (picked)="linkDocument($event)"
+      (closed)="picking.set(null)"
+    />
+  }
+
+  @if (picking() === 'transaction') {
+    <app-transaction-picker
+      [linkedIds]="linkedIds().transactions"
+      [busy]="busy()"
+      (picked)="linkPurchase(it, $event)"
+      (closed)="picking.set(null)"
+    />
+  }
+}

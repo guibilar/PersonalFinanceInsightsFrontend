@@ -155,14 +155,14 @@
       <section class="card" aria-labelledby="links-heading">
         <div class="card-body">
           <h2 id="links-heading" class="h6 mb-3">Links</h2>
-          @if (t.links.length === 0) {
+          @if (linkCount() === 0) {
             <p class="text-body-secondary small mb-3">
               Link the document or the payment that this task is about, so each finds the other.
             </p>
           } @else if (linkViews.error()) {
             <app-error-state message="Could not load the links." (retry)="linkViews.reload()" />
           } @else if (!linkViews.hasValue()) {
-            <app-skeleton [lines]="t.links.length" height="2.5rem" />
+            <app-skeleton [lines]="linkCount()" height="2.5rem" />
           } @else {
             <ul class="list-group mb-3" data-testid="links">
               @for (view of linkViews.value(); track view.link.id) {
@@ -246,6 +246,9 @@
           }
         </div>
       </section>
+
+      <!-- Home items -->
+      <app-linked-items kind="Tasks.Task" [ownerId]="t.id" [ownerLinks]="t.links" />
     </div>
   </div>
 

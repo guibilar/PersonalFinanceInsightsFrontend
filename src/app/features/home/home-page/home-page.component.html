@@ -1,0 +1,226 @@
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Home</h1>
+    <p class="text-body-secondary mb-0">The home, what is in it, and its upkeep</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a
+      class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+      download
+      [href]="exportUrl"
+      data-testid="export"
+    >
+      <app-icon name="download" [size]="16" /> Export list for insurance
+    </a>
+    @if (canWrite()) {
+      <a
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        routerLink="/home/items/new"
+      >
+        <app-icon name="plus" [size]="16" /> Add item
+      </a>
+    }
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+    <!-- Inventory -->
+    <section class="card" aria-labelledby="inventory-heading">
+      <div class="card-body">
+        @if (summaryResource.error() && !summary()) {
+          <h2 id="inventory-heading" class="h6 mb-3">Inventory</h2>
+          <app-error-state
+            message="Could not load the inventory."
+            (retry)="summaryResource.reload()"
+          />
+        } @else if (!summary()) {
+          <h2 id="inventory-heading" class="h6 mb-3">Inventory</h2>
+          <app-skeleton [lines]="2" height="1.5rem" />
+        } @else {
+          @let s = summary()!;
+          <h2 id="inventory-heading" class="h6 mb-1" data-testid="inventory-count">
+            Inventory · {{ count(s.itemCount) }}
+          </h2>
+          <p class="display-value mb-1" data-testid="total-value">{{ s.totalValue | money }}</p>
+          <p class="small text-body-secondary mb-0">Total value</p>
+          @if (s.warrantiesEnding > 0) {
+            <a
+              class="small d-inline-block mt-2"
+              routerLink="/home"
+              [queryParams]="{ warranty: 'expiring' }"
+              data-testid="warranties-ending"
+            >
+              {{ s.warrantiesEnding }}
+              {{ s.warrantiesEnding === 1 ? 'warranty ends' : 'warranties end' }} in the next 30
+              days
+            </a>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- Maintenance -->
+    <section class="card" aria-labelledby="maintenance-heading">
+      <div class="card-body">
+        <h2 id="maintenance-heading" class="h6 mb-3">Maintenance</h2>
+        @if (maintenanceResource.error() && !maintenance()) {
+          <app-error-state
+            message="Could not load the maintenance."
+            (retry)="maintenanceResource.reload()"
+          />
+        } @else if (!maintenance()) {
+          <app-skeleton [lines]="2" height="2.25rem" />
+        } @else if (maintenance()!.length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-maintenance">
+            No maintenance yet. On an item, use “Add maintenance”, for example “Clean the filter,
+            every month”.
+          </p>
+        } @else {
+          <ul class="list-group" data-testid="maintenance">
+            @for (task of maintenance(); track task.id) {
+              <li class="list-group-item maintenance-row">
+                <input
+                  type="checkbox"
+                  class="form-check-input task-check"
+                  [disabled]="!canWrite() || done.busy().has(task.id)"
+                  [attr.aria-label]="'Mark done: ' + task.title"
+                  (change)="done.done(task)"
+                />
+                <a class="flex-grow-1 min-w-0 task-link" [routerLink]="['/tasks', task.id]">
+                  <span class="d-block text-break task-title">{{ task.title }}</span>
+                  <span class="d-block small text-body-secondary">{{ rule(task) }}</span>
+                </a>
+                <span
+                  class="small text-nowrap fw-medium"
+                  [class.text-danger]="late(task)"
+                  data-testid="days-left"
+                  >{{ daysLeft(task) }}</span
+                >
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+    <!-- Search -->
+    <section aria-label="Search items">
+      <label for="home-search" class="visually-hidden">Search items</label>
+      <input
+        type="search"
+        id="home-search"
+        class="form-control"
+        placeholder="Search all items: names, brands, models, serial numbers, notes"
+        autocomplete="off"
+        [formControl]="search"
+      />
+    </section>
+
+    @if (searching()) {
+      <section class="card" aria-labelledby="results-heading">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+            <h2 id="results-heading" class="h6 mb-0">
+              @if (warranty()) {
+                {{ warrantyLabel() }}
+              } @else {
+                Items that match “{{ term() }}”
+              }
+            </h2>
+            <button type="button" class="btn btn-sm btn-link p-0" (click)="clearSearch()">
+              Show all rooms
+            </button>
+          </div>
+          @if (results.error()) {
+            <app-error-state message="Could not search the items." (retry)="results.reload()" />
+          } @else if (!resultPage()) {
+            <app-skeleton [lines]="3" height="2.5rem" />
+          } @else if (resultPage()!.items.length === 0) {
+            <p class="text-body-secondary small mb-0" data-testid="no-results">No items found.</p>
+          } @else {
+            <ul class="list-group" data-testid="results">
+              @for (item of resultPage()!.items; track item.id) {
+                <li class="list-group-item p-0">
+                  <app-item-row [item]="item" [today]="today()" [showRoom]="true" />
+                </li>
+              }
+            </ul>
+            @if (resultPage()!.totalCount > resultPage()!.items.length) {
+              <p class="small text-body-secondary mt-2 mb-0">
+                The first {{ resultPage()!.items.length }} of {{ resultPage()!.totalCount }}. Type
+                more words to find fewer.
+              </p>
+            }
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Rooms -->
+    <section aria-labelledby="rooms-heading">
+      <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+        <h2 id="rooms-heading" class="h6 mb-0">Rooms</h2>
+        @if (canWrite() && !addingRoom()) {
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+            (click)="startAddRoom()"
+          >
+            <app-icon name="plus" [size]="14" /> Add room
+          </button>
+        }
+      </div>
+      @if (addingRoom()) {
+        <form
+          class="d-flex flex-wrap gap-2 mb-3"
+          novalidate
+          (submit)="$event.preventDefault(); addRoom()"
+        >
+          <label for="new-room" class="visually-hidden">Room name</label>
+          <input
+            type="text"
+            id="new-room"
+            class="form-control flex-grow-1 room-input"
+            placeholder="For example Kitchen"
+            autocomplete="off"
+            [maxlength]="roomLimit"
+            [formControl]="newRoom"
+            [class.is-invalid]="newRoom.touched && newRoom.invalid"
+          />
+          <button type="submit" class="btn btn-primary" [disabled]="busy()">
+            {{ busy() ? 'Adding…' : 'Add' }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="addingRoom.set(false)">
+            Cancel
+          </button>
+        </form>
+      }
+      @if (summaryResource.error() && !summary()) {
+        <p class="text-body-secondary small mb-0">The rooms show when the inventory loads.</p>
+      } @else if (!summary()) {
+        <app-skeleton [lines]="2" height="4rem" />
+      } @else if (summary()!.rooms.length === 0) {
+        <p class="text-body-secondary small mb-0" data-testid="no-rooms">
+          No rooms yet. Add the rooms of the home, then the things in them.
+        </p>
+      } @else {
+        <ul class="list-unstyled row row-cols-2 row-cols-sm-3 g-3 mb-0" data-testid="rooms">
+          @for (room of summary()!.rooms; track room.roomId) {
+            <li class="col">
+              <a class="card h-100 room-card" [routerLink]="roomLink(room)">
+                <span class="card-body">
+                  <span class="d-block fw-semibold text-truncate">{{ roomName(room) }}</span>
+                  <span class="d-block small text-body-secondary">{{ count(room.itemCount) }}</span>
+                  <span class="d-block small fw-medium mt-1">{{ room.totalValue | money }}</span>
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</div>

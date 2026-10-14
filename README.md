@@ -10,16 +10,17 @@ The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, *
 screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
 round centre action; the menu button at the top opens the modules and the account actions.
 
-| Page      | Path           | What it shows                                                                              |
-| --------- | -------------- | ------------------------------------------------------------------------------------------ |
-| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come            |
-| Timeline  | `/timeline`    | A placeholder for now                                                                      |
-| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document" and "Add task"; Note is coming soon |
-| Modules   | `/modules`     | Every module: Money, Documents and Tasks open, the others show "Coming soon"               |
-| Search    | `/search`      | A placeholder for now                                                                      |
-| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                           |
-| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                      |
-| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                     |
+| Page      | Path           | What it shows                                                                                          |
+| --------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                        |
+| Timeline  | `/timeline`    | A placeholder for now                                                                                  |
+| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task" and "Add item"; Note is coming soon |
+| Modules   | `/modules`     | Every module: Money, Documents, Tasks and Home open, the others show "Coming soon"                     |
+| Search    | `/search`      | A placeholder for now                                                                                  |
+| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                       |
+| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                  |
+| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                 |
+| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                        |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -244,6 +245,46 @@ Hestia.Api (`/api/tasks`, the Tasks module of HestiaBackend).
 The models are in `core/models/outputs/task-output-dto.ts` and `core/models/inputs/task-input-dto.ts`, written by
 hand from the HestiaBackend contracts (`TaskDtos.cs`). The pages are in `features/tasks/`.
 
+## Home
+
+The Home module keeps the inventory of the home: the rooms, the things in them, what they cost, their serial numbers
+and their warranties. It needs Hestia.Api (`/api/home`, the Home module of HestiaBackend).
+
+| Page     | Path               | What it shows                                                              |
+| -------- | ------------------ | -------------------------------------------------------------------------- |
+| Home     | `/home`            | Maintenance, the inventory total, the rooms, a search, and the export      |
+| Room     | `/home/rooms/<id>` | The items of a room by name; rename, move up or down, delete when empty    |
+| New item | `/home/items/new`  | All the details of a new item (Capture, a room, and a transaction open it) |
+| Item     | `/home/items/<id>` | Details (edit), warranty state, documents, purchase, maintenance, delete   |
+
+- **Home page.** "Maintenance" lists the open repeated tasks that link to an item (`Home.Item`), soonest first, with
+  the days left; a checkbox marks one done, as on the Tasks page. "Inventory" shows the item count and the total
+  value, and how many warranties end in the next 30 days (a link to the list of them). The rooms show as tiles with
+  their item count and value; "No room" collects the items without a room (`/home/rooms/none`). The search covers all
+  items (names, brands, models, serial numbers, categories, notes, tags) and is in the address (`/home?q=tv`), as is
+  the warranty filter (`/home?warranty=expiring`). "Export list for insurance" downloads the CSV
+  (`GET /api/home/items/export.csv`, one row per item).
+- **Days.** The Home page uses the day of the server (`date` of `GET /api/home/summary`). The room and item pages use
+  the day of the browser for the warranty state.
+- **Item.** The warranty state is "Under warranty until …", "Ends in N days" (30 days or fewer), "Ends today", or
+  "Ended …". Prices are for one item; the value of a row is the value now (else the price) times the quantity.
+- **Links of an item.** Documents (from either side of the link): a document with an image shows as a photo
+  (`?inline=true`). "Add receipt or photo" opens `/documents/new?homeItemId=<id>`: after the upload, the document links
+  to the item (`Home.Item`) and the page goes back to it. "Link a document" uses the document picker. "Link the
+  purchase" uses the transaction picker; when the item has no price or no purchase day, they come from the transaction
+  (the amount without its sign). The purchase opens in Money (`transactionLink(id)`). "Add maintenance" opens
+  `/tasks/new?homeItemId=<id>`: a task that repeats every month after each done, with the link. Unlink removes the
+  link from the side that has it.
+- **From other modules.** The edit dialog of a transaction (Money › Transactions) has a "Home inventory" section: the
+  items that link to it, and "Add to inventory", which opens a new item with the description, the amount and the day
+  of the transaction, and the link. The document page and the task page have a "Home items" section
+  (`GET /api/home/items/by-link`) with "Link to item".
+- **Today.** The warranty alert ("The warranty of … ends on …") links to `/home/items/<id>`.
+- A read-only user can only read: no add, edit, delete, link, unlink, room changes or done. The export still works.
+
+The models are in `core/models/outputs/home-output-dto.ts` and `core/models/inputs/home-input-dto.ts`, written by
+hand from the HestiaBackend contracts (`HomeDtos.cs`). The pages are in `features/home/`.
+
 ## Accounts and flows
 
 Statements are imported into an **account** (`/money/accounts`): a name, a type (chequing, savings, credit card or
@@ -320,7 +361,7 @@ Development, sign in as `dev` / `development-only`.
 
 The answer of `me` (and of the sign-in) has a `scope`: `full` or `read-only` (T60). `AuthService.canWrite()` is false
 for `read-only`, and the pages hide or disable their write actions: Capture, Documents, the Documents section of a
-transaction, Tasks, "Import statements" in Money, and "Add transaction", "Import statement" and "Apply rules" on
+transaction, Tasks, Home (the export still works), "Import statements" in Money, and "Add transaction", "Import statement" and "Apply rules" on
 Transactions. A missing `scope` (an older Hestia.Api) counts as `full`. Tests sign in as a read-only user with
 `testing/test-auth.ts`.
 
@@ -386,6 +427,8 @@ src/app/
   features/   today/, capture/, modules/, placeholder/ (Timeline, Search)               (lazy-loaded routes)
               documents/ (the Documents module: list, upload, detail, transaction and document pickers)
               tasks/ (the Tasks module: list, new task, task, the Tasks section of a document)
+              home/ (the Home module: Home page, room, new item, item, the item picker, and the Home sections of a
+              document, a task and a transaction)
               money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
               transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
               bank-accounts/ (Accounts)

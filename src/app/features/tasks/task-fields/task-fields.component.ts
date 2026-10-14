@@ -19,6 +19,7 @@ import {
   REPEAT_UNITS,
   RepeatMode,
   RepeatUnit,
+  TaskRepeatDto,
   TaskSummaryDto,
 } from '../../../core/models/outputs/task-output-dto';
 import { REPEAT_MODES, TASK_LIMITS, parseTags, unitName } from '../tasks';
@@ -36,10 +37,14 @@ export type TaskForm = FormGroup<{
   mode: FormControl<RepeatMode>;
 }>;
 
-/** Values to start a new task with, for example from a document ("Renew …", 14 days before it expires). */
+/**
+ * Values to start a new task with, for example from a document ("Renew …", 14 days before it expires), or from a
+ * Home item (a repeat, for maintenance).
+ */
 export interface TaskFormStart {
   title?: string;
   dueOn?: string | null;
+  repeat?: TaskRepeatDto | null;
 }
 
 function tagsValidator(control: AbstractControl<string>): ValidationErrors | null {
@@ -64,6 +69,7 @@ function repeatValidator(group: AbstractControl): ValidationErrors | null {
 
 /** The task form, empty (or with start values) for a new task, or with a task's details. */
 export function createTaskForm(task?: TaskSummaryDto, start: TaskFormStart = {}): TaskForm {
+  const repeat = task ? task.repeat : (start.repeat ?? null);
   return new FormGroup(
     {
       title: new FormControl(task?.title ?? start.title ?? '', {
@@ -85,10 +91,10 @@ export function createTaskForm(task?: TaskSummaryDto, start: TaskFormStart = {})
         nonNullable: true,
         validators: [tagsValidator],
       }),
-      repeats: new FormControl(!!task?.repeat, { nonNullable: true }),
-      every: new FormControl<number | null>(task?.repeat?.every ?? 1),
-      unit: new FormControl<RepeatUnit>(task?.repeat?.unit ?? 'Weeks', { nonNullable: true }),
-      mode: new FormControl<RepeatMode>(task?.repeat?.mode ?? 'FromDueDate', {
+      repeats: new FormControl(!!repeat, { nonNullable: true }),
+      every: new FormControl<number | null>(repeat?.every ?? 1),
+      unit: new FormControl<RepeatUnit>(repeat?.unit ?? 'Weeks', { nonNullable: true }),
+      mode: new FormControl<RepeatMode>(repeat?.mode ?? 'FromDueDate', {
         nonNullable: true,
       }),
     },

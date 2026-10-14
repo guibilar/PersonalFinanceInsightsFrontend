@@ -81,6 +81,11 @@ export const routes: Routes = [
         path: 'tasks',
         loadChildren: () => import('./features/tasks/tasks.routes').then((m) => m.TASKS_ROUTES),
       },
+      {
+        // The Home module (Hestia.Api): the Home page, a room, a new item and one item.
+        path: 'home',
+        loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
+      },
       // The finance pages' old addresses, before Money was a module.
       ...LEGACY_FINANCE_REDIRECTS,
     ],

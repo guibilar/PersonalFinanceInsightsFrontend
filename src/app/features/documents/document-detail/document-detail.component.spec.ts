@@ -1,4 +1,4 @@
-import { Component, input, provideZonelessChangeDetection } from '@angular/core';
+import { Component, input, output, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import {
@@ -25,11 +25,24 @@ import {
 } from '../../../testing/test-documents';
 import { signInAsReadOnly } from '../../../testing/test-auth';
 import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
+import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
 
 /** The Tasks section has its own tests (DocumentTasksComponent); here it only shows which document it got. */
 @Component({ selector: 'app-document-tasks', template: '{{ document().id }}' })
 class DocumentTasksStub {
   readonly document = input.required<DocumentSummaryDto>();
+}
+
+/** The Home items section has its own tests (LinkedItemsComponent); here it only shows what it got. */
+@Component({
+  selector: 'app-linked-items',
+  template: '<span data-testid="linked-items-stub">{{ kind() }} {{ ownerId() }}</span>',
+})
+class LinkedItemsStub {
+  readonly kind = input.required<string>();
+  readonly ownerId = input.required<string>();
+  readonly ownerLinks = input<unknown[]>([]);
+  readonly changed = output<void>();
 }
 
 const LINK = { id: 'link-1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' };
@@ -88,8 +101,8 @@ describe('DocumentDetailComponent', () => {
 
   beforeEach(async () => {
     TestBed.overrideComponent(DocumentDetailComponent, {
-      remove: { imports: [DocumentTasksComponent] },
-      add: { imports: [DocumentTasksStub] },
+      remove: { imports: [DocumentTasksComponent, LinkedItemsComponent] },
+      add: { imports: [DocumentTasksStub, LinkedItemsStub] },
     });
     TestBed.configureTestingModule({
       providers: [
@@ -254,6 +267,21 @@ describe('DocumentDetailComponent', () => {
     link.click();
     await render();
     expect(router.url).toBe(`/money/transactions?id=${TX_ID}`);
+  });
+
+  it('shows a Home item link in the Home items section, not with the transactions', async () => {
+    await open(
+      testDocument({
+        links: [{ id: 'l-home', kind: 'Home.Item', targetId: 'item-1', createdAt: '' }],
+      }),
+    );
+
+    expect(lookups()).toEqual([]);
+    expect(root().querySelector('[data-testid="links"]')).toBeNull();
+    expect(root().textContent).toContain('Link a receipt to its purchase');
+    expect(root().querySelector('[data-testid="linked-items-stub"]')!.textContent).toBe(
+      `Documents.Document ${DOC_ID}`,
+    );
   });
 
   it('finds a deleted transaction among the deleted ones', async () => {
