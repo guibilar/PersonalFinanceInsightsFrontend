@@ -74,6 +74,15 @@ describe('app routes', () => {
     },
   );
 
+  it.each([
+    '/tasks',
+    '/tasks?due=overdue',
+    '/tasks/new',
+    '/tasks/0199f1a0-4444-7000-8000-000000000004',
+  ])('opens %s in the Tasks module', async (url) => {
+    expect(await open(url)).toBe(url);
+  });
+
   it('signs in first, then returns to the new address of an old link', async () => {
     user = null;
 

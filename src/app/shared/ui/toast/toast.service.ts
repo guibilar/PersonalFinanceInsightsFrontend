@@ -10,11 +10,18 @@ export interface ToastLink {
   queryParams?: Params;
 }
 
+/** A button in the toast, for example "Undo" after a task is marked done. A click runs it and closes the toast. */
+export interface ToastAction {
+  label: string;
+  run: () => void;
+}
+
 export interface Toast {
   id: number;
   kind: ToastKind;
   message: string;
   link?: ToastLink;
+  action?: ToastAction;
 }
 
 /** Short-lived notifications shown in the corner of the screen by ToastContainerComponent. */
@@ -47,6 +54,11 @@ export class ToastService {
     this.show('success', message, link);
   }
 
+  /** A success with a button, for example "Undo". It stays as long as a toast with a link. */
+  successWithAction(message: string, action: ToastAction): void {
+    this.show('success', message, undefined, action);
+  }
+
   /** Errors stay until dismissed, so they can't be missed. */
   error(message: string): void {
     this.show('error', message);
@@ -56,12 +68,18 @@ export class ToastService {
     this.items.update((toasts) => toasts.filter((toast) => toast.id !== id));
   }
 
-  private show(kind: ToastKind, message: string, link?: ToastLink): void {
-    const toast: Toast = { id: this.nextId++, kind, message, ...(link ? { link } : {}) };
+  private show(kind: ToastKind, message: string, link?: ToastLink, action?: ToastAction): void {
+    const toast: Toast = {
+      id: this.nextId++,
+      kind,
+      message,
+      ...(link ? { link } : {}),
+      ...(action ? { action } : {}),
+    };
     // Keep at most 4 on screen.
     this.items.update((toasts) => [...toasts, toast].slice(-4));
     if (kind === 'success') {
-      const duration = link ? ToastService.LINK_DURATION_MS : ToastService.DURATION_MS;
+      const duration = link || action ? ToastService.LINK_DURATION_MS : ToastService.DURATION_MS;
       setTimeout(() => this.dismiss(toast.id), duration);
     }
   }

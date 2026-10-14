@@ -1,0 +1,55 @@
+.section-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+
+  &.text-danger {
+    color: var(--bs-danger-text-emphasis);
+  }
+}
+
+.quick-main {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.quick-title {
+  min-width: 0;
+  padding-inline: 0.25rem;
+}
+
+.quick-due,
+.quick-day {
+  width: auto;
+}
+
+.search {
+  position: relative;
+  min-width: 14rem;
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  input {
+    padding-left: 2.25rem;
+  }
+}
+
+.tag-filter {
+  width: auto;
+}
+
+.done-section summary {
+  cursor: pointer;
+}
+
+.is-reloading {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}

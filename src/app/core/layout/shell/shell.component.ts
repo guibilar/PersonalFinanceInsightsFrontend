@@ -29,6 +29,7 @@ import { DataChangesService } from '../../data/data-changes.service';
 import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../data/transaction-add-launcher.service';
 import { MAIN_MENU, activeModules } from '../../modules/module-registry';
+import { TaskCountsService } from '../../data/task-counts.service';
 import { amountsHidden, toggleAmountsHidden } from '../../../shared/utils/privacy';
 
 const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
@@ -75,6 +76,8 @@ export class ShellComponent {
   /** "Add transaction" opens from Capture and the Transactions page; the shell shows it over any page too. */
   protected readonly adder = inject(TransactionAddLauncher);
   protected readonly dataChanges = inject(DataChangesService);
+  /** The overdue count on the Tasks entry. It loads again after each data change. */
+  protected readonly overdueTasks = inject(TaskCountsService).overdue;
 
   constructor() {
     // Close the slide-out menu after navigating.

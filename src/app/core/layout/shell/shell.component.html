@@ -80,10 +80,29 @@
               [routerLink]="module.route"
               routerLinkActive="active"
               ariaCurrentWhenActive="page"
-              [attr.title]="collapsed() ? module.name : null"
+              [attr.title]="
+                collapsed()
+                  ? module.name +
+                    (module.id === 'tasks' && overdueTasks() > 0
+                      ? ' (' + overdueTasks() + ' overdue)'
+                      : '')
+                  : null
+              "
             >
-              <app-icon [name]="module.icon" />
+              <span class="nav-icon">
+                <app-icon [name]="module.icon" />
+                @if (module.id === 'tasks' && overdueTasks() > 0) {
+                  <span class="badge-dot" aria-hidden="true"></span>
+                }
+              </span>
               <span class="label">{{ module.name }}</span>
+              @if (module.id === 'tasks' && overdueTasks() > 0) {
+                <span
+                  class="badge rounded-pill text-bg-danger ms-auto label"
+                  data-testid="overdue-badge"
+                  >{{ overdueTasks() }}<span class="visually-hidden"> overdue</span></span
+                >
+              }
             </a>
           </li>
         }

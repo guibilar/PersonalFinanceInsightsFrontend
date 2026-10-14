@@ -39,6 +39,7 @@ import {
   detailsOf,
 } from '../document-details-fields/document-details-fields.component';
 import { TransactionPickerComponent } from '../transaction-picker/transaction-picker.component';
+import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
 import {
   DOCUMENT_POLLING,
   changeError,
@@ -67,6 +68,7 @@ export interface LinkView {
     MoneyPipe,
     ConfirmDialogComponent,
     DocumentDetailsFieldsComponent,
+    DocumentTasksComponent,
     ErrorStateComponent,
     IconComponent,
     SkeletonComponent,

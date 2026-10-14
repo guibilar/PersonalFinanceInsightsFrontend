@@ -33,6 +33,15 @@ import { IconComponent } from '../icon/icon.component';
                 >{{ link.label }}</a
               >
             }
+            @if (toast.action; as action) {
+              <button
+                type="button"
+                class="btn btn-link toast-link toast-action p-0 align-baseline"
+                (click)="toasts.dismiss(toast.id); action.run()"
+              >
+                {{ action.label }}
+              </button>
+            }
           </span>
           <button
             type="button"

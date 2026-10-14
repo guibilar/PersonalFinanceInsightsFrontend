@@ -8,6 +8,8 @@ import { DataChangesService } from '../../core/data/data-changes.service';
 import { TodayCard, TodayDto } from '../../core/models/outputs/today-output-dto';
 import { setAmountsHidden } from '../../shared/utils/privacy';
 import { HIDDEN_AMOUNT } from '../../shared/utils/format';
+import { TaskDoneService } from '../tasks/task-done.service';
+import { TASK_ID, testTask } from '../../testing/test-tasks';
 
 function tile(card: Partial<TodayCard> & Pick<TodayCard, 'id' | 'kind' | 'title'>): TodayCard {
   return {
@@ -187,7 +189,7 @@ describe('TodayComponent', () => {
     expect(items[0].querySelector('[data-severity="Bad"]')).not.toBeNull();
 
     expect(root().querySelector('[data-module-status]')).toBeNull();
-    expect(placeholders()).toEqual(['home', 'people', 'journal', 'tasks']);
+    expect(placeholders()).toEqual(['home', 'people', 'journal']);
     expect(root().textContent).toContain('Tuesday, October 13');
   });
 
@@ -252,7 +254,7 @@ describe('TodayComponent', () => {
     expect(root().textContent).toContain('Money could not load.');
     expect(tileLabels()).toEqual(['Expiring soon']);
     // Documents is active, so it is never a placeholder; with cards it links to its module.
-    expect(placeholders()).toEqual(['home', 'people', 'journal', 'tasks']);
+    expect(placeholders()).toEqual(['home', 'people', 'journal']);
     expect(root().querySelector('a[href="/documents"]')!.textContent).toContain('Open Documents');
 
     clickButton('Retry');
@@ -265,7 +267,7 @@ describe('TodayComponent', () => {
     await fixture.whenStable();
 
     expect(root().textContent).toContain('Could not load Today.');
-    expect(placeholders().length).toBe(4);
+    expect(placeholders().length).toBe(3);
 
     clickButton('Retry');
     await answer(completeAnswer(), '/api/today?refresh=true');
@@ -293,6 +295,43 @@ describe('TodayComponent', () => {
     TestBed.inject(DataChangesService).changed();
     TestBed.tick();
     await answer(completeAnswer(), '/api/today?refresh=true');
+  });
+
+  it('shows the Tasks tile, and its new count after a task is marked done', async () => {
+    const withTasks = (dueToday: number) => {
+      const body = completeAnswer();
+      body.modules.push({ module: 'Tasks', status: 'Complete' });
+      body.cards.push(
+        tile({
+          id: 'tasks.due-today',
+          module: 'Tasks',
+          kind: 'due-today',
+          title: 'Tasks',
+          value: { type: 'Count', number: dueToday },
+          text: '{overdue} overdue',
+          values: { overdue: { type: 'Count', number: 1 } },
+          severity: 'Warning',
+          link: '/tasks',
+        }),
+      );
+      return body;
+    };
+    await answer(withTasks(1));
+
+    const card = () => root().querySelector('[data-card="tasks.due-today"]')!;
+    const count = () => card().querySelector('p.h4')!.textContent!.trim();
+    expect(card().querySelector('a')!.getAttribute('href')).toBe('/tasks');
+    expect(count()).toBe('1');
+    expect(card().textContent).toContain('1 overdue');
+
+    TestBed.inject(TaskDoneService).done(testTask());
+    http
+      .expectOne({ method: 'POST', url: `/api/tasks/${TASK_ID}/done` })
+      .flush(testTask({ status: 'Done', doneAt: '2026-10-13T15:00:00Z' }));
+    TestBed.tick();
+    await answer(withTasks(0), '/api/today?refresh=true');
+
+    expect(count()).toBe('0');
   });
 
   it('hides the amounts in privacy mode', async () => {

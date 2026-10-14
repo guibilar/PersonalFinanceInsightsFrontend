@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { Component, input, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import {
@@ -10,7 +10,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { DocumentDetailComponent } from './document-detail.component';
-import { DocumentDto } from '../../../core/models/outputs/document-output-dto';
+import { DocumentDto, DocumentSummaryDto } from '../../../core/models/outputs/document-output-dto';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DOCUMENT_POLLING } from '../documents';
@@ -24,6 +24,13 @@ import {
   testTransaction,
 } from '../../../testing/test-documents';
 import { signInAsReadOnly } from '../../../testing/test-auth';
+import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
+
+/** The Tasks section has its own tests (DocumentTasksComponent); here it only shows which document it got. */
+@Component({ selector: 'app-document-tasks', template: '{{ document().id }}' })
+class DocumentTasksStub {
+  readonly document = input.required<DocumentSummaryDto>();
+}
 
 const LINK = { id: 'link-1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' };
 const POLL_MS = 20;
@@ -80,6 +87,10 @@ describe('DocumentDetailComponent', () => {
   }
 
   beforeEach(async () => {
+    TestBed.overrideComponent(DocumentDetailComponent, {
+      remove: { imports: [DocumentTasksComponent] },
+      add: { imports: [DocumentTasksStub] },
+    });
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),

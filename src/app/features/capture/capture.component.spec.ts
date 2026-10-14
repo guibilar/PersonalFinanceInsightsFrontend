@@ -15,7 +15,7 @@ describe('CaptureComponent', () => {
     });
   });
 
-  it('adds a transaction or a document, imports statements, and shows the other actions as coming soon', async () => {
+  it('adds a transaction, a document or a task, imports statements, and shows the other actions as coming soon', async () => {
     const fixture = TestBed.createComponent(CaptureComponent);
     await fixture.whenStable();
     const buttons = Array.from(
@@ -30,13 +30,21 @@ describe('CaptureComponent', () => {
       ['Add', false],
       ['Import', false],
       ['Note', true],
-      ['Task', true],
     ]);
-    const addDocument = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
-      'a.capture-action',
-    )!;
-    expect(addDocument.textContent).toContain('Add document');
-    expect(addDocument.getAttribute('href')).toBe('/documents/new');
+    const links = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>(
+        'a.capture-action',
+      ),
+    );
+    expect(
+      links.map((link) => [
+        link.querySelector('.fw-semibold')!.textContent!.trim(),
+        link.getAttribute('href'),
+      ]),
+    ).toEqual([
+      ['Add document', '/documents/new'],
+      ['Add task', '/tasks/new'],
+    ]);
 
     buttons[0].click();
     expect(TestBed.inject(TransactionAddLauncher).isOpen()).toBe(true);
@@ -65,8 +73,8 @@ describe('CaptureComponent', () => {
       ['Add transaction', true],
       ['Import statements', true],
       ['Add document', true],
+      ['Add task', true],
       ['Note', true],
-      ['Task', true],
     ]);
     expect(root.querySelector('a.capture-action')).toBeNull();
   });

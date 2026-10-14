@@ -173,10 +173,31 @@ $bottom-bar-height: 4rem;
   padding: 2rem 1.5rem 3rem;
 }
 
+// A module icon, with room for a small dot (the overdue tasks) when the sidebar shows icons only.
+.nav-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.badge-dot {
+  display: none;
+  position: absolute;
+  top: -0.125rem;
+  right: -0.25rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--bs-danger);
+}
+
 // Desktop: collapsed sidebar shows icons only.
 @media (min-width: $md) {
   .sidebar.collapsed {
     width: $sidebar-collapsed-width;
+
+    .badge-dot {
+      display: block;
+    }
 
     .label {
       display: none;
