@@ -1,0 +1,291 @@
+<a class="back-link small d-inline-flex align-items-center gap-1 mb-2" routerLink="/tasks">
+  ← Tasks
+</a>
+
+@if (notFound()) {
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <p class="mb-1">This task does not exist any more.</p>
+      <a class="small" routerLink="/tasks">See all tasks</a>
+    </div>
+  </div>
+} @else if (taskResource.error() && !task()) {
+  <app-error-state message="Could not load the task." (retry)="taskResource.reload()" />
+} @else if (!task()) {
+  <app-skeleton [lines]="2" height="2rem" />
+  <div class="card mt-3">
+    <div class="card-body"><app-skeleton [lines]="5" /></div>
+  </div>
+} @else {
+  @let t = task()!;
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div class="min-w-0">
+      <h1 class="h3 mb-1 text-break" [class.is-done]="t.status === 'Done'">{{ t.title }}</h1>
+      <p class="text-body-secondary mb-0 d-flex flex-wrap align-items-center gap-2">
+        @if (t.status === 'Done') {
+          <span class="badge rounded-pill text-bg-success" data-testid="status">Done</span>
+          @if (t.doneAt) {
+            <span>{{ day(t.doneAt) }}</span>
+          }
+        } @else if (late(t)) {
+          <span class="badge rounded-pill text-bg-danger" data-testid="status">Overdue</span>
+        } @else {
+          <span class="badge rounded-pill text-bg-light" data-testid="status">Open</span>
+        }
+        @if (t.repeat) {
+          <span class="d-inline-flex align-items-center gap-1">
+            <app-icon name="refresh" [size]="14" /> {{ rule(t) }}
+          </span>
+        }
+      </p>
+    </div>
+    @if (canWrite()) {
+      <div class="d-flex flex-wrap gap-2">
+        @if (t.status === 'Open') {
+          <button
+            type="button"
+            class="btn btn-primary d-inline-flex align-items-center gap-2"
+            [disabled]="isBusy()"
+            (click)="markDone(t)"
+          >
+            <app-icon name="check-circle" [size]="16" /> Mark done
+          </button>
+        }
+        @if (t.completions.length > 0) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+            [disabled]="isBusy()"
+            (click)="undo(t)"
+          >
+            <app-icon name="undo" [size]="16" /> Undo the last done
+          </button>
+        }
+        <button
+          type="button"
+          class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
+          [disabled]="isBusy()"
+          (click)="confirmingDelete.set(true)"
+        >
+          <app-icon name="trash" [size]="16" /> Delete
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+      <!-- Details -->
+      <section class="card" aria-labelledby="details-heading">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 id="details-heading" class="h6 mb-0">Details</h2>
+            @if (!editing() && canWrite()) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                (click)="startEdit(t)"
+              >
+                <app-icon name="pencil" [size]="14" /> Edit
+              </button>
+            }
+          </div>
+          @if (editing() && form(); as form) {
+            <form novalidate (submit)="$event.preventDefault(); save(t)">
+              <app-task-fields [form]="form" />
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" [disabled]="busy()">
+                  {{ busy() ? 'Saving…' : 'Save' }}
+                </button>
+              </div>
+            </form>
+          } @else {
+            <dl class="details mb-0" data-testid="details">
+              <dt>Due</dt>
+              <dd [class.text-danger]="late(t)">{{ due(t) }}</dd>
+              <dt>Repeat</dt>
+              <dd>{{ rule(t) }}</dd>
+              <dt>Tags</dt>
+              <dd>
+                @for (tag of t.tags; track tag) {
+                  <a
+                    class="badge rounded-pill text-bg-light fw-normal me-1 text-decoration-none"
+                    routerLink="/tasks"
+                    [queryParams]="{ tag: tag }"
+                    >#{{ tag }}</a
+                  >
+                } @empty {
+                  —
+                }
+              </dd>
+              <dt>Notes</dt>
+              <dd class="notes">{{ t.notes || '—' }}</dd>
+            </dl>
+          }
+        </div>
+      </section>
+
+      <!-- Completions -->
+      <section class="card" aria-labelledby="completions-heading">
+        <div class="card-body">
+          <h2 id="completions-heading" class="h6 mb-3">Last done</h2>
+          @if (t.completions.length === 0) {
+            <p class="text-body-secondary small mb-0">Not done yet.</p>
+          } @else {
+            <ul class="list-unstyled mb-0 d-flex flex-column gap-1" data-testid="completions">
+              @for (completion of t.completions; track completion.id) {
+                <li>
+                  {{ day(completion.doneAt) }}
+                  @if (completion.dueOn) {
+                    <span class="text-body-secondary small">(due {{ day(completion.dueOn) }})</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </section>
+    </div>
+
+    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+      <!-- Links -->
+      <section class="card" aria-labelledby="links-heading">
+        <div class="card-body">
+          <h2 id="links-heading" class="h6 mb-3">Links</h2>
+          @if (t.links.length === 0) {
+            <p class="text-body-secondary small mb-3">
+              Link the document or the payment that this task is about, so each finds the other.
+            </p>
+          } @else if (linkViews.error()) {
+            <app-error-state message="Could not load the links." (retry)="linkViews.reload()" />
+          } @else if (!linkViews.hasValue()) {
+            <app-skeleton [lines]="t.links.length" height="2.5rem" />
+          } @else {
+            <ul class="list-group mb-3" data-testid="links">
+              @for (view of linkViews.value(); track view.link.id) {
+                <li class="list-group-item d-flex align-items-center gap-2">
+                  @if (view.document; as d) {
+                    <app-icon name="file-text" [size]="16" class="text-body-secondary" />
+                    <a class="flex-grow-1 min-w-0 link-target" [routerLink]="['/documents', d.id]">
+                      <span class="d-block text-truncate fw-medium">{{ d.title }}</span>
+                      <span class="d-block small text-body-secondary">
+                        {{ d.kind }}
+                        @if (d.expiresOn) {
+                          · expires {{ day(d.expiresOn) }}
+                        }
+                      </span>
+                    </a>
+                  } @else if (view.transaction; as tx) {
+                    @let target = transactionLink(tx.id);
+                    <app-icon name="banknote" [size]="16" class="text-body-secondary" />
+                    <a
+                      class="flex-grow-1 min-w-0 link-target"
+                      [routerLink]="target.route"
+                      [queryParams]="target.queryParams"
+                    >
+                      <span class="d-block text-truncate fw-medium">{{ tx.description }}</span>
+                      <span class="d-block small text-body-secondary">
+                        {{ day(tx.date) }} · {{ tx.accountName }}
+                        @if (tx.hidden) {
+                          · Deleted
+                        }
+                      </span>
+                    </a>
+                    <span class="text-nowrap fw-medium">{{ tx.amount | money }}</span>
+                  } @else if (view.link.kind === 'Documents.Document') {
+                    <span class="flex-grow-1 text-body-secondary small"
+                      >A document that does not exist any more</span
+                    >
+                  } @else if (view.link.kind === 'Money.Transaction') {
+                    <span class="flex-grow-1 text-body-secondary small"
+                      >A transaction that Money does not know any more</span
+                    >
+                  } @else {
+                    <span class="flex-grow-1 text-body-secondary small text-break"
+                      >{{ view.link.kind }} {{ view.link.targetId }}</span
+                    >
+                  }
+                  @if (canWrite()) {
+                    <button
+                      type="button"
+                      class="btn btn-icon btn-icon-danger"
+                      title="Unlink"
+                      [attr.aria-label]="'Unlink ' + linkName(view)"
+                      [disabled]="busy()"
+                      (click)="unlinking.set(view)"
+                    >
+                      <app-icon name="close" [size]="16" />
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+          @if (canWrite()) {
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                [disabled]="busy()"
+                (click)="picking.set('document')"
+              >
+                <app-icon name="file-text" [size]="14" /> Link to a document
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                [disabled]="busy()"
+                (click)="picking.set('transaction')"
+              >
+                <app-icon name="banknote" [size]="14" /> Link to a transaction
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+
+  @if (confirmingDelete()) {
+    <app-confirm-dialog
+      [title]="'Delete “' + t.title + '”?'"
+      message="Its history and its links go too. The linked documents and transactions stay. This cannot be undone."
+      [confirmLabel]="busy() ? 'Deleting…' : 'Delete'"
+      [danger]="true"
+      (confirmed)="confirmDelete(t)"
+      (cancelled)="confirmingDelete.set(false)"
+    />
+  }
+
+  @if (unlinking(); as view) {
+    <app-confirm-dialog
+      title="Remove the link?"
+      [message]="'The task stays, and so does ' + linkName(view) + '.'"
+      [confirmLabel]="busy() ? 'Unlinking…' : 'Unlink'"
+      [danger]="true"
+      (confirmed)="confirmUnlink(view)"
+      (cancelled)="unlinking.set(null)"
+    />
+  }
+
+  @if (picking() === 'document') {
+    <app-document-picker
+      [linkedIds]="linkedIds().documents"
+      [busy]="busy()"
+      (picked)="linkDocument($event)"
+      (closed)="picking.set(null)"
+    />
+  }
+
+  @if (picking() === 'transaction') {
+    <app-transaction-picker
+      [linkedIds]="linkedIds().transactions"
+      [busy]="busy()"
+      (picked)="linkTransaction($event)"
+      (closed)="picking.set(null)"
+    />
+  }
+}

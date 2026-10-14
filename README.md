@@ -10,15 +10,16 @@ The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, *
 screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
 round centre action; the menu button at the top opens the modules and the account actions.
 
-| Page      | Path           | What it shows                                                                         |
-| --------- | -------------- | ------------------------------------------------------------------------------------- |
-| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come       |
-| Timeline  | `/timeline`    | A placeholder for now                                                                 |
-| Capture   | `/capture`     | "Add transaction", "Import statements" and "Add document"; the others are coming soon |
-| Modules   | `/modules`     | Every module: Money and Documents open, the others show "Coming soon"                 |
-| Search    | `/search`      | A placeholder for now                                                                 |
-| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                      |
-| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                 |
+| Page      | Path           | What it shows                                                                              |
+| --------- | -------------- | ------------------------------------------------------------------------------------------ |
+| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come            |
+| Timeline  | `/timeline`    | A placeholder for now                                                                      |
+| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document" and "Add task"; Note is coming soon |
+| Modules   | `/modules`     | Every module: Money, Documents and Tasks open, the others show "Coming soon"               |
+| Search    | `/search`      | A placeholder for now                                                                      |
+| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                           |
+| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                      |
+| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                     |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -202,6 +203,47 @@ not have it.
 The models are in `core/models/outputs/document-output-dto.ts`, written by hand from the HestiaBackend contracts
 (`DocumentDtos.cs`). The pages are in `features/documents/`.
 
+## Tasks
+
+The Tasks module keeps to-dos and repeated home tasks, for example "Water the plants, every 4 days". It needs
+Hestia.Api (`/api/tasks`, the Tasks module of HestiaBackend).
+
+| Page     | Path          | What it shows                                                                 |
+| -------- | ------------- | ----------------------------------------------------------------------------- |
+| List     | `/tasks`      | A quick add field, the open tasks in sections, and the last done tasks        |
+| New task | `/tasks/new`  | All the details of a new task (Capture opens it; a document opens it too)     |
+| Task     | `/tasks/<id>` | Done and undo, the details and the repeat (edit them), links, history, delete |
+
+- **List.** The quick add takes a title; Enter adds it. It is due today, or on the day that the small menu next to
+  it sets (tomorrow, in a week, no date, or a day from a calendar). The open tasks show in sections: "Overdue",
+  "Today", "Upcoming" (the next 7 days), "Later and no date", and "Recurring" (each repeated task with its rule and
+  next date). A repeated task that is due today or overdue also shows in that section, so it can be ticked. A
+  checkbox marks a task done, and a toast offers "Undo". "Done" (the last 20, newest first) is collapsed, and loads
+  when it opens; there, the checkbox undoes the done. The tag filter and the search are in the address
+  (`/tasks?tag=garden&q=water`); a tag on a row filters by it. `/tasks?due=overdue` shows only the overdue tasks,
+  with "Show all" (the Today alert for many overdue tasks links there).
+- **Days.** "Today" is the day of the server (`date` in `GET /api/tasks/summary`), because the server decides what is
+  overdue. Until that answer comes, the page uses the day of the browser.
+- **Task.** The details are the title, the due date, the tags, the notes, and the repeat: every N days, weeks,
+  months or years, either "After each done" (from the day it was done) or "On a fixed schedule" (from the due date).
+  A repeated task without a date is due today. "Mark done" on a repeated task moves its date; the task stays open.
+  "Undo the last done" puts back the last one. The page shows the last 10 times the task was done.
+- **Links.** "Link to a document" (a search of the documents) and "Link to a transaction" (the picker of the
+  document page). Each link shows the document (title, kind, expiry) or the transaction (description, day, account,
+  amount), and opens it. Unlink with a confirmation.
+- **On a document.** The document page has a "Tasks" section: the tasks linked to it
+  (`GET /api/tasks/by-link?kind=Documents.Document&id=…`), with their checkboxes. "Add task" opens
+  `/tasks/new?documentId=<id>`: the new task links to the document, and the page goes back to it. For a document
+  with an expiry date, the task starts as "Renew <title>", due 14 days before the expiry (or today, if that day is
+  past).
+- **The menu badge.** The Tasks entry in the sidebar shows the overdue count from `GET /api/tasks/summary`. It loads
+  again after each change from this app (`DataChangesService`), as Today does.
+- A read-only user can only read: no quick add, no "Add task", and no done, edit, delete, link or unlink. The
+  checkboxes show, but are off.
+
+The models are in `core/models/outputs/task-output-dto.ts` and `core/models/inputs/task-input-dto.ts`, written by
+hand from the HestiaBackend contracts (`TaskDtos.cs`). The pages are in `features/tasks/`.
+
 ## Accounts and flows
 
 Statements are imported into an **account** (`/money/accounts`): a name, a type (chequing, savings, credit card or
@@ -278,7 +320,7 @@ Development, sign in as `dev` / `development-only`.
 
 The answer of `me` (and of the sign-in) has a `scope`: `full` or `read-only` (T60). `AuthService.canWrite()` is false
 for `read-only`, and the pages hide or disable their write actions: Capture, Documents, the Documents section of a
-transaction, "Import statements" in Money, and "Add transaction", "Import statement" and "Apply rules" on
+transaction, Tasks, "Import statements" in Money, and "Add transaction", "Import statement" and "Apply rules" on
 Transactions. A missing `scope` (an older Hestia.Api) counts as `full`. Tests sign in as a read-only user with
 `testing/test-auth.ts`.
 
@@ -342,7 +384,8 @@ src/app/
   shared/     ui/ (cards, modal, confirm dialog, toasts, tag picker, skeletons...), charts/ (theme, chart helper),
               utils/ (formatting, months, date presets, flows, problem details...)
   features/   today/, capture/, modules/, placeholder/ (Timeline, Search)               (lazy-loaded routes)
-              documents/ (the Documents module: list, upload, detail, transaction picker)
+              documents/ (the Documents module: list, upload, detail, transaction and document pickers)
+              tasks/ (the Tasks module: list, new task, task, the Tasks section of a document)
               money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
               transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
               bank-accounts/ (Accounts)

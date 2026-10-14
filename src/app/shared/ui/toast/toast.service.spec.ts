@@ -42,6 +42,20 @@ describe('ToastService', () => {
     expect(service.toasts()).toEqual([]);
   });
 
+  it('keeps a success toast with an action as long as one with a link', () => {
+    const run = vi.fn();
+    service.successWithAction('Done', { label: 'Undo', run });
+    expect(service.toasts()[0].action!.label).toBe('Undo');
+
+    vi.advanceTimersByTime(ToastService.DURATION_MS);
+    expect(service.toasts().length).toBe(1);
+    service.toasts()[0].action!.run();
+    expect(run).toHaveBeenCalledOnce();
+
+    vi.advanceTimersByTime(ToastService.LINK_DURATION_MS - ToastService.DURATION_MS);
+    expect(service.toasts()).toEqual([]);
+  });
+
   it('shows at most four at a time, newest last', () => {
     ['a', 'b', 'c', 'd', 'e'].forEach((m) => service.error(m));
 

@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
@@ -7,6 +7,7 @@ import { ShellComponent } from './shell.component';
 import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DataChangesService } from '../../data/data-changes.service';
+import { TaskCountsService } from '../../data/task-counts.service';
 import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../data/transaction-add-launcher.service';
 import { AccountType } from '../../models/enums/account-type';
@@ -16,7 +17,11 @@ import { TEST_CATEGORIES } from '../../../testing/test-categories';
 import { PRIVACY_STORAGE_KEY, amountsHidden } from '../../../shared/utils/privacy';
 
 describe('ShellComponent', () => {
+  /** The overdue tasks of the badge. The real service is in "shows the overdue tasks on Tasks". */
+  const overdue = signal(0);
+
   beforeEach(() => {
+    overdue.set(0);
     localStorage.removeItem('sidebar-collapsed');
     TestBed.configureTestingModule({
       imports: [ShellComponent],
@@ -30,6 +35,7 @@ describe('ShellComponent', () => {
         ]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: TaskCountsService, useValue: { overdue, today: signal('2026-10-14') } },
       ],
     });
   });
@@ -54,12 +60,50 @@ describe('ShellComponent', () => {
       'Search',
     ]);
     expect(labels('.sidebar .nav-group .nav-group-label')).toEqual(['Modules']);
-    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual(['Money', 'Documents']);
+    expect(labels('.sidebar .nav-group .nav-list .label')).toEqual(['Money', 'Documents', 'Tasks']);
     expect(
       Array.from(root.querySelectorAll('.sidebar .nav-group .nav-item')).map((item) =>
         item.getAttribute('href'),
       ),
-    ).toEqual(['/money', '/documents']);
+    ).toEqual(['/money', '/documents', '/tasks']);
+    expect(root.querySelector('[data-testid="overdue-badge"]')).toBeNull();
+  });
+
+  it('shows the overdue count on Tasks, and asks again after a data change', async () => {
+    TestBed.overrideProvider(TaskCountsService, { useFactory: () => new TaskCountsService() });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(ShellComponent);
+    const root = fixture.nativeElement as HTMLElement;
+    TestBed.tick();
+    http
+      .expectOne('/api/tasks/summary')
+      .flush({ date: '2026-10-14', dueToday: 2, overdue: 3, upcoming: 1 });
+    await fixture.whenStable();
+
+    const tasks = root.querySelector<HTMLElement>('.sidebar a[href="/tasks"]')!;
+    expect(tasks.querySelector('[data-testid="overdue-badge"]')!.textContent).toBe('3 overdue');
+
+    TestBed.inject(DataChangesService).changed();
+    TestBed.tick();
+    http
+      .expectOne('/api/tasks/summary')
+      .flush({ date: '2026-10-14', dueToday: 2, overdue: 0, upcoming: 1 });
+    await fixture.whenStable();
+
+    expect(tasks.querySelector('[data-testid="overdue-badge"]')).toBeNull();
+  });
+
+  it('shows no badge when the server has no Tasks module', async () => {
+    TestBed.overrideProvider(TaskCountsService, { useFactory: () => new TaskCountsService() });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(ShellComponent);
+    TestBed.tick();
+    http.expectOne('/api/tasks/summary').flush(null, { status: 404, statusText: 'Not Found' });
+    await fixture.whenStable();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="overdue-badge"]'),
+    ).toBeNull();
   });
 
   it('has the main menu as a bottom bar for small screens, with Capture as its centre action', async () => {

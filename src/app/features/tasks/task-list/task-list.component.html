@@ -1,0 +1,236 @@
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Tasks</h1>
+    <p class="text-body-secondary mb-0">To-dos, and the upkeep that comes back</p>
+  </div>
+  @if (canWrite()) {
+    <a
+      class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+      routerLink="/tasks/new"
+    >
+      <app-icon name="plus" [size]="16" /> New task with details
+    </a>
+  }
+</div>
+
+@if (canWrite()) {
+  <form
+    class="quick-add card mb-3"
+    data-testid="quick-add"
+    (submit)="$event.preventDefault(); add()"
+  >
+    <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+      <span class="d-flex align-items-center gap-2 quick-main">
+        <app-icon name="plus" [size]="18" class="text-primary" />
+        <label for="quick-add-title" class="visually-hidden">New task</label>
+        <input
+          type="text"
+          id="quick-add-title"
+          class="form-control border-0 shadow-none quick-title"
+          placeholder="Add a task, then press Enter"
+          autocomplete="off"
+          [maxlength]="limits.title"
+          [formControl]="newTitle"
+        />
+      </span>
+      <span class="d-flex align-items-center gap-2 ms-auto">
+        <label for="quick-add-due" class="visually-hidden">Due</label>
+        <select
+          id="quick-add-due"
+          class="form-select form-select-sm quick-due"
+          [value]="quickDue()"
+          (change)="setQuickDue($any($event.target).value)"
+        >
+          @for (option of quickDueLabels; track option.value) {
+            <option [value]="option.value" [selected]="option.value === quickDue()">
+              {{ option.label }}
+            </option>
+          }
+        </select>
+        @if (quickDue() === 'pick') {
+          <label for="quick-add-day" class="visually-hidden">Day</label>
+          <input
+            type="date"
+            id="quick-add-day"
+            class="form-control form-control-sm quick-day"
+            [formControl]="pickedDay"
+          />
+        }
+        <button
+          type="submit"
+          class="btn btn-sm btn-primary"
+          [disabled]="adding() || !newTitle.value.trim()"
+        >
+          {{ adding() ? 'Adding…' : 'Add' }}
+        </button>
+      </span>
+    </div>
+  </form>
+}
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <form class="search flex-grow-1" role="search" (submit)="$event.preventDefault()">
+    <label for="task-search" class="visually-hidden">Search tasks</label>
+    <app-icon name="search" [size]="16" class="search-icon text-body-secondary" />
+    <input
+      type="search"
+      id="task-search"
+      class="form-control"
+      placeholder="Search titles, notes and tags"
+      autocomplete="off"
+      [formControl]="search"
+      (keydown.escape)="clearSearch()"
+    />
+  </form>
+  <label for="task-tag" class="visually-hidden">Tag</label>
+  <select
+    id="task-tag"
+    class="form-select tag-filter"
+    [value]="tag()"
+    (change)="selectTag($any($event.target).value)"
+  >
+    <option value="" [selected]="!tag()">All tags</option>
+    @for (t of tags(); track t) {
+      <option [value]="t" [selected]="t === tag()">#{{ t }}</option>
+    }
+  </select>
+</div>
+
+@if (due()) {
+  <p
+    class="alert alert-secondary d-flex flex-wrap align-items-center gap-2"
+    data-testid="due-filter"
+  >
+    <span>Only the {{ dueLabel() }}.</span>
+    <a routerLink="/tasks">Show all</a>
+  </p>
+}
+
+@if (openResource.error() && !open()) {
+  <app-error-state message="Could not load the tasks." (retry)="reload()" />
+} @else if (!open()) {
+  <div class="card">
+    <div class="card-body"><app-skeleton [lines]="5" height="2.25rem" /></div>
+  </div>
+} @else {
+  <div [class.is-reloading]="openResource.isLoading()">
+    @if (noOpenTasks() && (due() || q() || tag())) {
+      <div class="card mb-4">
+        <div class="card-body text-center text-body-secondary py-5" data-testid="no-match">
+          @if (due()) {
+            <p class="mb-0">No {{ dueLabel() }}.</p>
+          } @else if (q()) {
+            <p class="mb-0">No open task matches “{{ q() }}”.</p>
+          } @else {
+            <p class="mb-0">No open task has the tag #{{ tag() }}.</p>
+          }
+        </div>
+      </div>
+    }
+
+    @for (section of shown(); track section.key) {
+      <section class="mb-4" [attr.aria-labelledby]="'section-' + section.key">
+        <h2
+          class="section-label mb-2"
+          [class.text-danger]="section.key === 'overdue'"
+          [id]="'section-' + section.key"
+        >
+          {{ section.title }} · {{ section.tasks.length }}
+        </h2>
+        @if (section.tasks.length === 0) {
+          <p class="text-body-secondary small mb-0" [attr.data-testid]="section.key + '-empty'">
+            {{ section.empty }}
+          </p>
+        } @else {
+          <div class="card">
+            <ul class="list-group list-group-flush" [attr.data-testid]="section.key">
+              @for (task of section.tasks; track task.id) {
+                <li class="list-group-item p-0">
+                  <app-task-row
+                    [task]="task"
+                    [today]="today()"
+                    [disabled]="!canWrite() || isBusy(task)"
+                    (toggled)="toggle($event)"
+                    (tagPicked)="selectTag($event)"
+                  />
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+    }
+
+    @if (!due() && sections().recurring.length > 0) {
+      <section class="mb-4" aria-labelledby="section-recurring">
+        <h2 class="section-label mb-2" id="section-recurring">Recurring</h2>
+        <div class="card">
+          <ul class="list-group list-group-flush" data-testid="recurring">
+            @for (task of sections().recurring; track task.id) {
+              <li class="list-group-item p-0">
+                <app-task-row
+                  [task]="task"
+                  [today]="today()"
+                  variant="recurring"
+                  [disabled]="!canWrite() || isBusy(task)"
+                  (toggled)="toggle($event)"
+                  (tagPicked)="selectTag($event)"
+                />
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+
+    @if (truncated()) {
+      <p class="small text-body-secondary" data-testid="truncated">
+        This page shows the first {{ open()!.items.length }} of {{ open()!.totalCount }} open tasks.
+        Search or pick a tag to find the others.
+      </p>
+    }
+  </div>
+
+  @if (!due()) {
+    <details
+      class="done-section"
+      data-testid="done-section"
+      [open]="doneOpen()"
+      (toggle)="doneOpen.set($any($event.target).open)"
+    >
+      <summary class="section-label">Done</summary>
+      <div class="mt-2">
+        @if (doneResource.error()) {
+          <app-error-state
+            message="Could not load the done tasks."
+            (retry)="doneResource.reload()"
+          />
+        } @else if (!doneTasks()) {
+          <app-skeleton [lines]="3" height="2.25rem" />
+        } @else if (doneTasks()!.length === 0) {
+          <p class="text-body-secondary small mb-0">No done tasks yet.</p>
+        } @else {
+          <div class="card">
+            <ul class="list-group list-group-flush" data-testid="done">
+              @for (task of doneTasks(); track task.id) {
+                <li class="list-group-item p-0">
+                  <app-task-row
+                    [task]="task"
+                    [today]="today()"
+                    variant="done"
+                    [disabled]="!canWrite() || isBusy(task)"
+                    (toggled)="toggle($event)"
+                    (tagPicked)="selectTag($event)"
+                  />
+                </li>
+              }
+            </ul>
+          </div>
+          <p class="small text-body-secondary mt-2 mb-0">
+            The last {{ doneTasks()!.length }} done.
+          </p>
+        }
+      </div>
+    </details>
+  }
+}

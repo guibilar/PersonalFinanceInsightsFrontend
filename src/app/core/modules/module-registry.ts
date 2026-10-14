@@ -35,6 +35,14 @@ export const MODULES: readonly AppModule[] = [
     status: 'active',
   },
   {
+    id: 'tasks',
+    name: 'Tasks',
+    description: 'To-dos and maintenance that comes back',
+    icon: 'list-checks',
+    route: '/tasks',
+    status: 'active',
+  },
+  {
     id: 'home',
     name: 'Home',
     description: 'The home, what is in it, and its upkeep',
@@ -56,14 +64,6 @@ export const MODULES: readonly AppModule[] = [
     description: 'Notes on the day, and on this day in other years',
     icon: 'book-open',
     route: '/journal',
-    status: 'coming-soon',
-  },
-  {
-    id: 'tasks',
-    name: 'Tasks',
-    description: 'To-dos and maintenance that comes back',
-    icon: 'list-checks',
-    route: '/tasks',
     status: 'coming-soon',
   },
 ];
