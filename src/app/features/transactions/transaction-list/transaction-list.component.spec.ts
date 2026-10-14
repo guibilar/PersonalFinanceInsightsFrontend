@@ -95,6 +95,11 @@ describe('TransactionListComponent', () => {
       .match('/api/Tags')
       .filter((r) => !r.cancelled)
       .forEach((r) => r.flush(TEST_TAGS));
+    // The documents of an open edit; tested in TransactionDocumentsComponent.
+    http
+      .match((r) => r.url === '/api/documents/by-link')
+      .filter((r) => !r.cancelled)
+      .forEach((r) => r.flush([]));
   }
 
   function lastFilterRequest() {

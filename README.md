@@ -109,6 +109,7 @@ A transaction can be:
 - edited: its description, category (optionally adding a rule so similar ones follow), what it counts as, a note
   and tags;
 - linked to a budget;
+- given documents (below);
 - deleted, which hides it: deleted ones are listed under "Deleted" to restore, and re-importing their statement
   doesn't add them back.
 
@@ -170,9 +171,16 @@ not have it.
 - **Links.** "Link to a transaction" lists the recent transactions, or the ones whose description matches a search.
   Each link shows the transaction (description, day, account, amount) and opens it in Money (`transactionLink(id)`).
   A deleted transaction shows as "Deleted".
+- **On a transaction.** The edit dialog of a transaction (Money › Transactions) has a "Documents" section: the
+  documents linked to it (`GET /api/documents/by-link?kind=Money.Transaction&id=…`), each opening its page.
+  "Add document" opens `/documents/new?transactionId=<id>`: the kind starts as Receipt, the page names the transaction,
+  and after the upload it links the new document and goes back to the transaction. If the link fails, the document
+  opens, so it can be linked there. "Link an existing document" searches the documents (the 5 newest, or the best
+  matches) and links one. The transaction list has no documents icon: it needs one request per row.
 - **Today.** The Documents "Needs attention" items ("expires soon") link to `/documents/<id>`.
 - A read-only user can only read. The web app cannot tell such a user from the sign-in, so a refused change says
-  "This account can only read documents." (403).
+  "This account can only read documents." (403) On a transaction, the "Documents" section then hides "Add
+  document" and "Link an existing document".
 
 The models are in `core/models/outputs/document-output-dto.ts`, written by hand from the HestiaBackend contracts
 (`DocumentDtos.cs`). The pages are in `features/documents/`.

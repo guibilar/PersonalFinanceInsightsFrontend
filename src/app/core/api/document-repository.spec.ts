@@ -78,6 +78,16 @@ describe('DocumentRepository', () => {
     expect(types.at(-1)).toBe(HttpEventType.Response);
   });
 
+  it('lists the documents of one transaction', () => {
+    let documents: unknown;
+    repository.listByTransaction(TX_ID).subscribe((d) => (documents = d));
+    const request = http.expectOne((r) => r.method === 'GET' && r.url === '/api/documents/by-link');
+    expect(request.request.params.get('kind')).toBe('Money.Transaction');
+    expect(request.request.params.get('id')).toBe(TX_ID);
+    request.flush([]);
+    expect(documents).toEqual([]);
+  });
+
   it('links to a transaction, and unlinks', () => {
     repository.linkTransaction(DOC_ID, TX_ID).subscribe();
     const link = http.expectOne({ method: 'POST', url: `/api/documents/${DOC_ID}/links` });

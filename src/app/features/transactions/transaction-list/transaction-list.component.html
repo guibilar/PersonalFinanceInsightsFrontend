@@ -407,6 +407,10 @@
       (cancelled)="actions.editingTransaction.set(null)"
       (deleteRequested)="actions.deletingTransaction.set(transaction)"
     />
+    <app-transaction-documents
+      class="d-block border-top mt-3 pt-3"
+      [transactionId]="transaction.id"
+    />
   </app-modal>
 }
 

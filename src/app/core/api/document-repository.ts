@@ -28,6 +28,12 @@ export class DocumentRepository {
     return this.http.get<PaginatedResult<DocumentSummaryDto>>(this.baseUrl, { params });
   }
 
+  /** The documents linked to one finance transaction, newest first. */
+  listByTransaction(transactionId: string): Observable<DocumentSummaryDto[]> {
+    const params = new HttpParams().set('kind', MONEY_TRANSACTION_LINK).set('id', transactionId);
+    return this.http.get<DocumentSummaryDto[]>(`${this.baseUrl}/by-link`, { params });
+  }
+
   /** One document, with its OCR text. */
   get(id: string): Observable<DocumentDto> {
     return this.http.get<DocumentDto>(`${this.baseUrl}/${id}`);
