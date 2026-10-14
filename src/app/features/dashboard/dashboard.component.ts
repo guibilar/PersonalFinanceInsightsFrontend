@@ -19,7 +19,7 @@ import { TransactionRepository } from '../../core/api/transaction-repository';
 import { Status } from '../../core/models/enums/status';
 import { CardWrapperComponent } from '../../shared/ui/card-wrapper/card-wrapper.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
-import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
+import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { FinanceTilesComponent } from './finance-tiles/finance-tiles.component';
 import { MonthlyCategorizedChartComponent } from './monthly-categorized-chart/monthly-categorized-chart.component';
@@ -29,13 +29,15 @@ import { RecentTransactionsComponent } from './recent-transactions/recent-transa
 import { CategoryAveragesComponent } from './category-averages/category-averages.component';
 import { CashFlowComponent } from './cash-flow/cash-flow.component';
 import { MonthForecastComponent } from './month-forecast/month-forecast.component';
-import { AttentionKind, attentionItems } from './attention';
 import { investments } from './investments';
 import { AccountRepository } from '../../core/api/account-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { PLAN_LABELS } from '../../shared/utils/account-labels';
-import { valueOf } from '../../shared/utils/resource-value';
+import { keptValueOf, valueOf } from '../../shared/utils/resource-value';
 import { formatDay, formatCurrency } from '../../shared/utils/format';
+import { AlertRepository } from '../../core/api/alert-repository';
+import { AttentionListComponent } from '../today/attention-list/attention-list.component';
+import { HttpErrorResponse } from '@angular/common/http';
 
 // Registered here so Chart.js only ships in the lazily loaded dashboard chunk.
 Chart.register(
@@ -51,6 +53,8 @@ Chart.register(
 );
 
 const RECENT_TRANSACTIONS = 6;
+/** The module name of the finance alerts in `GET /api/alerts`. */
+const MONEY = 'Money';
 
 @Component({
   selector: 'app-dashboard',
@@ -68,36 +72,9 @@ const RECENT_TRANSACTIONS = 6;
     RecentTransactionsComponent,
     CashFlowComponent,
     MonthForecastComponent,
+    AttentionListComponent,
   ],
   templateUrl: './dashboard.component.html',
-  styles: `
-    .attention {
-      border-color: var(--bs-warning-border-subtle);
-      background: var(--bs-warning-bg-subtle);
-    }
-
-    .attention-icon {
-      display: inline-flex;
-      flex-shrink: 0;
-      padding: 0.3rem;
-      border-radius: 50%;
-      background: var(--bs-body-bg);
-      color: var(--bs-warning-text-emphasis);
-
-      &[data-kind='budget'] {
-        color: var(--bs-danger-text-emphasis);
-      }
-    }
-
-    .attention-link {
-      color: var(--bs-emphasis-color);
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
@@ -105,6 +82,7 @@ export class DashboardComponent {
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly transactionRepository = inject(TransactionRepository);
   private readonly accountRepository = inject(AccountRepository);
+  private readonly alertRepository = inject(AlertRepository);
   /** A statement imported from the sidebar reloads everything below. */
   private readonly dataChanges = inject(DataChangesService);
 
@@ -140,13 +118,6 @@ export class DashboardComponent {
     params: () => this.dataChanges.version(),
     stream: () => this.reportsRepository.getForecast(),
   });
-  readonly uncategorised = rxResource({
-    params: () => this.dataChanges.version(),
-    stream: () => this.reportsRepository.getUncategorised(),
-  });
-  /** Transactions left in Other that a rule could sort; 0 while unknown. */
-  readonly unsortedCount = computed(() => valueOf(this.uncategorised)?.transactionCount ?? 0);
-
   readonly netWorth = rxResource({
     params: () => this.dataChanges.version(),
     stream: () => this.reportsRepository.getNetWorth(),
@@ -155,11 +126,6 @@ export class DashboardComponent {
     params: () => this.dataChanges.version(),
     stream: () => this.accountRepository.getAll(),
   });
-  readonly recurring = rxResource({
-    params: () => this.dataChanges.version(),
-    stream: () => this.reportsRepository.getRecurring(),
-  });
-
   readonly recent = rxResource({
     params: () => this.dataChanges.version(),
     stream: () => this.transactionRepository.filter({ page: 1, pageSize: RECENT_TRANSACTIONS }),
@@ -169,26 +135,48 @@ export class DashboardComponent {
   readonly yearValue = computed(() => valueOf(this.yearReport));
   readonly monthValue = computed(() => valueOf(this.monthReport));
 
-  /** Waits for what it is made of, so items don't appear one by one; a part that failed just adds nothing. */
-  readonly attention = computed(() => {
-    const parts = [this.uncategorised, this.budgets, this.recurring, this.accounts];
-    if (parts.some((part) => part.isLoading())) return [];
-    return attentionItems(
-      {
-        unsorted: this.unsortedCount(),
-        budgets: valueOf(this.budgets)?.items ?? [],
-        recurring: valueOf(this.recurring) ?? null,
-        accounts: valueOf(this.accounts) ?? [],
-      },
-      this.today(),
-    );
+  /** Clicks on "Retry" of the "Needs attention" list. */
+  private readonly alertRetries = signal(0);
+  /** The data version when the page opened: a later version means the data changed since. */
+  private readonly firstVersion = this.dataChanges.version();
+
+  /**
+   * The open alerts of all modules (T15). The first load uses the alerts that the server keeps. A retry, or a change to
+   * the data from this app, asks for a new check (`refresh=true`), as Today does.
+   */
+  readonly alerts = rxResource({
+    params: () => ({ version: this.dataChanges.version(), retries: this.alertRetries() }),
+    stream: ({ params }) =>
+      this.alertRepository.get(params.retries > 0 || params.version !== this.firstVersion),
   });
-  protected readonly attentionIcons: Record<AttentionKind, IconName> = {
-    budget: 'budgets',
-    statement: 'upload',
-    price: 'refresh',
-    unsorted: 'tag',
-  };
+  /** The last answer stays while the next one loads, so a new check does not hide the list for a moment. */
+  private readonly alertList = keptValueOf(this.alerts);
+
+  /**
+   * The Money items of "Needs attention", in the order of the server (most severe first, then newest). The server owns
+   * the rules, so the dashboard and Today show the same items.
+   */
+  readonly attention = computed(() =>
+    (this.alertList()?.alerts ?? []).filter((alert) => alert.module === MONEY),
+  );
+  /** The status of the last check of the Money rules; Complete when the server does not say. */
+  readonly attentionStatus = computed(
+    () => this.alertList()?.modules.find((m) => m.module === MONEY)?.status ?? 'Complete',
+  );
+  /**
+   * The alerts did not load. A 404 means that the API behind the app has no Alerts module (the finance backend alone):
+   * then the list just does not show, as before there were alerts.
+   */
+  readonly attentionError = computed(() => {
+    const error = this.alerts.error();
+    if (!error || this.alertList()) return false;
+    return !(error instanceof HttpErrorResponse && error.status === 404);
+  });
+
+  /** Asks the server for a new check of the alerts. */
+  retryAttention(): void {
+    this.alertRetries.update((n) => n + 1);
+  }
 
   readonly investments = computed(() => investments(valueOf(this.accounts) ?? []));
   protected readonly planLabels = PLAN_LABELS;

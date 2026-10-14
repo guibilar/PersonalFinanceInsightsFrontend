@@ -15,6 +15,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent, StatTone } from '../../shared/ui/stat-card/stat-card.component';
 import { keptValueOf } from '../../shared/utils/resource-value';
 import { fillTodayText, formatTodayValue } from './today-text';
+import { AttentionListComponent } from './attention-list/attention-list.component';
 
 /** One module on Today, with its tiles. */
 interface ModuleSection {
@@ -35,15 +36,6 @@ const TILE_ICONS: Record<string, IconName> = {
   budgets: 'budgets',
 };
 
-/** "Needs attention" icons by card kind, as on the Money dashboard. */
-const ATTENTION_ICONS: Record<string, IconName> = {
-  'budget-over': 'budgets',
-  'statements-not-imported': 'upload',
-  'statements-behind': 'upload',
-  'price-changed': 'refresh',
-  unsorted: 'tag',
-};
-
 const TONES: Record<TodaySeverity, StatTone> = {
   Neutral: 'neutral',
   Good: 'good',
@@ -58,7 +50,14 @@ const TONES: Record<TodaySeverity, StatTone> = {
  */
 @Component({
   selector: 'app-today',
-  imports: [RouterLink, ErrorStateComponent, IconComponent, SkeletonComponent, StatCardComponent],
+  imports: [
+    RouterLink,
+    AttentionListComponent,
+    ErrorStateComponent,
+    IconComponent,
+    SkeletonComponent,
+    StatCardComponent,
+  ],
   templateUrl: './today.component.html',
   styles: `
     .placeholder-card {
@@ -89,33 +88,6 @@ const TONES: Record<TodaySeverity, StatTone> = {
       &:focus-visible {
         outline: 2px solid var(--bs-primary);
         outline-offset: 2px;
-      }
-    }
-
-    .attention {
-      border-color: var(--bs-warning-border-subtle);
-      background: var(--bs-warning-bg-subtle);
-    }
-
-    .attention-icon {
-      display: inline-flex;
-      flex-shrink: 0;
-      padding: 0.3rem;
-      border-radius: 50%;
-      background: var(--bs-body-bg);
-      color: var(--bs-warning-text-emphasis);
-
-      &[data-severity='Bad'] {
-        color: var(--bs-danger-text-emphasis);
-      }
-    }
-
-    .attention-link {
-      color: var(--bs-emphasis-color);
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
       }
     }
   `,
@@ -205,10 +177,6 @@ export class TodayComponent {
 
   tileIcon(card: TodayCard): IconName {
     return TILE_ICONS[card.kind] ?? registryModule(card.module)?.icon ?? 'dashboard';
-  }
-
-  attentionIcon(card: TodayCard): IconName {
-    return ATTENTION_ICONS[card.kind] ?? 'alert-circle';
   }
 
   /**
