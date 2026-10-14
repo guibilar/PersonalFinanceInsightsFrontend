@@ -10,6 +10,7 @@ import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Subscription, of } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentRepository } from '../../../core/api/document-repository';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { DocumentDto } from '../../../core/models/outputs/document-output-dto';
@@ -54,6 +55,8 @@ export class DocumentUploadComponent implements OnDestroy {
   private readonly toasts = inject(ToastService);
   private readonly dataChanges = inject(DataChangesService);
   private readonly transactions = inject(TransactionRepository);
+  /** A read-only user (T60) sees why, in place of the form. */
+  readonly canWrite = inject(AuthService).canWrite;
 
   /** The transaction to link the new document to, from `?transactionId=`; null without one (or with a bad one). */
   readonly transactionId = linkTarget(

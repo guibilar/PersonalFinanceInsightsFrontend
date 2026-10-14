@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { AuthService, safeReturnUrl } from './auth.service';
+import { AuthService, canWrite, safeReturnUrl } from './auth.service';
 
 describe('AuthService', () => {
   let auth: AuthService;
@@ -35,6 +35,26 @@ describe('AuthService', () => {
     expect(await first).toEqual({ username: 'alex' });
     expect(await second).toEqual({ username: 'alex' });
     expect(auth.user()).toEqual({ username: 'alex' });
+  });
+
+  it('can write unless the server says the scope is read-only', async () => {
+    expect(auth.canWrite()).toBe(true); // nobody signed in yet: the server decides
+
+    const loaded = auth.ensureLoaded();
+    http.expectOne('/api/Auth/me').flush({ username: 'read-only token', scope: 'read-only' });
+    await loaded;
+    expect(auth.canWrite()).toBe(false);
+
+    auth.login({ username: 'alex', password: 'pw', rememberMe: false }).subscribe();
+    http.expectOne('/api/Auth/login').flush({ username: 'alex', scope: 'full' });
+    expect(auth.canWrite()).toBe(true);
+  });
+
+  it('counts a missing scope (an old server) as full', () => {
+    expect(canWrite({ username: 'alex' })).toBe(true);
+    expect(canWrite({ username: 'alex', scope: 'full' })).toBe(true);
+    expect(canWrite({ username: 'bot', scope: 'read-only' })).toBe(false);
+    expect(canWrite(null)).toBe(true);
   });
 
   it('treats 401 as signed out', async () => {

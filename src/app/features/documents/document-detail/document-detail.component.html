@@ -29,14 +29,16 @@
         }
       </p>
     </div>
-    <button
-      type="button"
-      class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
-      [disabled]="busy()"
-      (click)="confirmingDelete.set(true)"
-    >
-      <app-icon name="trash" [size]="16" /> Delete
-    </button>
+    @if (canWrite()) {
+      <button
+        type="button"
+        class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
+        [disabled]="busy()"
+        (click)="confirmingDelete.set(true)"
+      >
+        <app-icon name="trash" [size]="16" /> Delete
+      </button>
+    }
   </div>
 
   <div class="row g-4">
@@ -46,7 +48,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 id="details-heading" class="h6 mb-0">Details</h2>
-            @if (!editing()) {
+            @if (!editing() && canWrite()) {
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
@@ -167,14 +169,16 @@
                   <p class="small mb-0 text-break">{{ doc.ocrError }}</p>
                 }
               </div>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                [disabled]="busy()"
-                (click)="retryOcr()"
-              >
-                <app-icon name="refresh" [size]="14" /> Run OCR again
-              </button>
+              @if (canWrite()) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                  [disabled]="busy()"
+                  (click)="retryOcr()"
+                >
+                  <app-icon name="refresh" [size]="14" /> Run OCR again
+                </button>
+              }
             }
             @case ('NotNeeded') {
               <p class="text-body-secondary mb-0">
@@ -198,14 +202,16 @@
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 id="links-heading" class="h6 mb-0">Linked transactions</h2>
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-              [disabled]="busy()"
-              (click)="picking.set(true)"
-            >
-              <app-icon name="link" [size]="14" /> Link to a transaction
-            </button>
+            @if (canWrite()) {
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                [disabled]="busy()"
+                (click)="picking.set(true)"
+              >
+                <app-icon name="link" [size]="14" /> Link to a transaction
+              </button>
+            }
           </div>
           @if (doc.links.length === 0) {
             <p class="text-body-secondary small mb-0">
@@ -244,16 +250,18 @@
                       >{{ view.link.kind }} {{ view.link.targetId }}</span
                     >
                   }
-                  <button
-                    type="button"
-                    class="btn btn-icon btn-icon-danger"
-                    title="Unlink"
-                    [attr.aria-label]="'Unlink ' + linkName(view)"
-                    [disabled]="busy()"
-                    (click)="unlinking.set(view)"
-                  >
-                    <app-icon name="close" [size]="16" />
-                  </button>
+                  @if (canWrite()) {
+                    <button
+                      type="button"
+                      class="btn btn-icon btn-icon-danger"
+                      title="Unlink"
+                      [attr.aria-label]="'Unlink ' + linkName(view)"
+                      [disabled]="busy()"
+                      (click)="unlinking.set(view)"
+                    >
+                      <app-icon name="close" [size]="16" />
+                    </button>
+                  }
                 </li>
               }
             </ul>

@@ -17,6 +17,7 @@ import { ActivatedRoute, Params, Router } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Subscription, map, of, switchMap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
+import { AuthService } from '../../../core/auth/auth.service';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { BudgetRepository } from '../../../core/api/budget-repository';
 import { AccountRepository } from '../../../core/api/account-repository';
@@ -123,6 +124,8 @@ const DEFAULT_DIRECTION: Record<TransactionSortField, SortDirection> = {
 })
 export class TransactionListComponent {
   private readonly transactionRepository = inject(TransactionRepository);
+  /** A read-only user (T60) gets no "Apply rules", "Add transaction" or "Import statement". */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly categoryRuleRepository = inject(CategoryRuleRepository);
   private readonly accountRepository = inject(AccountRepository);

@@ -11,6 +11,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentRepository } from '../../../core/api/document-repository';
 import {
   DOCUMENT_KINDS,
@@ -50,6 +51,8 @@ export class DocumentListComponent {
   private readonly repository = inject(DocumentRepository);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  /** A read-only user (T60) gets no "Add document". */
+  readonly canWrite = inject(AuthService).canWrite;
 
   readonly kinds = DOCUMENT_KINDS;
   readonly kindLabels = KIND_FILTER_LABELS;

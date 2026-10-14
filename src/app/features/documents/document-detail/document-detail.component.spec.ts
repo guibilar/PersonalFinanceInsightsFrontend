@@ -23,6 +23,7 @@ import {
   testPage,
   testTransaction,
 } from '../../../testing/test-documents';
+import { signInAsReadOnly } from '../../../testing/test-auth';
 
 const LINK = { id: 'link-1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' };
 const POLL_MS = 20;
@@ -386,5 +387,26 @@ describe('DocumentDetailComponent', () => {
 
     expect(messages()).toEqual(['This account can only read documents.']);
     expect(router.url).toBe(`/documents/${DOC_ID}`);
+  });
+
+  it('shows no change actions to a read-only user', async () => {
+    await signInAsReadOnly(http);
+    await open(
+      testDocument({
+        ocrStatus: 'Failed',
+        ocrError: 'scan.pdf: encrypted',
+        ocrText: null,
+        links: [LINK],
+      }),
+    );
+    lookups()[0].flush(testPage([testTransaction()]));
+    await render();
+
+    expect(root().querySelector('h1')!.textContent).toContain('Dishwasher warranty');
+    expect(root().querySelector('[data-testid="links"] a')).not.toBeNull();
+    for (const label of ['Delete', 'Edit', 'Run OCR again', 'Link to a transaction']) {
+      expect(button(label)).toBeUndefined();
+    }
+    expect(root().querySelector('button[title="Unlink"]')).toBeNull();
   });
 });

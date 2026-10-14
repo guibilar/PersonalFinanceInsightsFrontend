@@ -17,6 +17,7 @@ import { TransactionBreakdownOutputDto } from '../../../core/models/outputs/tran
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { TransactionAddLauncher } from '../../../core/data/transaction-add-launcher.service';
+import { signInAsReadOnly } from '../../../testing/test-auth';
 
 describe('TransactionListComponent', () => {
   let fixture: ComponentFixture<TransactionListComponent>;
@@ -682,6 +683,21 @@ describe('TransactionListComponent', () => {
       // The shell shows the panel; the page has no add form of its own.
       expect(root().querySelector('app-transaction-add-form')).toBeNull();
       http.expectNone({ method: 'POST', url: '/api/Transaction' });
+    });
+
+    it('has no add, import or apply-rules buttons for a read-only user', async () => {
+      const labels = () =>
+        Array.from(root().querySelectorAll<HTMLButtonElement>('button')).map((b) =>
+          b.textContent!.trim(),
+        );
+      expect(labels()).toContain('Add transaction');
+
+      await signInAsReadOnly(http);
+      fixture.detectChanges();
+
+      expect(labels()).not.toContain('Add transaction');
+      expect(labels()).not.toContain('Import statement');
+      expect(labels()).not.toContain('Apply rules');
     });
 
     it('reloads when a transaction is added over the page', () => {

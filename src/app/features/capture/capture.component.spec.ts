@@ -4,6 +4,8 @@ import { provideRouter } from '@angular/router';
 import { CaptureComponent } from './capture.component';
 import { StatementImportLauncher } from '../../core/data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../core/data/transaction-add-launcher.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { readOnlyAuth } from '../../testing/test-auth';
 
 describe('CaptureComponent', () => {
   beforeEach(() => {
@@ -42,5 +44,30 @@ describe('CaptureComponent', () => {
 
     buttons[1].click();
     expect(TestBed.inject(StatementImportLauncher).isOpen()).toBe(true);
+  });
+
+  it('disables every add action for a read-only user, and says why', async () => {
+    TestBed.overrideProvider(AuthService, { useValue: readOnlyAuth() });
+    const fixture = TestBed.createComponent(CaptureComponent);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="read-only"]')?.textContent).toContain(
+      'This account can only read.',
+    );
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('button.capture-action'));
+    expect(
+      buttons.map((button) => [
+        button.querySelector('.fw-semibold')!.firstChild!.textContent!.trim(),
+        button.disabled,
+      ]),
+    ).toEqual([
+      ['Add transaction', true],
+      ['Import statements', true],
+      ['Add document', true],
+      ['Note', true],
+      ['Task', true],
+    ]);
+    expect(root.querySelector('a.capture-action')).toBeNull();
   });
 });

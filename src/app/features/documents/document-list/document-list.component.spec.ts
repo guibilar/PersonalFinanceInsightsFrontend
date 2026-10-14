@@ -13,6 +13,7 @@ import { DocumentListComponent } from './document-list.component';
 import { DocumentSummaryDto } from '../../../core/models/outputs/document-output-dto';
 import { isoDay } from '../../../shared/utils/date-presets';
 import { DOC_ID, testPage, testSummary } from '../../../testing/test-documents';
+import { signInAsReadOnly } from '../../../testing/test-auth';
 
 describe('DocumentListComponent', () => {
   let http: HttpTestingController;
@@ -113,6 +114,18 @@ describe('DocumentListComponent', () => {
       '/documents/d2',
     ]);
     expect(root().querySelector('[data-ocr="Failed"]')!.classList).toContain('text-bg-danger');
+  });
+
+  it('has no "Add document" for a read-only user', async () => {
+    await harness.navigateByUrl('/documents', DocumentListComponent);
+    await answer([testSummary()]);
+    expect(root().querySelector('a[href="/documents/new"]')).not.toBeNull();
+
+    await signInAsReadOnly(http);
+    harness.fixture.detectChanges();
+
+    expect(root().querySelector('a[href="/documents/new"]')).toBeNull();
+    expect(rows('documents').length).toBe(1);
   });
 
   it('shows the ones that expire in the next 30 days, soonest first, with the days left', async () => {

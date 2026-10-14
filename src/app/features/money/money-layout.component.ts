@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
+import { AuthService } from '../../core/auth/auth.service';
 import { StatementImportLauncher } from '../../core/data/statement-import-launcher.service';
 import { moneyPath } from './money-paths';
 
@@ -67,14 +68,16 @@ export const MONEY_NAV: readonly MoneyNavGroup[] = [
           <app-icon name="banknote" [size]="18" />
           <span>Money</span>
         </p>
-        <button
-          type="button"
-          class="btn btn-primary btn-sm import-button"
-          (click)="importer.open()"
-        >
-          <app-icon name="upload" [size]="16" />
-          <span>Import statements</span>
-        </button>
+        @if (canWrite()) {
+          <button
+            type="button"
+            class="btn btn-primary btn-sm import-button"
+            (click)="importer.open()"
+          >
+            <app-icon name="upload" [size]="16" />
+            <span>Import statements</span>
+          </button>
+        }
         <div class="money-groups">
           @for (group of groups; track group.label) {
             <div class="money-group" [class.quiet]="group.quiet">
@@ -109,5 +112,7 @@ export const MONEY_NAV: readonly MoneyNavGroup[] = [
 })
 export class MoneyLayoutComponent {
   protected readonly importer = inject(StatementImportLauncher);
+  /** A read-only user (T60) cannot import. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   readonly groups = MONEY_NAV;
 }

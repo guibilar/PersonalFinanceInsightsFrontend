@@ -21,29 +21,31 @@
     >
       <app-icon name="trash" [size]="16" /> Deleted
     </button>
-    <button
-      type="button"
-      class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-      [disabled]="actions.applyingRules()"
-      (click)="actions.confirmingRules.set(true)"
-    >
-      <app-icon name="refresh" [size]="16" />
-      {{ actions.applyingRules() ? 'Applying…' : 'Apply rules' }}
-    </button>
-    <button
-      type="button"
-      class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-      (click)="adder.open()"
-    >
-      <app-icon name="plus" [size]="16" /> Add transaction
-    </button>
-    <button
-      type="button"
-      class="btn btn-primary d-inline-flex align-items-center gap-2"
-      (click)="showImport.set(true)"
-    >
-      <app-icon name="upload" [size]="16" /> Import statement
-    </button>
+    @if (canWrite()) {
+      <button
+        type="button"
+        class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+        [disabled]="actions.applyingRules()"
+        (click)="actions.confirmingRules.set(true)"
+      >
+        <app-icon name="refresh" [size]="16" />
+        {{ actions.applyingRules() ? 'Applying…' : 'Apply rules' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+        (click)="adder.open()"
+      >
+        <app-icon name="plus" [size]="16" /> Add transaction
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary d-inline-flex align-items-center gap-2"
+        (click)="showImport.set(true)"
+      >
+        <app-icon name="upload" [size]="16" /> Import statement
+      </button>
+    }
   </div>
 </div>
 

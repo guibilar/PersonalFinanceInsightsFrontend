@@ -191,9 +191,10 @@ not have it.
   opens, so it can be linked there. "Link an existing document" searches the documents (the 5 newest, or the best
   matches) and links one. The transaction list has no documents icon: it needs one request per row.
 - **Today.** The Documents "Needs attention" items ("expires soon") link to `/documents/<id>`.
-- A read-only user can only read. The web app cannot tell such a user from the sign-in, so a refused change says
-  "This account can only read documents." (403) On a transaction, the "Documents" section then hides "Add
-  document" and "Link an existing document".
+- A read-only user can only read (T60). The pages hide the write actions: "Add document", edit, delete,
+  "Run OCR again", link and unlink. The upload page says "This account can only read documents." in place of the
+  form. If the server still refuses a change with 403 (for example a scope that changed after the sign-in), the page
+  says the same text.
 
 The models are in `core/models/outputs/document-output-dto.ts`, written by hand from the HestiaBackend contracts
 (`DocumentDtos.cs`). The pages are in `features/documents/`.
@@ -264,6 +265,12 @@ so the app never handles a token: it asks `GET /api/Auth/me` who is signed in, a
 the API sends you back to `/login` (returning to the same page afterwards). This relies on the app and
 the API sharing an origin, which the dev proxy and the nginx proxy both provide. Against a local API in
 Development, sign in as `dev` / `development-only`.
+
+The answer of `me` (and of the sign-in) has a `scope`: `full` or `read-only` (T60). `AuthService.canWrite()` is false
+for `read-only`, and the pages hide or disable their write actions: Capture, Documents, the Documents section of a
+transaction, "Import statements" in Money, and "Add transaction", "Import statement" and "Apply rules" on
+Transactions. A missing `scope` (an older Hestia.Api) counts as `full`. Tests sign in as a read-only user with
+`testing/test-auth.ts`.
 
 ## Scripts
 

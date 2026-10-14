@@ -1,4 +1,6 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { AuthService } from '../../core/auth/auth.service';
 import { StatementImportLauncher } from '../../core/data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../core/data/transaction-add-launcher.service';
 import { RouterLink } from '@angular/router';
@@ -18,20 +20,32 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
 
 /**
  * Capture: one place to add something to any module. For now it adds a transaction or imports bank statements into
- * Money, adds a document (a scan or a photo), and shows the other actions as coming soon.
+ * Money, adds a document (a scan or a photo), and shows the other actions as coming soon. A read-only user (T60) sees
+ * the actions disabled.
  */
 @Component({
   selector: 'app-capture',
-  imports: [IconComponent, RouterLink],
+  imports: [IconComponent, NgTemplateOutlet, RouterLink],
   template: `
     <div class="mb-4">
       <h1 class="h3 mb-1">Capture</h1>
       <p class="text-body-secondary mb-0">Add something to any module</p>
     </div>
 
+    @if (!canWrite()) {
+      <p class="alert alert-secondary" data-testid="read-only">
+        This account can only read. It cannot add anything.
+      </p>
+    }
+
     <div class="row row-cols-1 row-cols-sm-2 g-3">
       <div class="col">
-        <button type="button" class="card h-100 w-100 capture-action" (click)="adder.open()">
+        <button
+          type="button"
+          class="card h-100 w-100 capture-action"
+          [disabled]="!canWrite()"
+          (click)="adder.open()"
+        >
           <span class="card-body d-flex gap-3 align-items-center text-start">
             <span class="action-icon"><app-icon name="plus" /></span>
             <span class="min-w-0">
@@ -44,7 +58,12 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
         </button>
       </div>
       <div class="col">
-        <button type="button" class="card h-100 w-100 capture-action" (click)="importer.open()">
+        <button
+          type="button"
+          class="card h-100 w-100 capture-action"
+          [disabled]="!canWrite()"
+          (click)="importer.open()"
+        >
           <span class="card-body d-flex gap-3 align-items-center text-start">
             <span class="action-icon"><app-icon name="upload" /></span>
             <span class="min-w-0">
@@ -55,7 +74,16 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
         </button>
       </div>
       <div class="col">
-        <a class="card h-100 w-100 capture-action" routerLink="/documents/new">
+        @if (canWrite()) {
+          <a class="card h-100 w-100 capture-action" routerLink="/documents/new">
+            <ng-container *ngTemplateOutlet="addDocument" />
+          </a>
+        } @else {
+          <button type="button" class="card h-100 w-100 capture-action" disabled>
+            <ng-container *ngTemplateOutlet="addDocument" />
+          </button>
+        }
+        <ng-template #addDocument>
           <span class="card-body d-flex gap-3 align-items-center text-start">
             <span class="action-icon"><app-icon name="file-text" /></span>
             <span class="min-w-0">
@@ -65,7 +93,7 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
               >
             </span>
           </span>
-        </a>
+        </ng-template>
       </div>
       @for (action of comingActions; track action.label) {
         <div class="col">
@@ -126,4 +154,6 @@ export class CaptureComponent {
   protected readonly importer = inject(StatementImportLauncher);
   protected readonly adder = inject(TransactionAddLauncher);
   protected readonly comingActions = COMING_CAPTURE_ACTIONS;
+  /** A read-only user (T60) sees the add actions disabled, and why. */
+  protected readonly canWrite = inject(AuthService).canWrite;
 }

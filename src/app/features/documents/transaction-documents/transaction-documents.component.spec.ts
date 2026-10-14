@@ -10,6 +10,7 @@ import { provideRouter } from '@angular/router';
 import { TransactionDocumentsComponent } from './transaction-documents.component';
 import { DocumentSummaryDto } from '../../../core/models/outputs/document-output-dto';
 import { DOC_ID, TX_ID, testPage, testSummary } from '../../../testing/test-documents';
+import { signInAsReadOnly } from '../../../testing/test-auth';
 
 const RECEIPT_ID = '0199f1a0-4444-7000-8000-000000000004';
 
@@ -201,6 +202,18 @@ describe('TransactionDocumentsComponent', () => {
     expect(button('Link an existing document')).toBeUndefined();
     expect(root().textContent).not.toContain('Add document');
     // The documents stay.
+    expect(root().querySelectorAll('[data-testid="transaction-documents"] li').length).toBe(1);
+  });
+
+  it('shows a read-only user no add or link actions, from the start', async () => {
+    await signInAsReadOnly(http);
+    await open([receipt]);
+
+    expect(root().querySelector('[data-testid="read-only"]')!.textContent).toContain(
+      'This account can only read documents.',
+    );
+    expect(button('Link an existing document')).toBeUndefined();
+    expect(root().textContent).not.toContain('Add document');
     expect(root().querySelectorAll('[data-testid="transaction-documents"] li').length).toBe(1);
   });
 });
