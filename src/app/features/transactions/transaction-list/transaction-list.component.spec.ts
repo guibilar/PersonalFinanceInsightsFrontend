@@ -1165,6 +1165,58 @@ describe('TransactionListComponent, in the address bar', () => {
     });
   });
 
+  describe('a link with #import', () => {
+    const importDialog = () =>
+      (harness.routeNativeElement as HTMLElement).querySelector('app-statement-import');
+
+    it('opens the import, then takes the fragment from the address', async () => {
+      const list = await harness.navigateByUrl('/transactions#import', TransactionListComponent);
+      await settle();
+      harness.fixture.detectChanges();
+
+      expect(list.showImport()).toBe(true);
+      expect(importDialog()).not.toBeNull();
+      // A refresh does not open it again.
+      expect(router.url).toBe('/transactions');
+    });
+
+    it('keeps the query string of the link', async () => {
+      const list = await harness.navigateByUrl(
+        '/transactions?accountId=a1#import',
+        TransactionListComponent,
+      );
+      await settle();
+
+      expect(list.showImport()).toBe(true);
+      expect(list.filter().accountId).toBe('a1');
+      expect(router.url).toBe('/transactions?accountId=a1');
+    });
+
+    it('opens the import from a link while the page is open', async () => {
+      const list = await harness.navigateByUrl('/transactions', TransactionListComponent);
+      await settle();
+      expect(list.showImport()).toBe(false);
+
+      await harness.navigateByUrl('/transactions#import');
+      await settle();
+
+      expect(list.showImport()).toBe(true);
+      expect(router.url).toBe('/transactions');
+    });
+
+    it('stays closed once closed, and opens for no other fragment', async () => {
+      const list = await harness.navigateByUrl('/transactions#import', TransactionListComponent);
+      await settle();
+      list.showImport.set(false);
+      await settle();
+      expect(list.showImport()).toBe(false);
+
+      await harness.navigateByUrl('/transactions#unsorted');
+      await settle();
+      expect(list.showImport()).toBe(false);
+    });
+  });
+
   it('shows the interval the totals were charted in, when the asked one has too many periods', async () => {
     const list = await harness.navigateByUrl(
       '/transactions?startDate=2010-01-01&overTime=1&interval=Week',
