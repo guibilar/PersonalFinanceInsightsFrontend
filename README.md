@@ -47,10 +47,12 @@ The Money sub-menu keeps the groups of the old sidebar:
 
 "Import statements" is at the top of the Money sub-menu, and on the Capture page.
 
-"Add transaction" is on the Transactions page and on the Capture page (the same as "Expense" on Android). From
-Capture, the form opens over the current page (`TransactionAddLauncher` opens it, and the shell shows it). After a
-save, a notification has a "View" link that opens the new transaction in `/money/transactions` (a link to one
-transaction, below). The next transaction starts on the same day and account.
+"Add transaction" is on the Transactions page and on the Capture page (the same as "Expense" on Android). Both
+buttons open the same form over the current page: `TransactionAddLauncher` opens it, the shell shows it, and
+`TransactionAddPanel` saves it. The panel is the only code that adds a transaction. After a save, the pages that show
+transactions load again (`DataChangesService`), and a notification has a "View" link that opens the new transaction in
+`/money/transactions` (a link to one transaction, below). The next transaction starts on the same day and account,
+also when it is added from the other button.
 
 **Old addresses.** Before Money was a module, the finance pages were at the top level (`/transactions`, `/budgets`,
 `/net-worth` and so on). Each old address opens the same page under `/money`, with its query string and fragment, so

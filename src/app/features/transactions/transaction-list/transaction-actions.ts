@@ -3,7 +3,6 @@ import { Subject, switchMap, tap } from 'rxjs';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { CategoryRuleInputDto } from '../../../core/models/inputs/category-rule-input-dto';
-import { TransactionInputDto } from '../../../core/models/inputs/transaction-input-dto';
 import { TransactionLinkingInputDto } from '../../../core/models/inputs/transaction-linking-input-dto';
 import { BudgetOutputDto } from '../../../core/models/outputs/budget-output-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
@@ -13,8 +12,9 @@ import { conflictDetail, validationDetail } from '../../../shared/utils/problem-
 import { TransactionEditSubmission } from '../transaction-edit-form/transaction-edit-form';
 
 /**
- * What the transactions page does to one transaction (add, edit, link, delete, restore, unlink) and to all of them
- * (apply the rules), with the dialogs' state. Provided by the page; [changed] tells it to reload after each change.
+ * What the transactions page does to one transaction (edit, link, delete, restore, unlink) and to all of them (apply
+ * the rules), with the dialogs' state. Provided by the page; [changed] tells it to reload after each change. A new
+ * transaction goes through `TransactionAddLauncher` and `TransactionAddPanel`, the same as from Capture.
  */
 @Injectable()
 export class TransactionActions {
@@ -27,12 +27,6 @@ export class TransactionActions {
 
   readonly linkingTransaction = signal<TransactionOutputDto | null>(null);
   readonly savingLink = signal(false);
-  readonly showAdd = signal(false);
-  readonly savingAdd = signal(false);
-  /** What the last transaction added by hand used, so the next one starts on the same day and account. */
-  readonly lastAdded = signal<{ date: string; accountId: string } | null>(null);
-  /** The API's reason when the transaction being added already exists; the form then offers to add it anyway. */
-  readonly addDuplicate = signal<string | null>(null);
   readonly editingTransaction = signal<TransactionOutputDto | null>(null);
   readonly savingEdit = signal(false);
   readonly confirmingRules = signal(false);
@@ -40,35 +34,6 @@ export class TransactionActions {
   /** Asked to delete; the confirm dialog is showing. */
   readonly deletingTransaction = signal<TransactionOutputDto | null>(null);
   readonly removing = signal(false);
-
-  openAdd(): void {
-    this.addDuplicate.set(null);
-    this.showAdd.set(true);
-  }
-
-  onAddSubmit(input: TransactionInputDto): void {
-    if (this.savingAdd()) return;
-    this.savingAdd.set(true);
-    this.addDuplicate.set(null);
-    this.transactionRepository.add(input).subscribe({
-      next: (added) => {
-        this.savingAdd.set(false);
-        this.showAdd.set(false);
-        this.lastAdded.set({ date: input.date, accountId: input.accountId });
-        this.changed.next();
-        this.toasts.success(`Added “${added.description}” to ${added.accountName}`);
-      },
-      error: (error: unknown) => {
-        this.savingAdd.set(false);
-        const detail = conflictDetail(error, '');
-        if (detail) {
-          this.addDuplicate.set(detail);
-        } else {
-          this.toasts.error(validationDetail(error, 'Could not add the transaction.'));
-        }
-      },
-    });
-  }
 
   /** [budgets] name the budget in the message. */
   onLinkSubmit(linking: TransactionLinkingInputDto, budgets: BudgetOutputDto[] = []): void {

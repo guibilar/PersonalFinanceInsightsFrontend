@@ -72,7 +72,7 @@ export class ShellComponent {
   readonly confirmingSignOutOthers = signal(false);
   /** The import panel opens from Money and Capture; the shell shows it over any page. */
   protected readonly importer = inject(StatementImportLauncher);
-  /** "Add transaction" opens from Capture; the shell shows it over any page too. */
+  /** "Add transaction" opens from Capture and the Transactions page; the shell shows it over any page too. */
   protected readonly adder = inject(TransactionAddLauncher);
   protected readonly dataChanges = inject(DataChangesService);
 

@@ -33,7 +33,7 @@
     <button
       type="button"
       class="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-      (click)="actions.openAdd()"
+      (click)="adder.open()"
     >
       <app-icon name="plus" [size]="16" /> Add transaction
     </button>
@@ -392,20 +392,6 @@
       (imported)="onImported($event)"
       (progressed)="reload()"
       (cancelled)="showImport.set(false)"
-    />
-  </app-modal>
-}
-
-@if (actions.showAdd()) {
-  <app-modal title="Add transaction" (closed)="actions.showAdd.set(false)">
-    <app-transaction-add-form
-      [accounts]="accounts()"
-      [categories]="categories()"
-      [saving]="actions.savingAdd()"
-      [previous]="actions.lastAdded()"
-      [duplicate]="actions.addDuplicate()"
-      (submitAdd)="actions.onAddSubmit($event)"
-      (cancelled)="actions.showAdd.set(false)"
     />
   </app-modal>
 }
