@@ -12,131 +12,137 @@
   </p>
 </div>
 
-@if (transactionId) {
-  <div class="alert alert-info d-flex align-items-start gap-2" data-testid="link-target">
-    <app-icon name="link" [size]="16" class="mt-1" />
-    <span>
-      After the upload, the document is linked to the transaction
-      @if (transactionValue(); as transaction) {
-        <strong>{{ transaction.description }}</strong> ({{ day(transaction.date) }},
-        {{ transaction.amount | money }}).
-      } @else {
-        that you came from.
-      }
-    </span>
-  </div>
-}
+@if (!canWrite()) {
+  <p class="alert alert-secondary mb-0" data-testid="read-only">
+    This account can only read documents.
+  </p>
+} @else {
+  @if (transactionId) {
+    <div class="alert alert-info d-flex align-items-start gap-2" data-testid="link-target">
+      <app-icon name="link" [size]="16" class="mt-1" />
+      <span>
+        After the upload, the document is linked to the transaction
+        @if (transactionValue(); as transaction) {
+          <strong>{{ transaction.description }}</strong> ({{ day(transaction.date) }},
+          {{ transaction.amount | money }}).
+        } @else {
+          that you came from.
+        }
+      </span>
+    </div>
+  }
 
-<form class="d-flex flex-column gap-4" novalidate (submit)="$event.preventDefault(); submit()">
-  <div class="card">
-    <div class="card-body">
-      <h2 class="h6 mb-3">Files</h2>
-      <label
-        class="drop-zone"
-        for="document-files"
-        [class.dragging]="dragging()"
-        (dragover)="onDragOver($event)"
-        (dragleave)="onDragLeave($event)"
-        (drop)="onDrop($event)"
-      >
-        <app-icon name="upload" [size]="24" />
-        <span class="fw-medium">Drop files here, or pick them</span>
-        <span class="small text-body-secondary"
-          >Several pages of one document can go together, up to 100 MB</span
+  <form class="d-flex flex-column gap-4" novalidate (submit)="$event.preventDefault(); submit()">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Files</h2>
+        <label
+          class="drop-zone"
+          for="document-files"
+          [class.dragging]="dragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
         >
-      </label>
-      <input
-        type="file"
-        id="document-files"
-        class="visually-hidden"
-        multiple
-        [accept]="accept"
-        [disabled]="uploading()"
-        (change)="onPicked($event)"
-      />
+          <app-icon name="upload" [size]="24" />
+          <span class="fw-medium">Drop files here, or pick them</span>
+          <span class="small text-body-secondary"
+            >Several pages of one document can go together, up to 100 MB</span
+          >
+        </label>
+        <input
+          type="file"
+          id="document-files"
+          class="visually-hidden"
+          multiple
+          [accept]="accept"
+          [disabled]="uploading()"
+          (change)="onPicked($event)"
+        />
 
-      @if (files().length > 0) {
-        <ul class="list-unstyled mb-0 mt-3 d-flex flex-column gap-2" data-testid="chosen-files">
-          @for (file of files(); track file) {
-            <li class="chosen-file d-flex align-items-center gap-2">
-              <app-icon name="file-text" [size]="16" class="text-body-secondary" />
-              <span class="flex-grow-1 text-truncate min-w-0" [title]="file.name">{{
-                file.name
-              }}</span>
-              <span class="small text-body-secondary text-nowrap">{{ size(file.size) }}</span>
-              <button
-                type="button"
-                class="btn btn-icon"
-                [attr.aria-label]="'Remove ' + file.name"
-                title="Remove"
-                [disabled]="uploading()"
-                (click)="remove(file)"
-              >
-                <app-icon name="close" [size]="16" />
-              </button>
-            </li>
-          }
-        </ul>
-      }
+        @if (files().length > 0) {
+          <ul class="list-unstyled mb-0 mt-3 d-flex flex-column gap-2" data-testid="chosen-files">
+            @for (file of files(); track file) {
+              <li class="chosen-file d-flex align-items-center gap-2">
+                <app-icon name="file-text" [size]="16" class="text-body-secondary" />
+                <span class="flex-grow-1 text-truncate min-w-0" [title]="file.name">{{
+                  file.name
+                }}</span>
+                <span class="small text-body-secondary text-nowrap">{{ size(file.size) }}</span>
+                <button
+                  type="button"
+                  class="btn btn-icon"
+                  [attr.aria-label]="'Remove ' + file.name"
+                  title="Remove"
+                  [disabled]="uploading()"
+                  (click)="remove(file)"
+                >
+                  <app-icon name="close" [size]="16" />
+                </button>
+              </li>
+            }
+          </ul>
+        }
 
-      @if (problems().length > 0) {
-        <div class="alert alert-warning mt-3 mb-0" role="alert" data-testid="file-problems">
-          @for (problem of problems(); track problem) {
-            <div>{{ problem }}</div>
-          }
-        </div>
-      }
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-body">
-      <h2 class="h6 mb-3">Details</h2>
-      <app-document-details-fields [form]="form" />
-    </div>
-  </div>
-
-  @if (serverError(); as error) {
-    <div class="alert alert-danger mb-0" role="alert" data-testid="server-error">{{ error }}</div>
-  }
-
-  @if (progress() !== null) {
-    <div>
-      <div
-        class="progress"
-        role="progressbar"
-        aria-label="Upload"
-        [attr.aria-valuenow]="progress()"
-        aria-valuemin="0"
-        aria-valuemax="100"
-      >
-        <div class="progress-bar" [style.width.%]="progress()"></div>
+        @if (problems().length > 0) {
+          <div class="alert alert-warning mt-3 mb-0" role="alert" data-testid="file-problems">
+            @for (problem of problems(); track problem) {
+              <div>{{ problem }}</div>
+            }
+          </div>
+        }
       </div>
-      <p class="small text-body-secondary mt-1 mb-0">
-        {{ progress()! < 100 ? 'Uploading… ' + progress() + '%' : 'Saving…' }}
-      </p>
     </div>
-  }
 
-  <div class="d-flex flex-wrap gap-2 justify-content-end">
-    @if (uploading()) {
-      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
-        Stop the upload
-      </button>
-    } @else {
-      <a
-        class="btn btn-outline-secondary"
-        [routerLink]="back.route"
-        [queryParams]="back.queryParams"
-        >Cancel</a
-      >
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Details</h2>
+        <app-document-details-fields [form]="form" />
+      </div>
+    </div>
+
+    @if (serverError(); as error) {
+      <div class="alert alert-danger mb-0" role="alert" data-testid="server-error">{{ error }}</div>
     }
-    <button
-      type="submit"
-      class="btn btn-primary"
-      [disabled]="uploading() || files().length === 0 || problems().length > 0"
-    >
-      {{ uploading() ? 'Uploading…' : 'Upload' }}
-    </button>
-  </div>
-</form>
+
+    @if (progress() !== null) {
+      <div>
+        <div
+          class="progress"
+          role="progressbar"
+          aria-label="Upload"
+          [attr.aria-valuenow]="progress()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div class="progress-bar" [style.width.%]="progress()"></div>
+        </div>
+        <p class="small text-body-secondary mt-1 mb-0">
+          {{ progress()! < 100 ? 'Uploading… ' + progress() + '%' : 'Saving…' }}
+        </p>
+      </div>
+    }
+
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      @if (uploading()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
+          Stop the upload
+        </button>
+      } @else {
+        <a
+          class="btn btn-outline-secondary"
+          [routerLink]="back.route"
+          [queryParams]="back.queryParams"
+          >Cancel</a
+        >
+      }
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="uploading() || files().length === 0 || problems().length > 0"
+      >
+        {{ uploading() ? 'Uploading…' : 'Upload' }}
+      </button>
+    </div>
+  </form>
+}

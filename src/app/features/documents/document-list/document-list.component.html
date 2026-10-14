@@ -3,9 +3,11 @@
     <h1 class="h3 mb-1">Documents</h1>
     <p class="text-body-secondary mb-0">Receipts, warranties, leases and the dates they expire</p>
   </div>
-  <a class="btn btn-primary d-inline-flex align-items-center gap-2" routerLink="/documents/new">
-    <app-icon name="plus" [size]="16" /> Add document
-  </a>
+  @if (canWrite()) {
+    <a class="btn btn-primary d-inline-flex align-items-center gap-2" routerLink="/documents/new">
+      <app-icon name="plus" [size]="16" /> Add document
+    </a>
+  }
 </div>
 
 <div class="kind-filters d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Kind">

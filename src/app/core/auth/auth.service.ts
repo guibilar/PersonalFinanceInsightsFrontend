@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, firstValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../api/api-config';
@@ -18,6 +18,11 @@ export class AuthService {
   private readonly current = signal<CurrentUser | null>(null);
   /** The signed-in user, or null. Only meaningful once {@link ensureLoaded} has resolved. */
   readonly user = this.current.asReadonly();
+  /**
+   * False for a read-only user (scope `read-only`, T60): the screens hide or disable their write actions. A missing
+   * scope (an old server) counts as `full`.
+   */
+  readonly canWrite = computed(() => canWrite(this.current()));
 
   private loaded: Promise<CurrentUser | null> | null = null;
 
@@ -83,4 +88,9 @@ export function safeReturnUrl(value: string | null | undefined): string {
   return value && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')
     ? value
     : '/';
+}
+
+/** True unless the user has the `read-only` scope. No user, or no scope, can write (the server decides anyway). */
+export function canWrite(user: CurrentUser | null): boolean {
+  return user?.scope !== 'read-only';
 }

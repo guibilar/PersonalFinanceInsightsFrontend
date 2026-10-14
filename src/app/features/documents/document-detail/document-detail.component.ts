@@ -12,6 +12,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentRepository } from '../../../core/api/document-repository';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
@@ -82,6 +83,8 @@ export class DocumentDetailComponent {
   private readonly toasts = inject(ToastService);
   private readonly dataChanges = inject(DataChangesService);
   private readonly polling = inject(DOCUMENT_POLLING);
+  /** A read-only user (T60) gets no edit, delete, OCR retry, link or unlink. */
+  readonly canWrite = inject(AuthService).canWrite;
 
   readonly id = toSignal(inject(ActivatedRoute).paramMap.pipe(map((p) => p.get('id') ?? '')), {
     initialValue: '',

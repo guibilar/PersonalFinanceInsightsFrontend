@@ -13,6 +13,7 @@ import {
   testPage,
   testTransaction,
 } from '../../../testing/test-documents';
+import { signInAsReadOnly } from '../../../testing/test-auth';
 
 describe('DocumentUploadComponent', () => {
   let fixture: ComponentFixture<DocumentUploadComponent>;
@@ -187,6 +188,18 @@ describe('DocumentUploadComponent', () => {
     await render();
 
     expect(root().querySelector('[data-testid="server-error"]')!.textContent).toContain(
+      'This account can only read documents.',
+    );
+  });
+
+  it('shows a read-only user why, in place of the form', async () => {
+    expect(uploadButton()).not.toBeNull();
+
+    await signInAsReadOnly(http);
+    await render();
+
+    expect(root().querySelector('form')).toBeNull();
+    expect(root().querySelector('[data-testid="read-only"]')!.textContent).toContain(
       'This account can only read documents.',
     );
   });

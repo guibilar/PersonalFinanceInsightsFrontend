@@ -13,6 +13,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, of } from 'rxjs';
 import { DocumentRepository } from '../../../core/api/document-repository';
+import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentSummaryDto } from '../../../core/models/outputs/document-output-dto';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
@@ -28,8 +29,8 @@ export const LINK_CANDIDATES = 5;
  * upload page, which links the new document) and "Link an existing document" (a search). The documents come from
  * Hestia.Api (`GET /api/documents/by-link`); the finance API does not know them.
  *
- * The web app cannot tell a read-only user from the sign-in yet (T60). After the server refuses a link with 403, the
- * section hides its actions and says why.
+ * A read-only user (T60) sees no actions, only why. A 403 on a link (for example a scope that changed after the
+ * sign-in) also hides them.
  */
 @Component({
   selector: 'app-transaction-documents',
@@ -179,7 +180,10 @@ export class TransactionDocumentsComponent {
 
   readonly linking = signal(false);
   readonly busy = signal(false);
-  readonly readOnly = signal(false);
+  private readonly auth = inject(AuthService);
+  /** The server refused a change with 403. */
+  private readonly refused = signal(false);
+  readonly readOnly = computed(() => this.refused() || !this.auth.canWrite());
   readonly linkError = signal<string | null>(null);
   readonly announcement = signal('');
 
@@ -241,7 +245,7 @@ export class TransactionDocumentsComponent {
           return;
         }
         if (error instanceof HttpErrorResponse && error.status === 403) {
-          this.readOnly.set(true);
+          this.refused.set(true);
           return;
         }
         this.linkError.set(changeError(error, 'Could not link the document.'));
