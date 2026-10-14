@@ -6,10 +6,17 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { HttpEventType } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { Subscription, of } from 'rxjs';
 import { DocumentRepository } from '../../../core/api/document-repository';
+import { TransactionRepository } from '../../../core/api/transaction-repository';
+import { DocumentDto } from '../../../core/models/outputs/document-output-dto';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
+import { formatDay } from '../../../shared/utils/format';
+import { valueOf } from '../../../shared/utils/resource-value';
+import { transactionLink } from '../../transactions/transaction-list/transaction-list-query';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -30,10 +37,13 @@ import {
  * Adds a document: one or more files (picked, or dropped on the page) and its details. The browser checks the type and
  * size of the files first; the server checks them again and reads the text in the background. After the upload, the
  * document opens.
+ *
+ * With `?transactionId=<id>` (from the "Documents" section of a transaction in Money), the new document is a receipt by
+ * default, and the page links it to that transaction after the upload, then goes back to the transaction.
  */
 @Component({
   selector: 'app-document-upload',
-  imports: [RouterLink, IconComponent, DocumentDetailsFieldsComponent],
+  imports: [RouterLink, IconComponent, DocumentDetailsFieldsComponent, MoneyPipe],
   templateUrl: './document-upload.component.html',
   styleUrl: './document-upload.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +53,22 @@ export class DocumentUploadComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastService);
   private readonly dataChanges = inject(DataChangesService);
+  private readonly transactions = inject(TransactionRepository);
+
+  /** The transaction to link the new document to, from `?transactionId=`; null without one (or with a bad one). */
+  readonly transactionId = linkTarget(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('transactionId'),
+  );
+  /** Where "back" and "Cancel" go: the transaction, or the Documents list. */
+  readonly back = this.transactionId
+    ? transactionLink(this.transactionId)
+    : { route: '/documents', queryParams: {} };
+  /** The transaction, to show what the document will be linked to. */
+  readonly transaction = rxResource({
+    params: () => this.transactionId ?? undefined,
+    stream: ({ params }) => (params ? this.transactions.find(params) : of(null)),
+  });
+  readonly transactionValue = computed(() => valueOf(this.transaction) ?? null);
 
   readonly accept = ACCEPTED_FILES;
   readonly form = createDetailsForm();
@@ -59,6 +85,11 @@ export class DocumentUploadComponent implements OnDestroy {
   private upload?: Subscription;
 
   readonly size = formatSize;
+  readonly day = formatDay;
+
+  constructor() {
+    if (this.transactionId) this.form.controls.kind.setValue('Receipt');
+  }
 
   add(list: ArrayLike<File> | null | undefined): void {
     const added = Array.from(list ?? []);
@@ -117,15 +148,40 @@ export class DocumentUploadComponent implements OnDestroy {
           this.progress.set(Math.round((100 * event.loaded) / event.total));
         } else if (event.type === HttpEventType.Response && event.body) {
           const document = event.body;
-          this.progress.set(null);
           this.dataChanges.changed();
-          this.toasts.success(`Added “${document.title}”`);
-          void this.router.navigate(['/documents', document.id]);
+          if (this.transactionId) {
+            this.linkToTransaction(document, this.transactionId);
+          } else {
+            this.progress.set(null);
+            this.toasts.success(`Added “${document.title}”`);
+            void this.router.navigate(['/documents', document.id]);
+          }
         }
       },
       error: (error: unknown) => {
         this.progress.set(null);
         this.serverError.set(changeError(error, 'Could not upload the document.'));
+      },
+    });
+  }
+
+  /** The second step of an upload from a transaction. A failed link keeps the document: its page can link it. */
+  private linkToTransaction(document: DocumentDto, transactionId: string): void {
+    this.upload = this.repository.linkTransaction(document.id, transactionId).subscribe({
+      next: () => {
+        this.progress.set(null);
+        this.toasts.success(`Added “${document.title}” to the transaction`);
+        const { route, queryParams } = transactionLink(transactionId);
+        void this.router.navigate([route], { queryParams });
+      },
+      error: (error: unknown) => {
+        this.progress.set(null);
+        const readOnly = error instanceof HttpErrorResponse && error.status === 403;
+        this.toasts.error(
+          `Added “${document.title}”, but could not link it to the transaction.` +
+            (readOnly ? ' This account can only read documents.' : ' Link it from its page.'),
+        );
+        void this.router.navigate(['/documents', document.id]);
       },
     });
   }
@@ -139,4 +195,12 @@ export class DocumentUploadComponent implements OnDestroy {
     // Leaving the page stops an upload that is still running.
     this.upload?.unsubscribe();
   }
+}
+
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The transaction id from the address, when it is a GUID. Another value is ignored: the API would refuse it. */
+function linkTarget(value: string | null): string | null {
+  const id = value?.trim() ?? '';
+  return GUID.test(id) ? id : null;
 }

@@ -2,11 +2,17 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpEventType, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { DocumentUploadComponent } from './document-upload.component';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { DOC_ID, testDocument } from '../../../testing/test-documents';
+import {
+  DOC_ID,
+  TX_ID,
+  testDocument,
+  testPage,
+  testTransaction,
+} from '../../../testing/test-documents';
 
 describe('DocumentUploadComponent', () => {
   let fixture: ComponentFixture<DocumentUploadComponent>;
@@ -199,5 +205,122 @@ describe('DocumentUploadComponent', () => {
 
     expect(request.cancelled).toBe(true);
     expect(component.uploading()).toBe(false);
+  });
+});
+
+describe('DocumentUploadComponent from a transaction', () => {
+  let fixture: ComponentFixture<DocumentUploadComponent>;
+  let component: DocumentUploadComponent;
+  let http: HttpTestingController;
+  let router: Router;
+
+  const root = () => fixture.nativeElement as HTMLElement;
+  const messages = () =>
+    TestBed.inject(ToastService)
+      .toasts()
+      .map((t) => t.message);
+
+  async function render(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.tick();
+    fixture.detectChanges();
+  }
+
+  function create(transactionId: string): void {
+    TestBed.configureTestingModule({
+      imports: [DocumentUploadComponent],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ transactionId }) } },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(DocumentUploadComponent);
+    component = fixture.componentInstance;
+    http = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  }
+
+  async function opened(): Promise<void> {
+    create(TX_ID);
+    await render();
+    const lookup = http.expectOne({ method: 'POST', url: '/api/Transaction/Filter' });
+    expect(lookup.request.body).toEqual({ transactionId: TX_ID, page: 1, pageSize: 1 });
+    lookup.flush(testPage([testTransaction()]));
+    await render();
+  }
+
+  async function upload(): Promise<void> {
+    component.add([new File(['%PDF-1.7'], 'receipt.pdf', { type: 'application/pdf' })]);
+    await render();
+    root().querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    http
+      .expectOne({ method: 'POST', url: '/api/documents' })
+      .flush(testDocument({ title: 'receipt', kind: 'Receipt' }), {
+        status: 201,
+        statusText: 'Created',
+      });
+    await render();
+  }
+
+  afterEach(() => http.verify());
+
+  it('names the transaction, starts as a receipt, and goes back to the transaction', async () => {
+    await opened();
+
+    expect(root().querySelector('[data-testid="link-target"]')!.textContent).toContain(
+      'COSTCO WHOLESALE',
+    );
+    expect(component.form.controls.kind.value).toBe('Receipt');
+    const back = root().querySelector<HTMLAnchorElement>('a.back-link')!;
+    expect(back.textContent).toContain('Transaction');
+    expect(back.getAttribute('href')).toBe(`/money/transactions?id=${TX_ID}`);
+  });
+
+  it('links the new document to the transaction, then opens the transaction', async () => {
+    await opened();
+    await upload();
+
+    const link = http.expectOne({ method: 'POST', url: `/api/documents/${DOC_ID}/links` });
+    expect(link.request.body).toEqual({ kind: 'Money.Transaction', targetId: TX_ID });
+    expect(component.uploading()).toBe(true);
+    link.flush({ id: 'l1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' });
+    await render();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/money/transactions'], {
+      queryParams: { id: TX_ID },
+    });
+    expect(messages()).toEqual(['Added “receipt” to the transaction']);
+    expect(component.uploading()).toBe(false);
+  });
+
+  it('opens the document when the link fails, and says so', async () => {
+    await opened();
+    await upload();
+
+    http
+      .expectOne({ method: 'POST', url: `/api/documents/${DOC_ID}/links` })
+      .flush(null, { status: 502, statusText: 'Bad Gateway' });
+    await render();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/documents', DOC_ID]);
+    expect(messages()).toEqual([
+      'Added “receipt”, but could not link it to the transaction. Link it from its page.',
+    ]);
+  });
+
+  it('ignores a transaction id that is not a GUID', async () => {
+    create('not-a-guid');
+    await render();
+
+    expect(component.transactionId).toBeNull();
+    expect(root().querySelector('[data-testid="link-target"]')).toBeNull();
+    expect(root().querySelector('a.back-link')!.getAttribute('href')).toBe('/documents');
   });
 });

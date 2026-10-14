@@ -1,5 +1,9 @@
-<a class="back-link small d-inline-flex align-items-center gap-1 mb-2" routerLink="/documents">
-  ← Documents
+<a
+  class="back-link small d-inline-flex align-items-center gap-1 mb-2"
+  [routerLink]="back.route"
+  [queryParams]="back.queryParams"
+>
+  ← {{ transactionId ? 'Transaction' : 'Documents' }}
 </a>
 <div class="mb-4">
   <h1 class="h3 mb-1">Add document</h1>
@@ -7,6 +11,21 @@
     One or more files: PDF, JPEG, PNG, HEIC or WebP, up to 25 MB each
   </p>
 </div>
+
+@if (transactionId) {
+  <div class="alert alert-info d-flex align-items-start gap-2" data-testid="link-target">
+    <app-icon name="link" [size]="16" class="mt-1" />
+    <span>
+      After the upload, the document is linked to the transaction
+      @if (transactionValue(); as transaction) {
+        <strong>{{ transaction.description }}</strong> ({{ day(transaction.date) }},
+        {{ transaction.amount | money }}).
+      } @else {
+        that you came from.
+      }
+    </span>
+  </div>
+}
 
 <form class="d-flex flex-column gap-4" novalidate (submit)="$event.preventDefault(); submit()">
   <div class="card">
@@ -105,7 +124,12 @@
         Stop the upload
       </button>
     } @else {
-      <a class="btn btn-outline-secondary" routerLink="/documents">Cancel</a>
+      <a
+        class="btn btn-outline-secondary"
+        [routerLink]="back.route"
+        [queryParams]="back.queryParams"
+        >Cancel</a
+      >
     }
     <button
       type="submit"
