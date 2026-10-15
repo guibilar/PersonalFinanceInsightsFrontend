@@ -46,6 +46,7 @@ describe('CaptureComponent', () => {
       ['Add task', '/tasks/new'],
       ['Add item', '/home/items/new'],
       ['Add person', '/people/new'],
+      ['Write in journal', '/journal'],
     ]);
 
     buttons[0].click();
@@ -78,6 +79,7 @@ describe('CaptureComponent', () => {
       ['Add task', true],
       ['Add item', true],
       ['Add person', true],
+      ['Write in journal', true],
       ['Note', true],
     ]);
     expect(root.querySelector('a.capture-action')).toBeNull();

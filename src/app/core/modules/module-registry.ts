@@ -64,7 +64,7 @@ export const MODULES: readonly AppModule[] = [
     description: 'Notes on the day, and on this day in other years',
     icon: 'book-open',
     route: '/journal',
-    status: 'coming-soon',
+    status: 'active',
   },
 ];
 

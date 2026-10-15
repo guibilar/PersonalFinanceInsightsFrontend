@@ -13,7 +13,7 @@ export interface paths {
     };
     /**
      * The open "Needs attention" items of all modules.
-     * @description Most severe first, then newest first. Each alert has the fields of a Today attention card, and raisedAt. The host checks the rules in the background; refresh=true checks them first (at most Alerts:RefreshWait).
+     * @description Most severe first, then newest first; order=module gives the Today order (module order, then the order of each module's rules, T74). Each alert has the fields of a Today attention card, and raisedAt. The host checks the rules in the background; refresh=true checks them first (at most Alerts:RefreshWait).
      */
     get: operations['GetAlerts'];
     put?: never;
@@ -114,6 +114,26 @@ export interface paths {
     get: operations['ListDocumentsByLink'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/documents/by-link/counts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * How many documents link to each of some things (at most 200), for example the transactions of a page (T72).
+     * @description Body: { kind, targetIds }. The answer has every requested id, in its stored form, with its count (0 included).
+     */
+    post: operations['CountDocumentsByLink'];
     delete?: never;
     options?: never;
     head?: never;
@@ -606,6 +626,65 @@ export interface paths {
       };
     };
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/journal/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Today's entry, the streak, the last 7 days, and "On this day" (the same day in earlier years). */
+    get: operations['GetJournalSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/journal/entries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A page of entries, newest first (with q: best match first).
+     * @description q: words in the text (web search syntax: "a phrase", -not). from, to: days, both included.
+     */
+    get: operations['ListJournalEntries'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/journal/entries/{day}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The entry of one day (yyyy-MM-dd). 404 when the day has none. */
+    get: operations['GetJournalEntry'];
+    /**
+     * Writes the whole text of one day: 201 for a new entry, 200 for a change.
+     * @description The text is required (at most 20000 characters). A day after today is refused (400).
+     */
+    put: operations['SaveJournalEntry'];
+    post?: never;
+    /** Deletes the entry of one day. */
+    delete: operations['DeleteJournalEntry'];
     options?: never;
     head?: never;
     patch?: never;
@@ -1269,6 +1348,10 @@ export interface components {
     };
     /** @enum {unknown} */
     DocumentKind: 'Receipt' | 'Warranty' | 'Lease' | 'Tax' | 'Insurance' | 'Manual' | 'Other';
+    DocumentLinkCountsRequest: {
+      kind: null | string;
+      targetIds: null | string[];
+    };
     DocumentLinkDto: {
       /** Format: uuid */
       id: string;
@@ -1447,6 +1530,44 @@ export interface components {
       /** Format: date-time */
       lastDoneAt: null | string;
     };
+    JournalDayDto: {
+      /** Format: date */
+      day: string;
+      written: boolean;
+    };
+    JournalEntryDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      day: string;
+      text: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    JournalEntrySummaryDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      day: string;
+      excerpt: string;
+      /** Format: int32 */
+      length: number | string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    JournalSummaryDto: {
+      /** Format: date */
+      date: string;
+      /** Format: int32 */
+      streak: number | string;
+      week: components['schemas']['JournalDayDto'][];
+      today: null | components['schemas']['JournalEntryDto'];
+      onThisDay: components['schemas']['OnThisDayDto'][];
+      /** Format: int32 */
+      entryCount: number | string;
+    };
     /** @enum {unknown} */
     LoanDirection: 'Lent' | 'Borrowed';
     LoanDto: {
@@ -1503,6 +1624,11 @@ export interface components {
     };
     /** @enum {unknown} */
     OcrStatus: 'Pending' | 'Done' | 'Failed' | 'NotNeeded';
+    OnThisDayDto: {
+      /** Format: int32 */
+      yearsAgo: number | string;
+      entry: components['schemas']['JournalEntrySummaryDto'];
+    };
     PaginatedListOfDocumentSummaryDto: {
       items?: components['schemas']['DocumentSummaryDto'][];
       /** Format: int32 */
@@ -1531,6 +1657,19 @@ export interface components {
     };
     PaginatedListOfItemSummaryDto: {
       items?: components['schemas']['ItemSummaryDto'][];
+      /** Format: int32 */
+      page?: number | string;
+      /** Format: int32 */
+      pageSize?: number | string;
+      /** Format: int32 */
+      totalCount?: number | string;
+      /** Format: int32 */
+      totalPages?: number | string;
+      hasPreviousPage?: boolean;
+      hasNextPage?: boolean;
+    };
+    PaginatedListOfJournalEntrySummaryDto: {
+      items?: components['schemas']['JournalEntrySummaryDto'][];
       /** Format: int32 */
       page?: number | string;
       /** Format: int32 */
@@ -1683,6 +1822,9 @@ export interface components {
       name: string;
       /** Format: date-time */
       createdAt: string;
+    };
+    SaveJournalEntryRequest: {
+      text: null | string;
     };
     SignedOutSessionsDto: {
       /** Format: int32 */
@@ -1907,6 +2049,7 @@ export interface operations {
     parameters: {
       query?: {
         refresh?: boolean;
+        order?: string;
       };
       header?: never;
       path?: never;
@@ -2015,6 +2158,32 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['DocumentSummaryDto'][];
+        };
+      };
+    };
+  };
+  CountDocumentsByLink: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DocumentLinkCountsRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: number | string;
+          };
         };
       };
     };
@@ -2553,6 +2722,129 @@ export interface operations {
       path: {
         id: string;
         linkId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GetJournalSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JournalSummaryDto'];
+        };
+      };
+    };
+  };
+  ListJournalEntries: {
+    parameters: {
+      query?: {
+        q?: string;
+        from?: string;
+        to?: string;
+        page?: number | string;
+        pageSize?: number | string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaginatedListOfJournalEntrySummaryDto'];
+        };
+      };
+    };
+  };
+  GetJournalEntry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        day: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JournalEntryDto'];
+        };
+      };
+    };
+  };
+  SaveJournalEntry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        day: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveJournalEntryRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JournalEntryDto'];
+        };
+      };
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JournalEntryDto'];
+        };
+      };
+    };
+  };
+  DeleteJournalEntry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        day: string;
       };
       cookie?: never;
     };

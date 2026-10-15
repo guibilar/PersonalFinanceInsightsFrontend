@@ -91,6 +91,12 @@ export const routes: Routes = [
         path: 'people',
         loadChildren: () => import('./features/people/people.routes').then((m) => m.PEOPLE_ROUTES),
       },
+      {
+        // The Journal module (Hestia.Api, T21): one page, with the day in the address.
+        path: 'journal',
+        loadChildren: () =>
+          import('./features/journal/journal.routes').then((m) => m.JOURNAL_ROUTES),
+      },
       // The finance pages' old addresses, before Money was a module.
       ...LEGACY_FINANCE_REDIRECTS,
     ],
