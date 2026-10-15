@@ -1082,28 +1082,35 @@ describe('TransactionListComponent, in the address bar', () => {
       expect(router.url).toBe('/transactions');
     });
 
-    it('says when it is deleted, and offers the deleted transactions', async () => {
+    it('shows a deleted one on its day in the deleted view, highlighted, and says so (T65)', async () => {
+      const deletedLinked = { ...linked, hidden: true };
       const list = await harness.navigateByUrl(
         `/transactions?id=${linkedId}`,
         TransactionListComponent,
       );
       answer();
-      answerLinked(null, { ...linked, hidden: true });
-      await settle();
+      answerLinked(null, deletedLinked);
 
+      const { filter } = answer(() => pageOf([deletedLinked]));
+      expect(filter).toEqual(
+        expect.objectContaining({
+          accountId: 'a1',
+          startDate: '2026-10-09',
+          endDate: '2026-10-09',
+          hidden: true,
+          page: 1,
+        }),
+      );
+      await settle(() => pageOf([deletedLinked]));
+
+      expect(list.showDeleted()).toBe(true);
+      expect(list.highlightedId()).toBe(linkedId);
       expect(list.linkedNotice()).toBe('deleted');
       harness.fixture.detectChanges();
       const root = harness.routeNativeElement as HTMLElement;
       expect(root.querySelector('.alert')!.textContent).toContain(
-        'The linked transaction is deleted.',
+        'The linked transaction is deleted. Here it is among the deleted ones',
       );
-      [...root.querySelectorAll<HTMLButtonElement>('.alert button')]
-        .find((b) => b.textContent?.includes('Show deleted transactions'))!
-        .click();
-      await settle();
-
-      expect(list.showDeleted()).toBe(true);
-      expect(list.linkedNotice()).toBeNull();
     });
 
     it('does not ask the API about an id that is not a transaction id', async () => {

@@ -100,6 +100,28 @@ describe('TransactionDocumentsComponent', () => {
     expect(rows[1].getAttribute('href')).toBe(`/documents/${DOC_ID}`);
   });
 
+  it('unlinks a document after a confirmation (T65); both stay', async () => {
+    const linkedReceipt = {
+      ...receipt,
+      links: [{ id: 'link-1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' }],
+    };
+    await open([linkedReceipt]);
+
+    root().querySelector<HTMLButtonElement>('[aria-label="Unlink Costco receipt"]')!.click();
+    await render();
+    Array.from(document.querySelectorAll<HTMLButtonElement>('app-confirm-dialog button'))
+      .find((b) => b.textContent!.trim() === 'Unlink')!
+      .click();
+    http
+      .expectOne({ method: 'DELETE', url: `/api/documents/${RECEIPT_ID}/links/link-1` })
+      .flush(null);
+    await render();
+    byLink().flush([]);
+    await render();
+
+    expect(root().querySelector('[data-testid="no-documents"]')).not.toBeNull();
+  });
+
   it('says so when the transaction has no documents, and offers to add one', async () => {
     await open([]);
 

@@ -45,6 +45,8 @@ describe('date presets', () => {
     expect(describeRange(range('last3Months'))).toBe('Jun 1 – Aug 31, 2026');
     expect(describeRange(range('last12Months'))).toBe('Sep 1, 2025 – Aug 31, 2026');
     expect(describeRange(range('thisMonth'))).toBe('Sep 1 – today');
+    // One day (T65).
+    expect(describeRange({ startDate: '2026-10-03', endDate: '2026-10-03' })).toBe('Oct 3, 2026');
   });
 
   it('writes local days', () => {

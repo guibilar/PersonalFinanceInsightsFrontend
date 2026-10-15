@@ -131,6 +131,18 @@ describe('TransactionToolbarComponent', () => {
     });
   });
 
+  it('shows one day as one chip, which removes both ends (T65)', () => {
+    create({ page: 1, pageSize: 10, startDate: '2026-10-03', endDate: '2026-10-03' });
+
+    expect(component.chips().map((chip) => [chip.key, chip.label])).toEqual([
+      ['dates', 'Oct 3, 2026'],
+    ]);
+    component.remove('dates');
+    expect(emitted.at(-1)).toEqual(
+      expect.objectContaining({ startDate: undefined, endDate: undefined }),
+    );
+  });
+
   it('removes a chip without the search being typed, which stays and applies once typing pauses', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 27));

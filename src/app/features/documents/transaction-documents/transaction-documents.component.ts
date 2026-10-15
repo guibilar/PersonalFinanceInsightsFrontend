@@ -14,7 +14,11 @@ import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, of } from 'rxjs';
 import { DocumentRepository } from '../../../core/api/document-repository';
 import { AuthService } from '../../../core/auth/auth.service';
-import { DocumentSummaryDto } from '../../../core/models/outputs/document-output-dto';
+import {
+  DocumentSummaryDto,
+  MONEY_TRANSACTION_LINK,
+} from '../../../core/models/outputs/document-output-dto';
+import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
@@ -34,7 +38,14 @@ export const LINK_CANDIDATES = 5;
  */
 @Component({
   selector: 'app-transaction-documents',
-  imports: [ReactiveFormsModule, RouterLink, ErrorStateComponent, IconComponent, SkeletonComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    ConfirmDialogComponent,
+    ErrorStateComponent,
+    IconComponent,
+    SkeletonComponent,
+  ],
   template: `
     <section aria-labelledby="transaction-documents-heading">
       <h3 id="transaction-documents-heading" class="h6 mb-2">Documents</h3>
@@ -50,14 +61,30 @@ export const LINK_CANDIDATES = 5;
       } @else {
         <ul class="list-group mb-2" data-testid="transaction-documents">
           @for (document of list(); track document.id) {
-            <li class="list-group-item p-0">
-              <a class="document-row" [routerLink]="['/documents', document.id]">
+            <li class="list-group-item p-0 d-flex align-items-center">
+              <a
+                class="document-row flex-grow-1 min-w-0"
+                [routerLink]="['/documents', document.id]"
+              >
                 <app-icon name="file-text" [size]="16" class="text-body-secondary" />
                 <span class="flex-grow-1 min-w-0">
                   <span class="d-block text-truncate fw-medium">{{ document.title }}</span>
                   <span class="d-block small text-body-secondary">{{ subtitle(document) }}</span>
                 </span>
               </a>
+              @if (!readOnly()) {
+                <!-- T65: remove the link; the document and the transaction stay. -->
+                <button
+                  type="button"
+                  class="btn btn-icon me-1"
+                  title="Unlink"
+                  [attr.aria-label]="'Unlink ' + document.title"
+                  [disabled]="busy()"
+                  (click)="unlinking.set(document)"
+                >
+                  <app-icon name="close" [size]="16" />
+                </button>
+              }
             </li>
           }
         </ul>
@@ -146,6 +173,17 @@ export const LINK_CANDIDATES = 5;
       }
       <p class="visually-hidden" aria-live="polite">{{ announcement() }}</p>
     </section>
+
+    @if (unlinking(); as document) {
+      <app-confirm-dialog
+        title="Remove the link?"
+        [message]="'Both stay: this transaction and the document “' + document.title + '”.'"
+        [confirmLabel]="busy() ? 'Unlinking…' : 'Unlink'"
+        [danger]="true"
+        (confirmed)="unlink(document)"
+        (cancelled)="unlinking.set(null)"
+      />
+    }
   `,
   styles: `
     .document-row {
@@ -163,6 +201,15 @@ export const LINK_CANDIDATES = 5;
     .min-w-0 {
       min-width: 0;
     }
+    .btn-icon {
+      display: inline-flex;
+      padding: 0.3125rem;
+      color: var(--bs-secondary-color);
+      &:hover {
+        color: var(--bs-danger);
+        background: var(--bs-secondary-bg);
+      }
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -179,6 +226,8 @@ export class TransactionDocumentsComponent {
   readonly list = computed(() => this.kept());
 
   readonly linking = signal(false);
+  /** The document whose link the person wants to remove (T65), until confirmed or cancelled. */
+  readonly unlinking = signal<DocumentSummaryDto | null>(null);
   readonly busy = signal(false);
   private readonly auth = inject(AuthService);
   /** The server refused a change with 403. */
@@ -249,6 +298,34 @@ export class TransactionDocumentsComponent {
           return;
         }
         this.linkError.set(changeError(error, 'Could not link the document.'));
+      },
+    });
+  }
+
+  /** Removes the link of the document to this transaction (T65). The document and the transaction stay. */
+  unlink(document: DocumentSummaryDto): void {
+    const link = document.links.find(
+      (l) =>
+        l.kind === MONEY_TRANSACTION_LINK &&
+        l.targetId.toLowerCase() === this.transactionId().toLowerCase(),
+    );
+    this.unlinking.set(null);
+    if (!link || this.busy()) return;
+    this.busy.set(true);
+    this.linkError.set(null);
+    this.repository.unlink(document.id, link.id).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.announcement.set(`Unlinked “${document.title}”.`);
+        this.documents.reload();
+      },
+      error: (error: unknown) => {
+        this.busy.set(false);
+        if (error instanceof HttpErrorResponse && error.status === 403) {
+          this.refused.set(true);
+          return;
+        }
+        this.linkError.set(changeError(error, 'Could not unlink the document.'));
       },
     });
   }
