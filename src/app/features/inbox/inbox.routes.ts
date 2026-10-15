@@ -4,7 +4,7 @@ import { Routes } from '@angular/router';
 export const INBOX_ROUTES: Routes = [
   {
     path: '',
-    title: 'Inbox · Personal Finances',
+    title: 'Inbox · Hestia',
     loadComponent: () =>
       import('./inbox-page/inbox-page.component').then((m) => m.InboxPageComponent),
   },

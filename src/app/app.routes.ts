@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: 'login',
     canActivate: [signedOutGuard],
-    title: 'Sign in · Personal Finances',
+    title: 'Sign in · Hestia',
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
@@ -19,14 +19,14 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'today' },
       {
         path: 'today',
-        title: 'Today · Personal Finances',
+        title: 'Today · Hestia',
         loadComponent: () =>
           import('./features/today/today.component').then((m) => m.TodayComponent),
       },
       {
         // The Timeline (Hestia.Api, T16): what happened in all modules, day by day.
         path: 'timeline',
-        title: 'Timeline · Personal Finances',
+        title: 'Timeline · Hestia',
         loadComponent: () =>
           import('./features/timeline/timeline-page/timeline-page.component').then(
             (m) => m.TimelinePageComponent,
@@ -34,20 +34,20 @@ export const routes: Routes = [
       },
       {
         path: 'capture',
-        title: 'Capture · Personal Finances',
+        title: 'Capture · Hestia',
         loadComponent: () =>
           import('./features/capture/capture.component').then((m) => m.CaptureComponent),
       },
       {
         path: 'modules',
-        title: 'Modules · Personal Finances',
+        title: 'Modules · Hestia',
         loadComponent: () =>
           import('./features/modules/modules.component').then((m) => m.ModulesComponent),
       },
       {
         // Search (Hestia.Api, T17): one search across all modules.
         path: 'search',
-        title: 'Search · Personal Finances',
+        title: 'Search · Hestia',
         loadComponent: () =>
           import('./features/search/search-page.component').then((m) => m.SearchPageComponent),
       },
