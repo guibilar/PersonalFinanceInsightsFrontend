@@ -100,6 +100,7 @@ export function testPerson(changes: Partial<PersonDto> = {}): PersonDto {
     ],
     loans: [testLoan()],
     links: [],
+    linkedFrom: [],
     ...changes,
   };
 }

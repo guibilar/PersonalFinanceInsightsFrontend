@@ -196,6 +196,16 @@ export class PersonDetailComponent {
     return entries.sort((a, b) => b.day.localeCompare(a.day) || a.key.localeCompare(b.key));
   });
 
+  /** The documents and the tasks that link to the person (T93). The link is removed on their page. */
+  readonly linkedFrom = computed(() =>
+    (this.person()?.linkedFrom ?? []).map((link) => ({
+      link,
+      label: link.kind === PERSON_TASK_LINK ? 'Task' : 'Document',
+      route:
+        link.kind === PERSON_TASK_LINK ? `/tasks/${link.targetId}` : `/documents/${link.targetId}`,
+    })),
+  );
+
   readonly links = computed<LinkView[]>(() =>
     (this.person()?.links ?? []).map((link) => {
       switch (link.kind) {

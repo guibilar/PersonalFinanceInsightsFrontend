@@ -96,6 +96,29 @@ describe('PersonDetailComponent', () => {
       ]);
     });
 
+    it('lists its links and the documents and tasks that link to the person', async () => {
+      await open(
+        testPerson({
+          links: [{ id: 'l1', kind: 'Home.Item', targetId: 'item-1', createdAt: '' }],
+          linkedFrom: [
+            { kind: 'Documents.Document', targetId: 'doc-1', title: 'Birthday card scan' },
+            { kind: 'Tasks.Task', targetId: 'task-1', title: 'Call Marco' },
+          ],
+        }),
+      );
+
+      expect(rows('links')).toEqual([
+        'Home item Unlink',
+        'Birthday card scan Document links here',
+        'Call Marco Task links here',
+      ]);
+      const from = Array.from(root().querySelectorAll('[data-testid="linked-from"] a'));
+      expect(from.map((a) => a.getAttribute('href'))).toEqual([
+        '/documents/doc-1',
+        '/tasks/task-1',
+      ]);
+    });
+
     it('logs a contact for today', async () => {
       await open();
       const changes = TestBed.inject(DataChangesService).version();

@@ -23,6 +23,7 @@ import {
   MONEY_TRANSACTION_LINK,
 } from '../../../core/models/outputs/document-output-dto';
 import { HOME_ITEM_LINK } from '../../../core/models/outputs/home-output-dto';
+import { PEOPLE_PERSON_LINK } from '../../../core/models/outputs/people-output-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
@@ -42,6 +43,7 @@ import {
 import { TransactionPickerComponent } from '../transaction-picker/transaction-picker.component';
 import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
 import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
+import { LinkedPeopleComponent } from '../../people/linked-people/linked-people.component';
 import {
   DOCUMENT_POLLING,
   changeError,
@@ -52,9 +54,9 @@ import {
   previewKind,
 } from '../documents';
 
-/** The links that the "Linked transactions" section shows: all but the Home items. */
+/** The links that the "Linked transactions" section shows: all but the Home items and the people (own sections). */
 function notHomeItem(link: DocumentLinkDto): boolean {
-  return link.kind !== HOME_ITEM_LINK;
+  return link.kind !== HOME_ITEM_LINK && link.kind !== PEOPLE_PERSON_LINK;
 }
 
 /** A link as the page shows it: a transaction (found, deleted, or not found), or another kind as plain text. */
@@ -78,6 +80,7 @@ export interface LinkView {
     DocumentTasksComponent,
     ErrorStateComponent,
     LinkedItemsComponent,
+    LinkedPeopleComponent,
     IconComponent,
     SkeletonComponent,
     TransactionPickerComponent,
