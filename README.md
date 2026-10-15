@@ -13,7 +13,7 @@ round centre action; the menu button at the top opens the modules and the accoun
 | Page      | Path           | What it shows                                                                                                                            |
 | --------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                                                          |
-| Timeline  | `/timeline`    | A placeholder for now                                                                                                                    |
+| Timeline  | `/timeline`    | What happened in all modules, day by day (below)                                                                                         |
 | Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item", "Add person" and "Write in journal"; Note is coming soon |
 | Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home, People and Journal                                                                          |
 | Search    | `/search`      | A placeholder for now                                                                                                                    |
@@ -314,6 +314,23 @@ module of HestiaBackend).
 The models are in `core/models/outputs/people-output-dto.ts` and `core/models/inputs/people-input-dto.ts`, written by
 hand from the HestiaBackend contracts (`PeopleDtos.cs`). The pages are in `features/people/`.
 
+## Timeline
+
+The Timeline (T16) shows what happened in all modules, day by day, newest first. It needs Hestia.Api
+(`GET /api/timeline`); each module gives its own entries (the server keeps no copy).
+
+- **Days.** "Today · Sat Oct 10", "Yesterday · Fri Oct 9", then the other days. Only the days with entries show. An
+  entry has the icon and the colour of its module, a title, the time (when it has one) and a second line, and the amount
+  of a Money entry. A tap opens its page (a transaction, a document, a task, an item, a person, the journal day, or the
+  month review).
+- **Filters.** The chips (All, Money, Documents, Tasks, Home, People, Journal) are in the address
+  (`/timeline?module=Money`).
+- **Earlier.** The first page has 14 days; "Show earlier" adds the 14 days before.
+- **Problems.** A module that could not load is named at the top, with "Try again"; the other modules still show.
+- After a change in any module (data changes), the first page loads again.
+
+The models are in `core/models/outputs/timeline-output-dto.ts`. The page is in `features/timeline/`.
+
 ## Journal
 
 The Journal module (T21) keeps one entry per day. It needs Hestia.Api (`/api/journal`, the Journal module of
@@ -488,7 +505,7 @@ src/app/
               sidebar and bottom bar), modules/ (the module registry and the main menu)
   shared/     ui/ (cards, modal, confirm dialog, toasts, tag picker, skeletons...), charts/ (theme, chart helper),
               utils/ (formatting, months, date presets, flows, problem details...)
-  features/   today/, capture/, modules/, placeholder/ (Timeline, Search)               (lazy-loaded routes)
+  features/   today/, capture/, modules/, timeline/, placeholder/ (Search)               (lazy-loaded routes)
               documents/ (the Documents module: list, upload, detail, transaction and document pickers)
               tasks/ (the Tasks module: list, new task, task, the Tasks section of a document)
               home/ (the Home module: Home page, room, new item, item, the item picker, and the Home sections of a

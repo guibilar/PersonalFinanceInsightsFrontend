@@ -24,19 +24,13 @@ export const routes: Routes = [
           import('./features/today/today.component').then((m) => m.TodayComponent),
       },
       {
+        // The Timeline (Hestia.Api, T16): what happened in all modules, day by day.
         path: 'timeline',
         title: 'Timeline · Personal Finances',
         loadComponent: () =>
-          import('./features/placeholder/placeholder.component').then(
-            (m) => m.PlaceholderComponent,
+          import('./features/timeline/timeline-page/timeline-page.component').then(
+            (m) => m.TimelinePageComponent,
           ),
-        data: {
-          heading: 'Timeline',
-          summary: 'What happened, from every module, in order',
-          icon: 'history',
-          emptyTitle: 'All quiet so far',
-          emptyText: 'The timeline fills in as the modules record what happens.',
-        },
       },
       {
         path: 'capture',
