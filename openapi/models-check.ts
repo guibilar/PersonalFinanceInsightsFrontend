@@ -16,6 +16,7 @@ import type { CategoryCountDto } from '../src/app/core/models/outputs/home-outpu
 import type { MaintenanceDto } from '../src/app/core/models/outputs/home-output-dto';
 import type { RoomCountDto } from '../src/app/core/models/outputs/home-output-dto';
 import type { HomeSummaryDto } from '../src/app/core/models/outputs/home-output-dto';
+import type { InboxItemDto } from '../src/app/core/models/outputs/inbox-output-dto';
 import type { JournalEntryDto } from '../src/app/core/models/outputs/journal-output-dto';
 import type { JournalEntrySummaryDto } from '../src/app/core/models/outputs/journal-output-dto';
 import type { JournalDayDto } from '../src/app/core/models/outputs/journal-output-dto';
@@ -89,6 +90,8 @@ check<Fits<RoomCountDto, Schemas['RoomCountDto']>>();
 check<NoExtra<RoomCountDto, Schemas['RoomCountDto']>>();
 check<Fits<HomeSummaryDto, Schemas['HomeSummaryDto']>>();
 check<NoExtra<HomeSummaryDto, Schemas['HomeSummaryDto']>>();
+check<Fits<InboxItemDto, Schemas['InboxItemDto']>>();
+check<NoExtra<InboxItemDto, Schemas['InboxItemDto']>>();
 check<Fits<JournalEntryDto, Schemas['JournalEntryDto']>>();
 check<NoExtra<JournalEntryDto, Schemas['JournalEntryDto']>>();
 check<Fits<JournalEntrySummaryDto, Schemas['JournalEntrySummaryDto']>>();

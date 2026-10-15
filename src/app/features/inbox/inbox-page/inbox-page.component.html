@@ -1,0 +1,187 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Inbox</h1>
+    <p class="text-body-secondary mb-0">Quick notes, to sort later</p>
+  </div>
+  <nav class="btn-group" aria-label="Notes">
+    <a
+      class="btn btn-sm"
+      [class.btn-dark]="!sorted()"
+      [class.btn-outline-secondary]="sorted()"
+      [routerLink]="[]"
+      [queryParams]="{ view: null }"
+      >To sort</a
+    >
+    <a
+      class="btn btn-sm"
+      [class.btn-dark]="sorted()"
+      [class.btn-outline-secondary]="!sorted()"
+      [routerLink]="[]"
+      [queryParams]="{ view: 'sorted' }"
+      data-testid="view-sorted"
+      >Sorted</a
+    >
+  </nav>
+</div>
+
+@if (!canWrite()) {
+  <p class="alert alert-secondary" data-testid="read-only">This account can only read the Inbox.</p>
+} @else if (!sorted()) {
+  <form class="card mb-4" (submit)="$event.preventDefault(); send()" aria-labelledby="note-heading">
+    <div class="card-body d-flex flex-column gap-3">
+      <h2 id="note-heading" class="h6 mb-0">Quick note</h2>
+      <label class="visually-hidden" for="note-text">Note</label>
+      <textarea
+        id="note-text"
+        class="form-control"
+        rows="2"
+        [maxlength]="limit"
+        [formControl]="text"
+        placeholder="Type a note, a link, or a task…"
+      ></textarea>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="small text-body-secondary me-1">Send to</span>
+        @for (t of targets; track t) {
+          <button
+            type="button"
+            class="btn btn-sm rounded-pill"
+            [class.btn-primary]="target() === t"
+            [class.btn-outline-secondary]="target() !== t"
+            [attr.aria-pressed]="target() === t"
+            (click)="target.set(t)"
+          >
+            {{ t }}
+          </button>
+        }
+        <button
+          type="submit"
+          class="btn btn-primary ms-auto"
+          [disabled]="!canSend() || busy() === 'new'"
+          data-testid="send"
+        >
+          {{ busy() === 'new' ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+      <p class="small text-body-secondary mb-0">
+        Photos and scans go to <a routerLink="/documents/new">Documents</a>.
+      </p>
+    </div>
+  </form>
+}
+
+@if (notes.error() && !page()) {
+  <app-error-state message="Could not load the Inbox." (retry)="notes.reload()" />
+} @else if (!page()) {
+  <app-skeleton [lines]="3" height="4rem" />
+} @else if (page()!.items.length === 0) {
+  <p class="text-body-secondary" data-testid="empty">
+    {{
+      sorted()
+        ? 'No sorted notes yet.'
+        : 'Nothing to sort. A quick note shows here until you sort it.'
+    }}
+  </p>
+} @else {
+  <p class="small text-body-secondary" data-testid="count">
+    {{ page()!.totalCount }} {{ page()!.totalCount === 1 ? 'note' : 'notes' }}
+  </p>
+  <ul class="list-unstyled d-flex flex-column gap-2" data-testid="notes">
+    @for (note of page()!.items; track note.id) {
+      <li class="card" [attr.data-note]="note.id">
+        <div class="card-body d-flex flex-column gap-2">
+          @if (editing() === note.id) {
+            <label class="visually-hidden" [for]="'edit-' + note.id">Note</label>
+            <textarea
+              [id]="'edit-' + note.id"
+              class="form-control"
+              rows="3"
+              [maxlength]="limit"
+              [formControl]="editText"
+            ></textarea>
+            <div class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                (click)="saveEdit(note)"
+                [disabled]="busy() === note.id"
+              >
+                Save
+              </button>
+              <button type="button" class="btn btn-sm btn-link" (click)="editing.set(null)">
+                Cancel
+              </button>
+            </div>
+          } @else {
+            <p class="note-text mb-0">{{ note.text }}</p>
+            <span class="small text-body-secondary">
+              {{ when(note.createdAt) }}
+              @if (note.doneAt) {
+                · sorted {{ note.sortedTo ? 'to ' + note.sortedTo : '' }} {{ when(note.doneAt) }}
+              }
+            </span>
+            @if (canWrite()) {
+              <div class="d-flex flex-wrap gap-2">
+                @if (!note.doneAt) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary"
+                    [disabled]="busy() === note.id"
+                    (click)="sortTo(note, 'Task')"
+                  >
+                    To task
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    [disabled]="busy() === note.id"
+                    (click)="sortTo(note, 'Journal')"
+                  >
+                    To journal
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="busy() === note.id"
+                    (click)="done(note)"
+                  >
+                    Done
+                  </button>
+                  <button type="button" class="btn btn-sm btn-link" (click)="edit(note)">
+                    Edit
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="busy() === note.id"
+                    (click)="reopen(note)"
+                  >
+                    Undo
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link text-danger"
+                  (click)="deleting.set(note)"
+                >
+                  Delete
+                </button>
+              </div>
+            }
+          }
+        </div>
+      </li>
+    }
+  </ul>
+}
+
+@if (deleting(); as note) {
+  <app-confirm-dialog
+    title="Delete the note?"
+    message="This cannot be undone."
+    confirmLabel="Delete"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="deleting.set(null)"
+  />
+}

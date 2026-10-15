@@ -10,19 +10,20 @@ The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, *
 screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
 round centre action; the menu button at the top opens the modules and the account actions.
 
-| Page      | Path           | What it shows                                                                                                                            |
-| --------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                                                          |
-| Timeline  | `/timeline`    | What happened in all modules, day by day (below)                                                                                         |
-| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item", "Add person" and "Write in journal"; Note is coming soon |
-| Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home, People and Journal                                                                          |
-| Search    | `/search`      | One search across all modules (below)                                                                                                    |
-| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                                                         |
-| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                                                    |
-| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                                                   |
-| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                                                          |
-| People    | `/people/…`    | Birthdays, gift ideas, lent items, and who to reach out to (below)                                                                       |
-| Journal   | `/journal`     | One entry a day, the streak, and the same day in other years (below)                                                                     |
+| Page      | Path           | What it shows                                                                                                                     |
+| --------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                                                   |
+| Timeline  | `/timeline`    | What happened in all modules, day by day (below)                                                                                  |
+| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item", "Add person", "Quick note" and "Write in journal" |
+| Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home, People and Journal                                                                   |
+| Search    | `/search`      | One search across all modules (below)                                                                                             |
+| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                                                  |
+| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                                             |
+| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                                            |
+| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                                                   |
+| People    | `/people/…`    | Birthdays, gift ideas, lent items, and who to reach out to (below)                                                                |
+| Inbox     | `/inbox`       | Quick notes to sort later (below)                                                                                                 |
+| Journal   | `/journal`     | One entry a day, the streak, and the same day in other years (below)                                                              |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -331,6 +332,21 @@ The Timeline (T16) shows what happened in all modules, day by day, newest first.
 
 The models are in `core/models/outputs/timeline-output-dto.ts`. The page is in `features/timeline/`.
 
+## Inbox
+
+The Inbox (T18) keeps quick notes to sort later. It needs Hestia.Api (`/api/inbox`).
+
+- **Quick note.** A note goes to the Inbox, or at once to a task (the first line is the title, the rest the notes) or
+  to today's journal entry (as a new paragraph). Capture's "Quick note" opens this page. Photos and scans go to
+  Documents, as before.
+- **To sort.** Each note has "To task", "To journal" (the app adds the task or the journal text, then marks the note
+  sorted), "Done", "Edit", and "Delete" (asks first).
+- **Sorted** (`/inbox?view=sorted`): the sorted notes, last sorted first, with where they went and "Undo".
+- **Today.** The Inbox tile (`inbox.open`) counts the notes to sort and links here.
+- A read-only user can only read.
+
+The models are in `core/models/outputs/inbox-output-dto.ts`; the page and `NoteSender` are in `features/inbox/`.
+
 ## Search
 
 Search (T17) is one search across all modules. It needs Hestia.Api (`GET /api/search`); each module searches its own
@@ -525,7 +541,7 @@ src/app/
               home/ (the Home module: Home page, room, new item, item, the item picker, and the Home sections of a
               document, a task and a transaction)
               people/ (the People module: People page, new person, person)
-              journal/ (the Journal module: one page)
+              journal/ (the Journal module: one page), inbox/ (the Inbox: quick notes, and NoteSender)
               money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
               transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
               bank-accounts/ (Accounts)

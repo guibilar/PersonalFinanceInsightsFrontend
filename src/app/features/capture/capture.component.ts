@@ -4,23 +4,12 @@ import { AuthService } from '../../core/auth/auth.service';
 import { StatementImportLauncher } from '../../core/data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../core/data/transaction-add-launcher.service';
 import { RouterLink } from '@angular/router';
-import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
-
-interface CaptureAction {
-  label: string;
-  hint: string;
-  icon: IconName;
-}
-
-/** Capture actions still to come, the same as on Android. The Inbox (T18) makes them work. */
-export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
-  { label: 'Note', hint: 'A quick thought', icon: 'note' },
-];
+import { IconComponent } from '../../shared/ui/icon/icon.component';
 
 /**
  * Capture: one place to add something to any module. For now it adds a transaction or imports bank statements into
- * Money, adds a document (a scan or a photo), a task, a home item, or a person, opens the journal (T21), and shows the
- * other actions as coming soon. A read-only user (T60) sees
+ * Money, adds a document (a scan or a photo), a task, a home item, or a person, writes a quick note (T18: the Inbox), and
+ * opens the journal (T21). A read-only user (T60) sees
  * the actions disabled.
  */
 @Component({
@@ -163,6 +152,28 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
       </div>
       <div class="col">
         @if (canWrite()) {
+          <a class="card h-100 w-100 capture-action" routerLink="/inbox">
+            <ng-container *ngTemplateOutlet="quickNote" />
+          </a>
+        } @else {
+          <button type="button" class="card h-100 w-100 capture-action" disabled>
+            <ng-container *ngTemplateOutlet="quickNote" />
+          </button>
+        }
+        <ng-template #quickNote>
+          <span class="card-body d-flex gap-3 align-items-center text-start">
+            <span class="action-icon"><app-icon name="note" /></span>
+            <span class="min-w-0">
+              <span class="d-block fw-semibold">Quick note</span>
+              <span class="d-block small text-body-secondary"
+                >A thought, a link or a to-do: to the Inbox, a task or the journal</span
+              >
+            </span>
+          </span>
+        </ng-template>
+      </div>
+      <div class="col">
+        @if (canWrite()) {
           <a class="card h-100 w-100 capture-action" routerLink="/journal">
             <ng-container *ngTemplateOutlet="writeJournal" />
           </a>
@@ -181,22 +192,6 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
           </span>
         </ng-template>
       </div>
-      @for (action of comingActions; track action.label) {
-        <div class="col">
-          <button type="button" class="card h-100 w-100 capture-action" disabled>
-            <span class="card-body d-flex gap-3 align-items-center text-start">
-              <span class="action-icon"><app-icon [name]="action.icon" /></span>
-              <span class="min-w-0">
-                <span class="d-block fw-semibold">
-                  {{ action.label }}
-                  <span class="badge text-bg-secondary ms-1 align-middle">Coming soon</span>
-                </span>
-                <span class="d-block small text-body-secondary">{{ action.hint }}</span>
-              </span>
-            </span>
-          </button>
-        </div>
-      }
     </div>
   `,
   styles: `
@@ -239,7 +234,6 @@ export const COMING_CAPTURE_ACTIONS: readonly CaptureAction[] = [
 export class CaptureComponent {
   protected readonly importer = inject(StatementImportLauncher);
   protected readonly adder = inject(TransactionAddLauncher);
-  protected readonly comingActions = COMING_CAPTURE_ACTIONS;
   /** A read-only user (T60) sees the add actions disabled, and why. */
   protected readonly canWrite = inject(AuthService).canWrite;
 }
