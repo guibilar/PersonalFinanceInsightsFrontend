@@ -2,11 +2,12 @@
   <div class="login-card card">
     <div class="card-body p-4 p-sm-5">
       <div class="brand mb-4">
-        <span class="brand-mark"><app-icon name="logo" [size]="20" /></span>
-        Hestia
+        <app-logo [size]="56" />
+        <span class="brand-name">Hestia</span>
+        <span class="welcome">Welcome home.</span>
       </div>
       <h1 class="h4 mb-1">Sign in</h1>
-      <p class="text-body-secondary mb-4">to see your spending and budgets</p>
+      <p class="text-body-secondary mb-4">to your money, tasks, journal and the rest of home</p>
 
       @if (sessionEnded && !error()) {
         <div class="alert alert-warning py-2 small" role="status">

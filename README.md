@@ -1,8 +1,21 @@
 # Hestia — web app
 
-Angular 22 frontend of **Hestia**, a personal "everything app" (T23: the app shows the name Hestia, with a flame icon
-in ember orange). Its first module, **Money**, is the Personal Finance Insights app: where the money goes, what is
+Angular 22 frontend of **Hestia**, a personal "everything app". Its first module, **Money**, is the Personal Finance Insights app: where the money goes, what is
 coming, and what you are worth, from the bank statements you import. The repository keeps its old name.
+
+## Look: "Hearth"
+
+Hestia should feel like home, not like a bank. The identity is called **Hearth** (chosen 2026-10-15):
+
+- **Logo:** a cream house on terracotta, whose doorway is a glowing hearth (`shared/ui/logo`, `public/favicon.svg`).
+  The line icon `logo` is the same house.
+- **Colours:** cream canvas `#FAF6EF`, warm white cards `#FFFDF9`, charcoal ink `#2B2622`, terracotta `#B5562F`
+  (primary), sage `#4F7A4A` (good), and a warm accent for each module on Today (`data-accent`, in `styles.scss`).
+  Dark mode is an evening room: brown-black canvas, lighter cards, warm light ink.
+- **Type:** Fraunces with soft serifs (`--hestia-display-font`) for page titles, section names and the big figures;
+  Inter for the rest.
+- **Layout:** one menu (the sidebar). A module's own pages are a row of tabs above them (Money). The account is a small
+  card with a menu; hiding amounts, dark mode, and collapsing the sidebar are three icon buttons.
 
 ## The shell and the modules
 

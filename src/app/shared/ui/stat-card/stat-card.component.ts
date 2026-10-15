@@ -13,7 +13,7 @@ export type StatTone = 'good' | 'bad' | 'warning' | 'neutral';
         <span class="stat-icon"><app-icon [name]="icon()" /></span>
         <div class="min-w-0">
           <p class="small text-body-secondary fw-medium mb-1">{{ label() }}</p>
-          <p class="h4 fw-semibold mb-1 text-truncate">{{ value() }}</p>
+          <p class="stat-value mb-1 text-truncate">{{ value() }}</p>
           @if (hint(); as hint) {
             <p
               class="small mb-0 d-flex align-items-center gap-1"
@@ -33,12 +33,22 @@ export type StatTone = 'good' | 'bad' | 'warning' | 'neutral';
     </div>
   `,
   styles: `
+    /* The colour of the module around it (data-accent), or terracotta. */
     .stat-icon {
       display: inline-flex;
       padding: 0.625rem;
-      border-radius: var(--bs-border-radius-lg);
-      background: var(--bs-primary-bg-subtle);
-      color: var(--bs-primary-text-emphasis);
+      border-radius: 50%;
+      background: var(--accent-bg, var(--bs-primary-bg-subtle));
+      color: var(--accent, var(--bs-primary-text-emphasis));
+    }
+    /* The number in Fraunces: the figure is what you read first. */
+    .stat-value {
+      font-family: var(--hestia-display-font);
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.2;
+      font-variation-settings: 'SOFT' 100;
+      color: var(--bs-emphasis-color);
     }
     .min-w-0 {
       min-width: 0;

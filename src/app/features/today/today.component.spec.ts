@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { TodayComponent } from './today.component';
+import { TodayComponent, displayName, greetingFor } from './today.component';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import { TodayCard, TodayDto } from '../../core/models/outputs/today-output-dto';
 import { setAmountsHidden } from '../../shared/utils/privacy';
@@ -336,7 +336,7 @@ describe('TodayComponent', () => {
     await answer(withTasks(1));
 
     const card = () => root().querySelector('[data-card="tasks.due-today"]')!;
-    const count = () => card().querySelector('p.h4')!.textContent!.trim();
+    const count = () => card().querySelector('.stat-value')!.textContent!.trim();
     expect(card().querySelector('a')!.getAttribute('href')).toBe('/tasks');
     expect(count()).toBe('1');
     expect(card().textContent).toContain('1 overdue');
@@ -412,6 +412,10 @@ describe('TodayComponent', () => {
       root().querySelectorAll('h2[id^="today-"]:not(#today-attention):not(#today-more)'),
     ).map((h) => h.textContent!.trim());
     expect(headings).toEqual(['Money']);
+    // Each module section has its own warm colour (styles.scss, data-accent).
+    expect(root().querySelector('section.today-section')!.getAttribute('data-accent')).toBe(
+      'money',
+    );
     const system = root().querySelector('[data-card="system.broker-down"]')!;
     expect(system.querySelector('a')).toBeNull();
     expect(root().querySelector('[data-card="people.reach-out.p1"] a')!.getAttribute('href')).toBe(
@@ -443,5 +447,29 @@ describe('TodayComponent', () => {
 
     expect(root().querySelectorAll('.attention a').length).toBe(0);
     expect(root().querySelector('.attention')!.textContent).toContain('Outside');
+  });
+});
+
+describe('the Today greeting', () => {
+  it('greets by the time of day', () => {
+    expect([3, 5, 11, 12, 17, 18, 23].map(greetingFor)).toEqual([
+      'Good night',
+      'Good morning',
+      'Good morning',
+      'Good afternoon',
+      'Good afternoon',
+      'Good evening',
+      'Good evening',
+    ]);
+  });
+
+  it('uses the first name of the user name', () => {
+    expect(['alex', 'guilherme.bilar', ' maria_s ', 'jo@home', ''].map(displayName)).toEqual([
+      'Alex',
+      'Guilherme',
+      'Maria',
+      'Jo',
+      '',
+    ]);
   });
 });

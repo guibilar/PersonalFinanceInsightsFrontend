@@ -55,8 +55,8 @@ export const MONEY_NAV: readonly MoneyNavGroup[] = [
 ];
 
 /**
- * The Money module's frame: its sub-menu and "Import statements" beside the finance pages on wide screens, and a row
- * that scrolls sideways above them on narrow ones.
+ * The Money module's frame: its pages as a row of tabs above them (it scrolls sideways on a narrow screen), and "Import
+ * statements". The app's sidebar is the only menu column.
  */
 @Component({
   selector: 'app-money-layout',

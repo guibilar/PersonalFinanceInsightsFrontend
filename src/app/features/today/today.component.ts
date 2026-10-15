@@ -14,6 +14,7 @@ import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { StatCardComponent, StatTone } from '../../shared/ui/stat-card/stat-card.component';
 import { keptValueOf } from '../../shared/utils/resource-value';
+import { AuthService } from '../../core/auth/auth.service';
 import { fillTodayText, formatTodayValue } from './today-text';
 import { AttentionListComponent } from './attention-list/attention-list.component';
 
@@ -24,6 +25,8 @@ interface ModuleSection {
   name: string;
   /** The module home, when the registry has the module and it is active. */
   route: string | null;
+  /** The module's icon, beside its name. */
+  icon: IconName;
   status: TodayModuleStatus;
   tiles: TodayCard[];
 }
@@ -63,6 +66,45 @@ const TONES: Record<TodaySeverity, StatTone> = {
   ],
   templateUrl: './today.component.html',
   styles: `
+    .today-date {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent, var(--bs-primary-text-emphasis));
+    }
+
+    .greeting {
+      font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+      font-weight: 600;
+      color: var(--bs-emphasis-color);
+    }
+
+    .today-sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+      gap: 1.5rem 1rem;
+    }
+
+    .today-section.wide {
+      grid-column: 1 / -1;
+    }
+
+    .section-icon {
+      display: inline-flex;
+      padding: 0.375rem;
+      border-radius: 50%;
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .section-title {
+      font-family: var(--hestia-display-font);
+      font-size: 1.125rem;
+      font-weight: 600;
+      font-variation-settings: 'SOFT' 100;
+    }
+
     .bell {
       line-height: 1;
     }
@@ -108,6 +150,7 @@ const TONES: Record<TodaySeverity, StatTone> = {
 export class TodayComponent {
   private readonly todayRepository = inject(TodayRepository);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   /** A statement or a transaction added from Capture loads the cards again. */
   private readonly dataChanges = inject(DataChangesService);
 
@@ -127,6 +170,14 @@ export class TodayComponent {
   });
   /** The last answer stays on the page while the next one loads, so a refresh does not flash the skeleton. */
   readonly today = keptValueOf(this.todayResource);
+
+  /** "Good evening, Alex": by the time of day, with the user's name (none for the read-only token). */
+  readonly greeting = computed(() => {
+    const user = this.auth.user();
+    const name = user && user.scope !== 'read-only' ? displayName(user.username) : '';
+    const part = greetingFor(new Date().getHours());
+    return name ? `${part}, ${name}` : part;
+  });
 
   readonly dateLabel = computed(() => {
     const date = this.today()?.date;
@@ -158,6 +209,7 @@ export class TodayComponent {
         id: known?.id ?? name.toLowerCase(),
         name: known?.name ?? name,
         route: known?.status === 'active' ? known.route : null,
+        icon: known?.icon ?? 'layout-grid',
         status: today.modules.find((m) => m.module === name)?.status ?? 'Complete',
         tiles: today.cards.filter((card) => card.module === name && card.type === 'Tile'),
       };
@@ -231,4 +283,18 @@ export class TodayComponent {
 function registryModule(serverName: string): AppModule | undefined {
   const id = serverName.toLowerCase();
   return MODULES.find((module) => module.id === id);
+}
+
+/** The part of the day, as people greet each other. */
+export function greetingFor(hour: number): string {
+  if (hour < 5) return 'Good night';
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/** A user name as a first name: "alex.smith" or "alex" → "Alex". */
+export function displayName(username: string): string {
+  const first = username.trim().split(/[\s._@-]+/)[0] ?? '';
+  return first ? first[0].toUpperCase() + first.slice(1) : '';
 }

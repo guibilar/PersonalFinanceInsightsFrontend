@@ -1,6 +1,8 @@
 // Bootstrap, trimmed to the modules the app uses.
 // Add a module here before using its classes (e.g. modal, dropdown).
 @import '@fontsource-variable/inter';
+// Headings: Fraunces with soft serifs, the warm voice of Hestia's "Hearth" identity.
+@import '@fontsource-variable/fraunces/soft.css';
 
 @import 'bootstrap/scss/functions';
 
@@ -12,31 +14,38 @@ $font-family-sans-serif:
   'Segoe UI',
   Roboto,
   sans-serif;
+$headings-font-family: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
 $headings-font-weight: 600;
-$primary: #4f46e5;
-$success: #16a34a;
-$danger: #dc2626;
-$warning: #d97706;
-$info: #0891b2;
+// Hearth: terracotta, sage, and warm charcoal on cream (D10, the Hestia identity).
+$primary: #b5562f;
+$success: #4f7a4a;
+$danger: #b42318;
+$warning: #b7791f;
+$info: #3e7c87;
 
-$border-radius: 0.5rem;
-$border-radius-sm: 0.375rem;
-$border-radius-lg: 0.75rem;
-$box-shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06);
+$border-radius: 0.75rem;
+$border-radius-sm: 0.5rem;
+$border-radius-lg: 1rem;
+$box-shadow-sm:
+  0 1px 2px rgb(64 40 20 / 0.05),
+  0 2px 10px rgb(64 40 20 / 0.04);
 
-// Light: white surfaces on a faintly tinted canvas.
-$body-color: #1f2937;
-$body-bg: #ffffff;
-$body-secondary-bg: #f1f3f8;
-$body-tertiary-bg: #f6f7fb;
-$border-color: #e4e7ee;
+// Light: warm white cards on a cream canvas, charcoal ink.
+$body-color: #2b2622;
+$body-bg: #fffdf9;
+$body-secondary-bg: #f3ede3;
+$body-tertiary-bg: #faf6ef;
+$border-color: #ebe2d5;
 
-// Dark: slate surfaces, slightly lighter than the canvas.
-$body-color-dark: #e5e7eb;
-$body-bg-dark: #171b24;
-$body-secondary-bg-dark: #222835;
-$body-tertiary-bg-dark: #0f1219;
-$border-color-dark: #2a3140;
+// Dark: an evening room. Brown-black canvas, cards a little lighter, warm light ink.
+$body-color-dark: #ede6dd;
+$body-bg-dark: #26211d;
+$body-secondary-bg-dark: #312b26;
+$body-tertiary-bg-dark: #1c1916;
+$border-color-dark: #3b342d;
+$primary-text-emphasis-dark: #eba27f;
+$primary-bg-subtle-dark: #3d2a20;
+$link-color-dark: #e39470;
 
 $card-border-color: var(--bs-border-color);
 $card-cap-bg: transparent;
@@ -94,9 +103,112 @@ $utilities: map-remove(
 @import 'bootstrap/scss/helpers';
 @import 'bootstrap/scss/utilities/api';
 
+:root {
+  --hestia-display-font: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+}
+
 body {
   background-color: var(--bs-tertiary-bg);
   -webkit-font-smoothing: antialiased;
+}
+
+// Fraunces: soft serifs, and the optical size that fits each heading.
+h1,
+h2,
+h3,
+.h1,
+.h2,
+.h3,
+.font-display {
+  font-family: $headings-font-family;
+  font-variation-settings:
+    'SOFT' 100,
+    'WONK' 0;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+}
+
+// Small headings (card titles, labels) stay in the sans, where a serif would look fussy.
+h4,
+h5,
+h6,
+.h4,
+.h5,
+.h6 {
+  font-family: var(--bs-body-font-family);
+}
+
+// Dark mode: the status inks lighter, so they read on the dark cards (Bootstrap uses the light ones for text-*).
+[data-bs-theme='dark'] {
+  --bs-success-rgb: 134, 179, 127;
+  --bs-danger-rgb: 236, 128, 112;
+  --bs-warning-rgb: 226, 180, 111;
+}
+
+// Each module has its own warm colour (Today's sections, the stat cards inside): set by data-accent.
+[data-accent] {
+  --accent: var(--bs-primary-text-emphasis);
+  --accent-bg: var(--bs-primary-bg-subtle);
+}
+$accents: (
+  money: (
+    #a6492a,
+    #f7e3d8,
+    #eba27f,
+    #3d2a20,
+  ),
+  tasks: (
+    #4a7344,
+    #e2ecdd,
+    #9cc493,
+    #26331f,
+  ),
+  journal: (
+    #844a6d,
+    #f1e1ea,
+    #d5a3c2,
+    #3a2431,
+  ),
+  inbox: (
+    #99601a,
+    #f8ead2,
+    #e2b46f,
+    #3a2c18,
+  ),
+  documents: (
+    #3c6886,
+    #dfeaf2,
+    #93bcd8,
+    #1f2d38,
+  ),
+  home: (
+    #8f5a3a,
+    #f2e3d8,
+    #d7a888,
+    #362619,
+  ),
+  people: (
+    #a44457,
+    #f6dfe3,
+    #e39aa8,
+    #3b2027,
+  ),
+);
+@each $name, $c in $accents {
+  [data-accent='#{$name}'] {
+    --accent: #{nth($c, 1)};
+    --accent-bg: #{nth($c, 2)};
+  }
+  [data-bs-theme='dark'] [data-accent='#{$name}'] {
+    --accent: #{nth($c, 3)};
+    --accent-bg: #{nth($c, 4)};
+  }
+}
+
+// Amounts line up in columns.
+.amount,
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 // A wide table scrolls inside its box. The box is the containing block of what Bootstrap hides for screen readers

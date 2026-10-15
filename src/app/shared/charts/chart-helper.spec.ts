@@ -233,17 +233,18 @@ describe('chart style', () => {
   });
 
   it('gives the income and spending bars validated colours for the mode, in a fixed order', () => {
+    // Hearth: sage, terracotta, slate blue and plum; each at least 3:1 against its surface.
     expect(cashFlowColors(CHART_THEMES.light)).toEqual({
-      income: '#1baf7a',
-      spending: '#eb6834',
-      net: '#2a78d6',
-      savings: '#e87ba4',
+      income: '#5f8f5a',
+      spending: '#c2643c',
+      net: '#3f6f8f',
+      savings: '#a35d84',
     });
     expect(cashFlowColors(CHART_THEMES.dark)).toEqual({
-      income: '#199e70',
-      spending: '#d95926',
-      net: '#3987e5',
-      savings: '#d55181',
+      income: '#86b37f',
+      spending: '#e0805a',
+      net: '#6f9cbc',
+      savings: '#c987ab',
     });
   });
 
