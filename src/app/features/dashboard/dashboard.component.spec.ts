@@ -186,7 +186,7 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Reports/net-worth').flush(extra.netWorth ?? EMPTY_NET_WORTH);
     http.expectOne('/api/Accounts').flush(extra.accounts ?? []);
     // The first load uses the alerts that the server keeps.
-    http.expectOne('/api/alerts').flush(alertList);
+    http.expectOne('/api/alerts?order=module').flush(alertList);
     await fixture.whenStable();
     return {
       dashboard: fixture.componentInstance,
@@ -348,7 +348,7 @@ describe('DashboardComponent', () => {
     http.expectOne('/api/Reports/forecast').flush(null, { status: 500, statusText: 'Error' });
     http.expectOne('/api/Reports/net-worth').flush(null, { status: 500, statusText: 'Error' });
     http.expectOne('/api/Accounts').flush(null, { status: 500, statusText: 'Error' });
-    http.expectOne('/api/alerts').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/alerts?order=module').flush(null, { status: 500, statusText: 'Error' });
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
 
@@ -636,7 +636,7 @@ describe('DashboardComponent', () => {
     error.querySelector('button')!.click();
     TestBed.tick();
     // A retry asks the server for a new check; the reports do not load again.
-    http.expectOne('/api/alerts?refresh=true').flush(
+    http.expectOne('/api/alerts?refresh=true&order=module').flush(
       alerts([
         alert({
           id: 'money.unsorted',
@@ -658,7 +658,7 @@ describe('DashboardComponent', () => {
     TestBed.inject(DataChangesService).changed();
     TestBed.tick();
     flushReportsAgain();
-    http.expectOne('/api/alerts?refresh=true').flush(
+    http.expectOne('/api/alerts?refresh=true&order=module').flush(
       alerts([
         alert({
           id: 'money.statements-not-imported',
@@ -678,7 +678,9 @@ describe('DashboardComponent', () => {
     const fixture = TestBed.createComponent(DashboardComponent);
     TestBed.tick();
     flushReportsAgain();
-    http.expectOne('/api/alerts').flush(null, { status: 404, statusText: 'Not Found' });
+    http
+      .expectOne('/api/alerts?order=module')
+      .flush(null, { status: 404, statusText: 'Not Found' });
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
 

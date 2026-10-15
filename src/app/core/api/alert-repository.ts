@@ -14,10 +14,13 @@ export class AlertRepository {
 
   /**
    * The open alerts. With `refresh`, the server checks its rules first (it waits at most 10 seconds), for example
-   * after a data change from this app.
+   * after a data change from this app. `order`: most severe first (the server's default), or `module`, the Today
+   * order (T74).
    */
-  get(refresh = false): Observable<AlertListDto> {
-    const params = refresh ? new HttpParams().set('refresh', 'true') : undefined;
+  get(refresh = false, order: 'severity' | 'module' = 'severity'): Observable<AlertListDto> {
+    let params = new HttpParams();
+    if (refresh) params = params.set('refresh', 'true');
+    if (order === 'module') params = params.set('order', 'module');
     return this.http.get<AlertListDto>(this.url, { params });
   }
 }

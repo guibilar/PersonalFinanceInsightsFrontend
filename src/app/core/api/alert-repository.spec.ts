@@ -36,4 +36,8 @@ describe('AlertRepository', () => {
     expect(req.request.method).toBe('GET');
     req.flush({ checkedAt: null, modules: [], alerts: [] });
   });
+  it('asks for the Today order with order=module', () => {
+    repository.get(false, 'module').subscribe();
+    http.expectOne('/api/alerts?order=module').flush({ checkedAt: null, modules: [], alerts: [] });
+  });
 });
