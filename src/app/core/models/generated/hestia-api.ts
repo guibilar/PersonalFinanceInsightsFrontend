@@ -88,7 +88,7 @@ export interface paths {
     };
     /**
      * A page of documents, newest first (best match first with q).
-     * @description Filters: kind, tag, q (full-text search in the title, the tags, the notes, and the OCR text; web search syntax: "exact phrase", -word), expiresFrom and expiresTo (yyyy-MM-dd, both included).
+     * @description Filters: kind, tag, q (full-text search in the title, the tags, the notes, and the OCR text; web search syntax: "exact phrase", -word), expiresFrom and expiresTo (yyyy-MM-dd, both included), expiring=soon (from today, in the host's time zone, to Documents:Expiry:SoonDays ahead; T86).
      */
     get: operations['ListDocuments'];
     put?: never;
@@ -219,6 +219,40 @@ export interface paths {
     };
     /** The item count, the total value, the count per room, and the warranties that end in the next 30 days. */
     get: operations['GetHomeSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/home/maintenance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** All maintenance: the open tasks linked to an item from either side, by due date (T89). */
+    get: operations['ListHomeMaintenance'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/home/categories': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The categories in use, by name, with the count of items in each (T89). */
+    get: operations['ListHomeCategories'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1118,6 +1152,11 @@ export interface components {
       /** Format: int32 */
       year?: null | number | string;
     };
+    CategoryCountDto: {
+      name: string;
+      /** Format: int32 */
+      count: number | string;
+    };
     ChangePasswordRequest: {
       currentPassword: null | string;
       newPassword: null | string;
@@ -1445,6 +1484,22 @@ export interface components {
       password: null | string;
       /** @default false */
       rememberMe: boolean;
+    };
+    MaintenanceDto: {
+      /** Format: uuid */
+      taskId: string;
+      title: string;
+      /** Format: date */
+      dueOn: null | string;
+      /** Format: int32 */
+      repeatEvery: null | number | string;
+      repeatUnit: null | string;
+      /** Format: date-time */
+      lastDoneAt: null | string;
+      /** Format: uuid */
+      itemId: string;
+      itemName: string;
+      roomName: null | string;
     };
     /** @enum {unknown} */
     OcrStatus: 'Pending' | 'Done' | 'Failed' | 'NotNeeded';
@@ -1900,6 +1955,7 @@ export interface operations {
         q?: string;
         expiresFrom?: string;
         expiresTo?: string;
+        expiring?: string;
         page?: number | string;
         pageSize?: number | string;
       };
@@ -2139,6 +2195,46 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HomeSummaryDto'];
+        };
+      };
+    };
+  };
+  ListHomeMaintenance: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MaintenanceDto'][];
+        };
+      };
+    };
+  };
+  ListHomeCategories: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CategoryCountDto'][];
         };
       };
     };
