@@ -193,6 +193,18 @@ describe('TodayComponent', () => {
     expect(root().textContent).toContain('Tuesday, October 13');
   });
 
+  it('has a bell with the count of the items that need attention, which goes to the list (T69)', async () => {
+    await answer(completeAnswer());
+
+    const bell = root().querySelector<HTMLButtonElement>('[data-testid="bell"]')!;
+    expect(bell.getAttribute('aria-label')).toBe('3 items need attention');
+    expect(bell.textContent!.trim()).toBe('3');
+    const heading = root().querySelector<HTMLElement>('#today-attention')!;
+    heading.scrollIntoView = () => undefined;
+    bell.click();
+    expect(document.activeElement).toBe(heading);
+  });
+
   it('keeps the fragment of a link, so a statement item opens the import', async () => {
     await answer(completeAnswer());
     const card = completeAnswer().cards.find((c) => c.kind === 'statements-behind')!;
@@ -210,6 +222,9 @@ describe('TodayComponent', () => {
 
     expect(tileLabels().length).toBe(4);
     expect(root().querySelector('.attention')).toBeNull();
+    const bell = root().querySelector<HTMLButtonElement>('[data-testid="bell"]')!;
+    expect(bell.disabled).toBe(true);
+    expect(bell.getAttribute('aria-label')).toBe('Nothing needs attention');
   });
 
   it('notes a Partial module, and keeps its other tiles', async () => {
