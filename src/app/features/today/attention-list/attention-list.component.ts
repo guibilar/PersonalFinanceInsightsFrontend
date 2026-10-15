@@ -19,6 +19,20 @@ const ICONS: Record<string, IconName> = {
   'statements-behind': 'upload',
   'price-changed': 'refresh',
   unsorted: 'tag',
+  // Documents (T11) and Tasks (T19).
+  expiring: 'file-text',
+  expired: 'file-text',
+  overdue: 'list-checks',
+  'overdue-many': 'list-checks',
+  // Home (T22) and People (T20).
+  'warranty-ending': 'house',
+  'reach-out': 'users',
+  birthday: 'calendar',
+  'loan-overdue': 'user',
+  // System (T80): a stuck event outbox, the event broker down, document files missing.
+  'outbox-stuck': 'history',
+  'broker-down': 'devices',
+  'files-missing': 'file-text',
 };
 
 /**

@@ -28,6 +28,9 @@ interface ModuleSection {
   tiles: TodayCard[];
 }
 
+/** The module of the server's own alerts (T80): no tiles, and last on Today. */
+const SYSTEM_MODULE = 'system';
+
 /** Tile icons by card kind. A kind not in the list gets the module icon. */
 const TILE_ICONS: Record<string, IconName> = {
   spent: 'calendar',
@@ -122,8 +125,18 @@ export class TodayComponent {
     return day.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
   });
 
-  /** The modules with cards, in server order, each with its tiles. */
-  readonly sections = computed<ModuleSection[]>(() => {
+  /**
+   * The modules with tiles (or a load problem), in server order, each with its tiles. A module with only "Needs attention"
+   * items has no section: its items are in the one list below (T81). `System` (T80) goes last.
+   */
+  readonly sections = computed<ModuleSection[]>(() =>
+    this.allSections()
+      .filter((section) => section.tiles.length > 0 || section.status !== 'Complete')
+      .sort((a, b) => Number(a.id === SYSTEM_MODULE) - Number(b.id === SYSTEM_MODULE)),
+  );
+
+  /** Every module of the answer, also one with no tiles. */
+  private readonly allSections = computed<ModuleSection[]>(() => {
     const today = this.today();
     if (!today) return [];
     const names = today.modules.map((m) => m.module);
@@ -149,7 +162,7 @@ export class TodayComponent {
 
   /** Registry modules that are still to come and that the server has no cards for. */
   readonly comingSoon = computed(() => {
-    const served = new Set(this.sections().map((section) => section.id));
+    const served = new Set(this.allSections().map((section) => section.id));
     return MODULES.filter((module) => module.status === 'coming-soon' && !served.has(module.id));
   });
 
