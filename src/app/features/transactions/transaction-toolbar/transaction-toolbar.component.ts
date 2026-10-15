@@ -110,6 +110,9 @@ export class TransactionToolbarComponent {
     const preset = DATE_PRESETS.find((p) => p.id === period);
     if (preset) {
       chips.push({ key: 'dates', label: `${preset.label} · ${describeRange(filter)}` });
+    } else if (filter.startDate && filter.startDate === filter.endDate) {
+      // One day (T65), for example from a link to one transaction: one chip.
+      chips.push({ key: 'dates', label: describeRange(filter) });
     } else {
       if (filter.startDate) chips.push({ key: 'startDate', label: `From ${filter.startDate}` });
       if (filter.endDate) chips.push({ key: 'endDate', label: `To ${filter.endDate}` });

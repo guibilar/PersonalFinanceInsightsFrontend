@@ -76,11 +76,6 @@
 @if (linkedNotice(); as notice) {
   <div class="alert alert-warning d-flex align-items-center gap-2 py-2" role="status">
     <span>{{ linkedMessages[notice] }}</span>
-    @if (notice === 'deleted') {
-      <button type="button" class="btn btn-link btn-sm p-0" (click)="toggleDeleted()">
-        Show deleted transactions
-      </button>
-    }
     <button
       type="button"
       class="btn-close ms-auto"

@@ -75,6 +75,8 @@ export function describeRange(range: DateRange): string {
   const day = (iso: string, withYear: boolean) => formatDay(iso, { year: withYear });
   if (!range.startDate) return '';
   if (!range.endDate) return `${day(range.startDate, false)} – today`;
+  // One day (T65): "Oct 3, 2026", not a range.
+  if (range.startDate === range.endDate) return day(range.startDate, true);
   const sameYear = range.startDate.slice(0, 4) === range.endDate.slice(0, 4);
   return `${day(range.startDate, !sameYear)} – ${day(range.endDate, true)}`;
 }

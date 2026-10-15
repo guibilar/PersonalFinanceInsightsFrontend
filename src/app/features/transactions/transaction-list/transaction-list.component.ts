@@ -180,15 +180,19 @@ export class TransactionListComponent {
   readonly linkedNotice = signal<LinkedNotice | null>(null);
   readonly linkedMessages: Record<LinkedNotice, string> = {
     missing: 'The linked transaction does not exist.',
-    deleted: 'The linked transaction is deleted.',
+    deleted:
+      'The linked transaction is deleted. Here it is among the deleted ones, where you can restore it.',
     failed: 'Could not load the linked transaction.',
   };
   /** The linked transaction, highlighted for a short time once it is on screen. */
   readonly highlightedId = signal<string | null>(null);
   /** The linked transaction that the list still has to show, and the criteria that show it. */
-  private readonly pendingLinked = signal<{ id: string; criteria: TransactionCriteria } | null>(
-    null,
-  );
+  private readonly pendingLinked = signal<{
+    id: string;
+    criteria: TransactionCriteria;
+    /** A deleted transaction shows in the deleted view (T65). */
+    deleted: boolean;
+  } | null>(null);
   private linkedLookup?: Subscription;
   private highlightTimer?: ReturnType<typeof setTimeout>;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -412,7 +416,11 @@ export class TransactionListComponent {
       const page = valueOf(this.transactions);
       const filter = this.filter();
       untracked(() => {
-        if (!page || filter.hidden || !sameCriteria(filter, pending.criteria)) {
+        if (
+          !page ||
+          !!filter.hidden !== pending.deleted ||
+          !sameCriteria(filter, pending.criteria)
+        ) {
           // Failed, or the person changed the list meanwhile.
           this.pendingLinked.set(null);
         } else if (page.items.some((t) => t.id === pending.id)) {
@@ -489,8 +497,8 @@ export class TransactionListComponent {
   }
 
   /**
-   * A link to one transaction (`?id=…`): find it, show its day and account, and highlight it. A deleted or unknown
-   * one gives a short message and the normal list.
+   * A link to one transaction (`?id=…`): find it, show its day and account, and highlight it. A deleted one shows the
+   * same way in the deleted view, with a short message (T65); an unknown one gives a message and the normal list.
    */
   private openLinked(id: string): void {
     this.linkedLookup?.unsubscribe();
@@ -515,22 +523,22 @@ export class TransactionListComponent {
       .subscribe({
         next: (found) => {
           if (!found) this.showNormalList('missing');
-          else if (found.deleted) this.showNormalList('deleted');
-          else this.showLinked(found.transaction);
+          else this.showLinked(found.transaction, found.deleted);
         },
         error: () => this.linkedNotice.set('failed'),
       });
   }
 
-  private showLinked(transaction: TransactionOutputDto): void {
+  private showLinked(transaction: TransactionOutputDto, deleted = false): void {
     const day = transaction.date.slice(0, 10);
     const criteria: TransactionCriteria = {
       accountId: transaction.accountId,
       startDate: day,
       endDate: day,
     };
-    this.pendingLinked.set({ id: transaction.id, criteria });
-    this.showCriteria(criteria);
+    this.pendingLinked.set({ id: transaction.id, criteria, deleted });
+    this.showCriteria(criteria, deleted);
+    if (deleted) this.linkedNotice.set('deleted');
   }
 
   private showNormalList(notice: LinkedNotice): void {
@@ -538,14 +546,15 @@ export class TransactionListComponent {
     this.showCriteria({});
   }
 
-  /** These criteria on the first page, out of the deleted view; the page size and sort stay. */
-  private showCriteria(criteria: TransactionCriteria): void {
+  /** These criteria on the first page, out of the deleted view (or in it); the page size and sort stay. */
+  private showCriteria(criteria: TransactionCriteria, deletedView = false): void {
     this.filter.update(({ pageSize, sortBy, sortDirection }) => ({
       ...criteria,
       pageSize,
       sortBy,
       sortDirection,
       page: 1,
+      hidden: deletedView ? true : undefined,
     }));
   }
 
