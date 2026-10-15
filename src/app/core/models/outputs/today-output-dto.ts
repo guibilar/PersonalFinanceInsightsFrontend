@@ -5,6 +5,7 @@
 export interface TodayDto {
   /** The day the cards are for, in the host's time zone ("2026-10-13"). */
   date: string;
+  probeField: string;
   /** When the host made this answer; it keeps a complete answer for a short time. */
   generatedAt: string;
   /** Each module that gives cards, with its status. A failed module gives no cards. */
