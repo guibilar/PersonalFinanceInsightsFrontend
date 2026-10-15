@@ -8,7 +8,7 @@ import { provideLocationMocks } from '@angular/common/testing';
 import { HomePageComponent } from './home-page.component';
 import { HOME_TODAY } from '../home';
 import { DataChangesService } from '../../../core/data/data-changes.service';
-import { HomeSummaryDto } from '../../../core/models/outputs/home-output-dto';
+import { HomeSummaryDto, MaintenanceDto } from '../../../core/models/outputs/home-output-dto';
 import { TaskSummaryDto } from '../../../core/models/outputs/task-output-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { provideReadOnlyUser } from '../../../testing/test-auth';
@@ -21,7 +21,7 @@ import {
   testItemSummary,
   testRoom,
 } from '../../../testing/test-home';
-import { testTaskPage, testTaskSummary } from '../../../testing/test-tasks';
+import { testTaskSummary } from '../../../testing/test-tasks';
 
 const HOME_LINK = [{ id: 'l1', kind: 'Home.Item', targetId: ITEM_ID, createdAt: '' }];
 const MONTHLY = { every: 1, unit: 'Months' as const, mode: 'FromCompletion' as const };
@@ -37,6 +37,34 @@ function summary(): HomeSummaryDto {
       { roomId: null, name: null, itemCount: 1, totalValue: 250 },
     ],
   });
+}
+
+/** All maintenance as the server sends it (T89): the soonest first, each with its item. */
+function maintenance(): MaintenanceDto[] {
+  return [
+    {
+      taskId: 'smoke',
+      title: 'Smoke detector batteries',
+      dueOn: '2026-10-20',
+      repeatEvery: 12,
+      repeatUnit: 'Months',
+      lastDoneAt: null,
+      itemId: 'detector',
+      itemName: 'Smoke detector',
+      roomName: 'Hall',
+    },
+    {
+      taskId: 'filter',
+      title: 'Clean the dishwasher filter',
+      dueOn: '2026-11-05',
+      repeatEvery: 1,
+      repeatUnit: 'Months',
+      lastDoneAt: null,
+      itemId: 'dishwasher',
+      itemName: 'Dishwasher',
+      roomName: 'Kitchen',
+    },
+  ];
 }
 
 function openTasks(): TaskSummaryDto[] {
@@ -80,12 +108,10 @@ describe('HomePageComponent', () => {
     harness.fixture.detectChanges();
   }
 
-  async function answer(body: HomeSummaryDto = summary(), tasks = openTasks()): Promise<void> {
+  async function answer(body: HomeSummaryDto = summary(), jobs = maintenance()): Promise<void> {
     TestBed.tick();
     http.expectOne('/api/home/summary').flush(body);
-    const list = http.expectOne((r) => r.url === '/api/tasks');
-    expect(list.request.params.get('status')).toBe('Open');
-    list.flush(testTaskPage(tasks));
+    http.expectOne('/api/home/maintenance').flush(jobs);
     await settle();
   }
 
@@ -152,12 +178,12 @@ describe('HomePageComponent', () => {
       expect(root().querySelector('a[href="/home/items/new"]')).not.toBeNull();
     });
 
-    it('lists the repeated tasks of items, soonest first, with the days left', async () => {
+    it('lists the maintenance of the items from the server, with the item and the days left', async () => {
       await open();
 
       expect(rows('maintenance')).toEqual([
-        'Smoke detector batteries Every 12 months 6 days',
-        'Clean the dishwasher filter Every month 22 days',
+        'Smoke detector batteries Smoke detector · Every 12 months 6 days',
+        'Clean the dishwasher filter Dishwasher · Every month 22 days',
       ]);
       expect(root().querySelector('[data-testid="maintenance"] a')!.getAttribute('href')).toBe(
         '/tasks/smoke',
@@ -278,7 +304,7 @@ describe('HomePageComponent', () => {
       await harness.navigateByUrl('/home', HomePageComponent);
       TestBed.tick();
       http.expectOne('/api/home/summary').flush(null, { status: 500, statusText: 'Error' });
-      http.expectOne((r) => r.url === '/api/tasks').flush(testTaskPage([]));
+      http.expectOne('/api/home/maintenance').flush([]);
       await settle();
 
       expect(root().textContent).toContain('Could not load the inventory.');

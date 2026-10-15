@@ -11,8 +11,10 @@ import { RoomDto } from '../../../core/models/outputs/home-output-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { provideReadOnlyUser } from '../../../testing/test-auth';
 import {
+  ITEM_ID,
   OFFICE_ID,
   ROOM_ID,
+  testItem,
   testItemPage,
   testItemSummary,
   testRoom,
@@ -35,7 +37,9 @@ describe('RoomPageComponent', () => {
 
   const root = () => harness.routeNativeElement as HTMLElement;
   const text = (el: Element) => (el as HTMLElement).innerText.replace(/\s+/g, ' ').trim();
-  const rows = () => Array.from(root().querySelectorAll('[data-testid="items"] > li')).map(text);
+  // The item rows, without the "Move to…" list (T89).
+  const rows = () =>
+    Array.from(root().querySelectorAll('[data-testid="items"] > li app-item-row')).map(text);
   const button = (label: string) =>
     Array.from(root().querySelectorAll<HTMLButtonElement>('button')).find(
       (b) => (b.getAttribute('aria-label') ?? b.textContent!.trim()) === label,
@@ -149,6 +153,32 @@ describe('RoomPageComponent', () => {
       expect(messages()).toEqual(['Renamed to “Galley”']);
       await answer(rooms().map((r) => (r.id === ROOM_ID ? { ...r, name: 'Galley' } : r)));
       expect(root().querySelector('h1')!.textContent!.trim()).toBe('Galley');
+    });
+
+    it('moves an item to another room, with all its details', async () => {
+      await harness.navigateByUrl(`/home/rooms/${ROOM_ID}`, RoomPageComponent);
+      await answer();
+
+      const select = root().querySelector<HTMLSelectElement>(
+        '[aria-label="Move Dishwasher to another room"]',
+      )!;
+      expect(Array.from(select.options).map((o) => o.text.trim())).toEqual([
+        'Move to…',
+        'Office',
+        'Garage',
+        'No room',
+      ]);
+      select.value = OFFICE_ID;
+      select.dispatchEvent(new Event('change'));
+      http.expectOne(`/api/home/items/${ITEM_ID}`).flush(testItem());
+      const put = http.expectOne({ method: 'PUT', url: `/api/home/items/${ITEM_ID}` });
+      expect(put.request.body.roomId).toBe(OFFICE_ID);
+      expect(put.request.body.name).toBe('Dishwasher');
+      put.flush(testItem({ roomId: OFFICE_ID }));
+      await settle();
+
+      expect(messages()).toEqual(['Moved “Dishwasher” to Office']);
+      await answer();
     });
 
     it('moves the room up and down in the list', async () => {

@@ -23,12 +23,13 @@ export class TaskDoneService {
   readonly busy = this.pending.asReadonly();
 
   /** Marks an open task done, or undoes the last "done" of a done task. */
-  toggle(task: TaskSummaryDto): void {
+  toggle(task: Pick<TaskSummaryDto, 'id' | 'status'>): void {
     if (task.status === 'Done') this.undo(task);
     else this.done(task);
   }
 
-  done(task: TaskSummaryDto): void {
+  /** Only the id counts, so a page with another task model can call it (for example Home maintenance, T89). */
+  done(task: Pick<TaskSummaryDto, 'id'>): void {
     this.run(task, this.repository.done(task.id), 'Could not mark the task done.', (changed) => {
       const message = changed.repeat
         ? `Done: “${changed.title}”. Next: ${changed.dueOn ? formatDay(changed.dueOn) : 'today'}.`
@@ -37,14 +38,14 @@ export class TaskDoneService {
     });
   }
 
-  undo(task: TaskSummaryDto): void {
+  undo(task: Pick<TaskSummaryDto, 'id'>): void {
     this.run(task, this.repository.undo(task.id), 'Could not undo the done.', (changed) =>
       this.toasts.success(`“${changed.title}” is open again.`),
     );
   }
 
   private run(
-    task: TaskSummaryDto,
+    task: Pick<TaskSummaryDto, 'id'>,
     request: ReturnType<TaskRepository['done']>,
     fallback: string,
     after: (changed: TaskDto) => void,

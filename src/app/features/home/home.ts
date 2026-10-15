@@ -1,7 +1,7 @@
 import { InjectionToken } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { HOME_ITEM_LINK, ItemTaskDto } from '../../core/models/outputs/home-output-dto';
-import { RepeatUnit, TaskSummaryDto } from '../../core/models/outputs/task-output-dto';
+import { ItemTaskDto } from '../../core/models/outputs/home-output-dto';
+import { RepeatUnit } from '../../core/models/outputs/task-output-dto';
 import { isoDay } from '../../shared/utils/date-presets';
 import { formatDay } from '../../shared/utils/format';
 import { conflictDetail, validationDetail } from '../../shared/utils/problem-detail';
@@ -80,21 +80,6 @@ export function daysLeftText(dueOn: string | null, today: string): string {
   if (days === 0) return 'Today';
   if (days < 0) return `${-days} ${days === -1 ? 'day' : 'days'} late`;
   return `${days} ${days === 1 ? 'day' : 'days'}`;
-}
-
-/**
- * The maintenance of the Home page: the open repeated tasks that link to an item (`Home.Item`), soonest first. Tasks
- * without a date go last.
- */
-export function maintenanceTasks(tasks: readonly TaskSummaryDto[]): TaskSummaryDto[] {
-  return tasks
-    .filter(
-      (task) =>
-        task.status === 'Open' &&
-        !!task.repeat &&
-        task.links.some((link) => link.kind === HOME_ITEM_LINK),
-    )
-    .sort((a, b) => (a.dueOn ?? '9999').localeCompare(b.dueOn ?? '9999'));
 }
 
 /** The repeat of a maintenance task of an item: "Every 3 months", or "Once" for a task without a repeat. */

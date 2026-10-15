@@ -141,8 +141,24 @@
           } @else {
             <ul class="list-group" data-testid="item-maintenance">
               @for (task of it.maintenance; track task.id) {
-                <li class="list-group-item">
-                  <a class="link-target d-block" [routerLink]="['/tasks', task.id]">
+                <li class="list-group-item d-flex align-items-start gap-2">
+                  <!-- T89: done (or undo) here, as on the Home page. -->
+                  <input
+                    type="checkbox"
+                    class="form-check-input task-check mt-1"
+                    [checked]="task.status === 'Done'"
+                    [disabled]="!canWrite() || done.busy().has(task.id)"
+                    [attr.aria-label]="
+                      (task.status === 'Done' ? 'Undo done: ' : 'Mark done: ') + task.title
+                    "
+                    (change)="
+                      done.toggle({ id: task.id, status: task.status === 'Done' ? 'Done' : 'Open' })
+                    "
+                  />
+                  <a
+                    class="link-target d-block flex-grow-1 min-w-0"
+                    [routerLink]="['/tasks', task.id]"
+                  >
                     <span class="d-block fw-medium text-break">{{ task.title }}</span>
                     <span class="d-block small text-body-secondary">
                       {{ rule(task) }} ·

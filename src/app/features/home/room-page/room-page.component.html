@@ -118,8 +118,25 @@
       } @else {
         <ul class="list-group" data-testid="items">
           @for (item of items()!.items; track item.id) {
-            <li class="list-group-item p-0">
-              <app-item-row [item]="item" [today]="today" />
+            <li class="list-group-item p-0 d-flex align-items-center">
+              <app-item-row class="flex-grow-1 min-w-0" [item]="item" [today]="today" />
+              @if (canWrite()) {
+                <!-- T89: move the item to another room (for example before a room delete). -->
+                <select
+                  class="form-select form-select-sm move-select me-2"
+                  [attr.aria-label]="'Move ' + item.name + ' to another room'"
+                  [disabled]="busy()"
+                  (change)="moveItem(item, $any($event.target).value)"
+                >
+                  <option value="" selected disabled>Move to…</option>
+                  @for (other of otherRooms(); track other.id) {
+                    <option [value]="other.id">{{ other.name }}</option>
+                  }
+                  @if (!noRoom()) {
+                    <option value="none">No room</option>
+                  }
+                </select>
+              }
             </li>
           }
         </ul>

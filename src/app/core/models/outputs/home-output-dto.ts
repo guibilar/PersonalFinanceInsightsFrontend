@@ -92,6 +92,30 @@ export interface ItemDto extends ItemSummaryDto {
   maintenance: ItemTaskDto[];
 }
 
+/** A category in use and how many items have it (`GET /api/home/categories`, T89). */
+export interface CategoryCountDto {
+  name: string;
+  count: number;
+}
+
+/**
+ * One maintenance task of one item (`GET /api/home/maintenance`, T89): an open task linked to the item from either
+ * side. A task linked to two items comes twice.
+ */
+export interface MaintenanceDto {
+  taskId: string;
+  title: string;
+  /** `yyyy-MM-dd`, or null. */
+  dueOn: string | null;
+  repeatEvery: number | null;
+  /** `Days`, `Weeks`, `Months`, or `Years`, for a repeated task. */
+  repeatUnit: string | null;
+  lastDoneAt: string | null;
+  itemId: string;
+  itemName: string;
+  roomName: string | null;
+}
+
 /** The items of one room in the summary. `roomId` and `name` are null for the items without a room. */
 export interface RoomCountDto {
   roomId: string | null;
