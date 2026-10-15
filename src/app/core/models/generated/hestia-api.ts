@@ -176,6 +176,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/documents/{id}/files/{fileId}/thumbnail': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A JPEG preview of one file (T61): the first page of a PDF, or the photo, at most 480 pixels on its longest side. 404 when no preview can be made: show the icon of the type. */
+    get: operations['GetDocumentFileThumbnail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/documents/{id}/ocr': {
     parameters: {
       query?: never;
@@ -1174,6 +1191,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/timeline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What happened in all modules, day by day, newest first: one page of days.
+     * @description before: the page ends the day before it (none: the page ends today; the next page uses the answer's earlier). days: 1 to 31 (7). module: only one module, for example Money.
+     */
+    get: operations['GetTimeline'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1920,6 +1957,43 @@ export interface components {
       updatedAt: string;
       links: components['schemas']['TaskLinkDto'][];
     };
+    TimelineDayDto: {
+      /** Format: date */
+      day: string;
+      entries: components['schemas']['TimelineEntry'][];
+    };
+    TimelineDto: {
+      /** Format: date */
+      today: string;
+      /** Format: date */
+      from: string;
+      /** Format: date */
+      to: string;
+      /** Format: date */
+      earlier: string;
+      days: components['schemas']['TimelineDayDto'][];
+      modules: components['schemas']['TimelineModuleDto'][];
+    };
+    TimelineEntry: {
+      id: string;
+      module: string;
+      kind: string;
+      /** Format: date */
+      day: string;
+      /** Format: date-time */
+      at: null | string;
+      title: string;
+      text: null | string;
+      /** Format: double */
+      amount: null | number | string;
+      link: null | string;
+    };
+    TimelineModuleDto: {
+      module: string;
+      status: components['schemas']['TimelineModuleStatus'];
+    };
+    /** @enum {unknown} */
+    TimelineModuleStatus: 'Complete' | 'Partial' | 'Failed';
     TodayCard: {
       id: string;
       module: string;
@@ -2261,6 +2335,27 @@ export interface operations {
       query?: {
         inline?: boolean;
       };
+      header?: never;
+      path: {
+        id: string;
+        fileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GetDocumentFileThumbnail: {
+    parameters: {
+      query?: never;
       header?: never;
       path: {
         id: string;
@@ -3620,6 +3715,30 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  GetTimeline: {
+    parameters: {
+      query?: {
+        before?: string;
+        module?: string;
+        days?: number | string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimelineDto'];
+        };
       };
     };
   };

@@ -1,0 +1,99 @@
+<div class="mb-3">
+  <h1 class="h3 mb-1">Timeline</h1>
+  <p class="text-body-secondary mb-0">What happened, from every module, day by day</p>
+</div>
+
+<nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Modules" data-testid="filters">
+  @for (filter of filters; track filter.label) {
+    <a
+      class="btn btn-sm rounded-pill"
+      [class.btn-dark]="module() === filter.module"
+      [class.btn-outline-secondary]="module() !== filter.module"
+      [routerLink]="[]"
+      [queryParams]="filterParams(filter.module)"
+      [attr.aria-current]="module() === filter.module ? 'page' : null"
+      >{{ filter.label }}</a
+    >
+  }
+</nav>
+
+@if (failed().length > 0) {
+  <div class="alert alert-warning d-flex align-items-center gap-2" data-testid="failed">
+    <span class="flex-grow-1"
+      >{{ failed().join(', ') }} could not load. The other modules show.</span
+    >
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="reload()">
+      Try again
+    </button>
+  </div>
+} @else if (partial().length > 0) {
+  <p class="small text-body-secondary" data-testid="partial">
+    Some entries of {{ partial().join(', ') }} are missing.
+  </p>
+}
+
+@if (error() && pages().length === 0) {
+  <app-error-state message="Could not load the timeline." (retry)="reload()" />
+} @else if (pages().length === 0) {
+  <app-skeleton [lines]="5" height="3.5rem" />
+} @else {
+  @if (days().length === 0) {
+    <p class="text-body-secondary" data-testid="empty">Nothing happened in these days.</p>
+  }
+  @for (day of days(); track day.day) {
+    <section class="mb-4" [attr.aria-labelledby]="'day-' + day.day">
+      <h2 class="day-heading" [id]="'day-' + day.day">{{ heading(day.day) }}</h2>
+      <ul class="list-unstyled d-flex flex-column gap-2 mb-0" [attr.data-day]="day.day">
+        @for (entry of day.entries; track entry.id) {
+          <li class="entry" [attr.data-entry]="entry.id">
+            <span class="entry-icon" [attr.data-tone]="tone(entry)" aria-hidden="true">
+              <app-icon [name]="icon(entry)" [size]="18" />
+            </span>
+            <a
+              class="card entry-card"
+              [attr.href]="entry.link"
+              [class.no-link]="!entry.link"
+              (click)="open($event, entry)"
+            >
+              <span class="card-body d-flex flex-column gap-1">
+                <span class="d-flex justify-content-between gap-3">
+                  <span class="fw-medium text-truncate">{{ entry.title }}</span>
+                  @if (entry.amount !== null) {
+                    <span class="amount text-nowrap" [class.text-success]="entry.amount > 0">{{
+                      amount(entry)
+                    }}</span>
+                  }
+                </span>
+                @if (entry.text || entry.at) {
+                  <span class="small text-body-secondary">
+                    @if (entry.at) {
+                      {{ time(entry) }}
+                      @if (entry.text) {
+                        ·
+                      }
+                    }
+                    {{ entry.text }}
+                  </span>
+                }
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+  <div class="d-flex align-items-center gap-3">
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      [disabled]="loading()"
+      (click)="showEarlier()"
+      data-testid="earlier"
+    >
+      {{ loading() ? 'Loading…' : 'Show earlier' }}
+    </button>
+    @if (error()) {
+      <span class="small text-danger">Could not load more.</span>
+    }
+  </div>
+}
