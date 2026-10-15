@@ -12,10 +12,8 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, map, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { HomeRepository } from '../../../core/api/home-repository';
-import { TaskRepository } from '../../../core/api/task-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
-import { RoomCountDto } from '../../../core/models/outputs/home-output-dto';
-import { TaskSummaryDto } from '../../../core/models/outputs/task-output-dto';
+import { MaintenanceDto, RoomCountDto } from '../../../core/models/outputs/home-output-dto';
 import { WarrantyFilter } from '../../../core/models/inputs/home-input-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
@@ -24,17 +22,15 @@ import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.componen
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { keptValueOf } from '../../../shared/utils/resource-value';
 import { TaskDoneService } from '../../tasks/task-done.service';
-import { repeatText } from '../../tasks/tasks';
 import { ItemRowComponent } from '../item-row/item-row.component';
 import {
   HOME_LIMITS,
   HOME_TODAY,
-  MAX_PAGE_SIZE,
   NO_ROOM,
   NO_ROOM_NAME,
   daysLeftText,
   homeError,
-  maintenanceTasks,
+  maintenanceRule,
 } from '../home';
 
 /** How many items a search shows. */
@@ -71,7 +67,6 @@ export const WARRANTY_FILTER_LABELS: Record<WarrantyFilter, string> = {
 })
 export class HomePageComponent {
   private readonly repository = inject(HomeRepository);
-  private readonly tasks = inject(TaskRepository);
   private readonly dataChanges = inject(DataChangesService);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
@@ -89,12 +84,10 @@ export class HomePageComponent {
   private readonly browserToday = inject(HOME_TODAY);
   readonly today = computed(() => this.summary()?.date ?? this.browserToday());
 
+  /** All maintenance from the server (T89): both sides of the link, with the item of each task. */
   readonly maintenanceResource = rxResource({
     params: () => this.dataChanges.version(),
-    stream: () =>
-      this.tasks
-        .list({ status: 'Open', page: 1, pageSize: MAX_PAGE_SIZE })
-        .pipe(map((page) => maintenanceTasks(page.items))),
+    stream: () => this.repository.maintenance(),
   });
   readonly maintenance = keptValueOf(this.maintenanceResource);
 
@@ -177,15 +170,25 @@ export class HomePageComponent {
     return `${n} ${n === 1 ? 'item' : 'items'}`;
   }
 
-  rule(task: TaskSummaryDto): string {
-    return task.repeat ? repeatText(task.repeat) : '';
+  /** "Dishwasher · Every 3 months", or the item name alone for a task without a repeat. */
+  rule(task: MaintenanceDto): string {
+    const repeat = maintenanceRule({
+      id: task.taskId,
+      title: task.title,
+      status: 'Open',
+      dueOn: task.dueOn,
+      repeatEvery: task.repeatEvery,
+      repeatUnit: task.repeatUnit,
+      lastDoneAt: task.lastDoneAt,
+    });
+    return repeat === 'Once' ? task.itemName : `${task.itemName} · ${repeat}`;
   }
 
-  daysLeft(task: TaskSummaryDto): string {
+  daysLeft(task: MaintenanceDto): string {
     return daysLeftText(task.dueOn, this.today());
   }
 
-  late(task: TaskSummaryDto): boolean {
+  late(task: MaintenanceDto): boolean {
     return !!task.dueOn && task.dueOn.slice(0, 10) < this.today();
   }
 

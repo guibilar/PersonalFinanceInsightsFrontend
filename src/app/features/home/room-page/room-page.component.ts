@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { map } from 'rxjs';
+import { map, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { HomeRepository } from '../../../core/api/home-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
-import { RoomDto } from '../../../core/models/outputs/home-output-dto';
+import { ItemSummaryDto, RoomDto } from '../../../core/models/outputs/home-output-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
@@ -15,6 +15,7 @@ import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.componen
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { keptValueOf } from '../../../shared/utils/resource-value';
 import { ItemRowComponent } from '../item-row/item-row.component';
+import { createItemForm, itemDetailsOf } from '../item-fields/item-fields.component';
 import { HOME_LIMITS, HOME_TODAY, MAX_PAGE_SIZE, NO_ROOM, NO_ROOM_NAME, homeError } from '../home';
 
 /**
@@ -35,6 +36,11 @@ import { HOME_LIMITS, HOME_TODAY, MAX_PAGE_SIZE, NO_ROOM, NO_ROOM_NAME, homeErro
   ],
   templateUrl: './room-page.component.html',
   styles: `
+    .move-select {
+      width: auto;
+      max-width: 10rem;
+      flex-shrink: 0;
+    }
     .back-link {
       color: var(--bs-secondary-color);
       text-decoration: none;
@@ -76,6 +82,10 @@ export class RoomPageComponent {
   readonly index = computed(() => this.rooms()?.findIndex((room) => room.id === this.id()) ?? -1);
   readonly notFound = computed(() => !this.noRoom() && !!this.rooms() && !this.room());
   readonly title = computed(() => (this.noRoom() ? NO_ROOM_NAME : (this.room()?.name ?? '')));
+  /** The rooms that an item of this page can move to (T89). */
+  readonly otherRooms = computed(() =>
+    (this.rooms() ?? []).filter((room) => room.id !== this.id()),
+  );
 
   readonly itemsResource = rxResource({
     params: () => ({ room: this.id(), version: this.dataChanges.version() }),
@@ -104,6 +114,38 @@ export class RoomPageComponent {
   readonly busy = signal(false);
   readonly confirmingDelete = signal(false);
   readonly roomLimit = HOME_LIMITS.room;
+
+  /**
+   * Moves an item to another room (T89), or out of all rooms with `none`. The update sends all details again, so the
+   * page reads the item first.
+   */
+  moveItem(item: ItemSummaryDto, target: string): void {
+    if (this.busy() || !target) return;
+    const roomId = target === 'none' ? null : target;
+    const name = roomId
+      ? (this.rooms()?.find((room) => room.id === roomId)?.name ?? 'the room')
+      : NO_ROOM_NAME;
+    this.busy.set(true);
+    this.repository
+      .get(item.id)
+      .pipe(
+        switchMap((full) =>
+          this.repository.update(full.id, { ...itemDetailsOf(createItemForm(full)), roomId }),
+        ),
+      )
+      .subscribe({
+        next: () => {
+          this.busy.set(false);
+          this.dataChanges.changed();
+          this.toasts.success(`Moved “${item.name}” to ${name}`);
+        },
+        error: (error: unknown) => {
+          this.busy.set(false);
+          this.dataChanges.changed();
+          this.toasts.error(homeError(error, 'Could not move the item.'));
+        },
+      });
+  }
 
   count(n: number): string {
     return `${n} ${n === 1 ? 'item' : 'items'}`;

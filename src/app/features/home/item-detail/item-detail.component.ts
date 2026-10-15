@@ -34,6 +34,7 @@ import { keptValueOf, valueOf } from '../../../shared/utils/resource-value';
 import { DocumentPickerComponent } from '../../documents/document-picker/document-picker.component';
 import { previewKind } from '../../documents/documents';
 import { TransactionPickerComponent } from '../../documents/transaction-picker/transaction-picker.component';
+import { TaskDoneService } from '../../tasks/task-done.service';
 import { transactionLink } from '../../transactions/transaction-list/transaction-list-query';
 import {
   ItemFieldsComponent,
@@ -94,6 +95,8 @@ export class ItemDetailComponent {
   private readonly toasts = inject(ToastService);
   private readonly dataChanges = inject(DataChangesService);
   /** A read-only user (T60) gets no edit, delete, link, unlink, or add. */
+  /** Done and undo of a maintenance task (T89). */
+  protected readonly done = inject(TaskDoneService);
   readonly canWrite = inject(AuthService).canWrite;
   readonly today = inject(HOME_TODAY)();
 

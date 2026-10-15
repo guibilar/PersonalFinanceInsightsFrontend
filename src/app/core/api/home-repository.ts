@@ -4,10 +4,12 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import { PaginatedResult } from '../models/outputs/paginated-result-output-dto';
 import {
+  CategoryCountDto,
   HomeSummaryDto,
   ItemDto,
   ItemLinkDto,
   ItemSummaryDto,
+  MaintenanceDto,
   RoomDto,
 } from '../models/outputs/home-output-dto';
 import {
@@ -41,6 +43,16 @@ export class HomeRepository {
   /** The item count, the total value, the count per room, and the warranties that end soon. */
   summary(): Observable<HomeSummaryDto> {
     return this.http.get<HomeSummaryDto>(`${this.baseUrl}/summary`);
+  }
+
+  /** All maintenance (T89): the open tasks linked to an item from either side, by due date. */
+  maintenance(): Observable<MaintenanceDto[]> {
+    return this.http.get<MaintenanceDto[]>(`${this.baseUrl}/maintenance`);
+  }
+
+  /** The categories in use (T89), by name, with their counts. */
+  categories(): Observable<CategoryCountDto[]> {
+    return this.http.get<CategoryCountDto[]>(`${this.baseUrl}/categories`);
   }
 
   /** All rooms, in list order, with their counts and values. */

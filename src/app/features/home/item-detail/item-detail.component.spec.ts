@@ -14,6 +14,7 @@ import { HOME_TODAY } from '../home';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { ItemDto } from '../../../core/models/outputs/home-output-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { testTask } from '../../../testing/test-tasks';
 import { provideReadOnlyUser } from '../../../testing/test-auth';
 import {
   DOC_ID,
@@ -156,6 +157,29 @@ describe('ItemDetailComponent', () => {
       expect(maintenance.innerText.replace(/\s+/g, ' ').trim()).toBe(
         'Clean the filter Every month · Next: Oct 20, 2026 · 6 days',
       );
+    });
+
+    it('marks a maintenance task done from the item page', async () => {
+      const task = {
+        id: 'task-1',
+        title: 'Clean the filter',
+        status: 'Open',
+        dueOn: '2026-10-20',
+        repeatEvery: 1,
+        repeatUnit: 'Months',
+        lastDoneAt: null,
+      };
+      await open(testItem({ maintenance: [task] }));
+
+      const check = root().querySelector<HTMLInputElement>(
+        '[data-testid="item-maintenance"] input[type="checkbox"]',
+      )!;
+      expect(check.getAttribute('aria-label')).toBe('Mark done: Clean the filter');
+      check.click();
+      http
+        .expectOne({ method: 'POST', url: '/api/tasks/task-1/done' })
+        .flush(testTask({ id: 'task-1', title: 'Clean the filter', dueOn: '2026-11-20' }));
+      await answer(testItem({ maintenance: [{ ...task, dueOn: '2026-11-20' }] }));
     });
 
     it('shows the purchase, which opens it in Money', async () => {

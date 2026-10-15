@@ -6,10 +6,8 @@ import {
   guidOrNull,
   homeError,
   maintenanceRule,
-  maintenanceTasks,
   warrantyOf,
 } from './home';
-import { testTaskSummary } from '../../testing/test-tasks';
 
 const today = '2026-10-14';
 
@@ -32,18 +30,6 @@ describe('home helpers', () => {
     expect(daysLeftText('2026-10-15', today)).toBe('1 day');
     expect(daysLeftText('2026-10-20', today)).toBe('6 days');
     expect(daysLeftText('2026-10-11', today)).toBe('3 days late');
-  });
-
-  it('keeps the open repeated tasks of items, soonest first', () => {
-    const home = [{ id: 'l', kind: 'Home.Item', targetId: 'i', createdAt: '' }];
-    const repeat = { every: 1, unit: 'Months' as const, mode: 'FromDueDate' as const };
-    const later = testTaskSummary({ id: 'a', dueOn: '2026-11-05', repeat, links: home });
-    const soon = testTaskSummary({ id: 'b', dueOn: '2026-10-20', repeat, links: home });
-    const once = testTaskSummary({ id: 'c', links: home });
-    const other = testTaskSummary({ id: 'd', repeat });
-    const done = testTaskSummary({ id: 'e', repeat, links: home, status: 'Done' });
-
-    expect(maintenanceTasks([later, once, other, soon, done]).map((t) => t.id)).toEqual(['b', 'a']);
   });
 
   it('describes the repeat of a maintenance task', () => {

@@ -2,9 +2,11 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   effect,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import {
   AbstractControl,
@@ -15,6 +17,9 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
+import { HomeRepository } from '../../../core/api/home-repository';
 import { ItemDetailsInputDto } from '../../../core/models/inputs/home-input-dto';
 import { ItemSummaryDto, RoomDto } from '../../../core/models/outputs/home-output-dto';
 import { parseTags } from '../../tasks/tasks';
@@ -183,7 +188,15 @@ let nextId = 0;
           formControlName="category"
           [id]="id + '-category'"
           [maxlength]="limits.category"
+          [attr.list]="id + '-categories'"
+          (focus)="loadCategories()"
         />
+        <!-- T89: the categories in use, as suggestions; any other text is a new category. -->
+        <datalist [id]="id + '-categories'">
+          @for (category of categories(); track category.name) {
+            <option [value]="category.name"></option>
+          }
+        </datalist>
       </div>
       <div class="col-12 col-sm-6">
         <label class="form-label" [for]="id + '-brand'">Brand</label>
@@ -312,6 +325,18 @@ export class ItemFieldsComponent {
   readonly rooms = input<readonly RoomDto[]>([]);
   readonly limits = HOME_LIMITS;
   readonly id = `item-fields-${nextId++}`;
+  private readonly home = inject(HomeRepository);
+  /** The category field had the focus once: then the suggestions load (T89). */
+  private readonly wantCategories = signal(false);
+  /** The categories in use (T89), for the suggestions of the category field. None when they do not load. */
+  private readonly categoriesResource = rxResource({
+    params: () => (this.wantCategories() ? true : undefined),
+    stream: () => this.home.categories().pipe(catchError(() => of([]))),
+  });
+  readonly categories = computed(() => this.categoriesResource.value() ?? []);
+  loadCategories(): void {
+    this.wantCategories.set(true);
+  }
 
   constructor() {
     // The parent marks the fields as touched on a save: redraw then too.
