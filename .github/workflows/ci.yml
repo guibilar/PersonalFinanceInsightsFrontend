@@ -56,6 +56,10 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # T45: each step through scripts/ci-step.sh: a failed step writes its last lines as an annotation.
+    defaults:
+      run:
+        shell: bash scripts/ci-step.sh {0}
     steps:
       - uses: actions/checkout@v7
       # Docker Hub limits pulls without an account, and GitHub's shared runners hit it ("429 Too Many Requests").
@@ -81,4 +85,8 @@ jobs:
         run: docker/smoke-test.sh http://localhost:5095
       - name: Container logs
         if: failure()
-        run: docker logs frontend
+        shell: bash
+        run: |
+          docker logs frontend || true
+          # T45: the last lines of nginx as an annotation.
+          echo "::error title=frontend log (last 30 lines)::$(docker logs --tail 30 frontend 2>&1 | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')"
