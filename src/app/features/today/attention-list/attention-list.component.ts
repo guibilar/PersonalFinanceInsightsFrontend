@@ -15,6 +15,7 @@ export type AttentionListItem = Pick<
 /** Icons by item kind. A kind not in the list gets a general icon. */
 const ICONS: Record<string, IconName> = {
   'budget-over': 'budgets',
+  'budget-warning': 'budgets',
   'statements-not-imported': 'upload',
   'statements-behind': 'upload',
   'price-changed': 'refresh',
