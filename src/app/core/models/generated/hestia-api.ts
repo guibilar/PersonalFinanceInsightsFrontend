@@ -1530,6 +1530,7 @@ export interface components {
       giftIdeas: components['schemas']['GiftIdeaDto'][];
       loans: components['schemas']['LoanDto'][];
       links: components['schemas']['PersonLinkDto'][];
+      linkedFrom: components['schemas']['PersonLinkedFromDto'][];
     };
     PersonLinkDto: {
       /** Format: uuid */
@@ -1538,6 +1539,11 @@ export interface components {
       targetId: string;
       /** Format: date-time */
       createdAt: string;
+    };
+    PersonLinkedFromDto: {
+      kind: string;
+      targetId: string;
+      title: string;
     };
     PersonSummaryDto: {
       /** Format: uuid */

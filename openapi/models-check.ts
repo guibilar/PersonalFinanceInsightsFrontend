@@ -21,6 +21,7 @@ import type { GiftIdeaDto } from '../src/app/core/models/outputs/people-output-d
 import type { LoanDto } from '../src/app/core/models/outputs/people-output-dto';
 import type { PersonLinkDto } from '../src/app/core/models/outputs/people-output-dto';
 import type { PersonDto } from '../src/app/core/models/outputs/people-output-dto';
+import type { PersonLinkedFromDto } from '../src/app/core/models/outputs/people-output-dto';
 import type { GroupCountDto } from '../src/app/core/models/outputs/people-output-dto';
 import type { UpcomingBirthdayDto } from '../src/app/core/models/outputs/people-output-dto';
 import type { PeopleSummaryDto } from '../src/app/core/models/outputs/people-output-dto';
@@ -84,6 +85,8 @@ check<Fits<PersonLinkDto, Schemas['PersonLinkDto']>>();
 check<NoExtra<PersonLinkDto, Schemas['PersonLinkDto']>>();
 check<Fits<PersonDto, Schemas['PersonDto']>>();
 check<NoExtra<PersonDto, Schemas['PersonDto']>>();
+check<Fits<PersonLinkedFromDto, Schemas['PersonLinkedFromDto']>>();
+check<NoExtra<PersonLinkedFromDto, Schemas['PersonLinkedFromDto']>>();
 check<Fits<GroupCountDto, Schemas['GroupCountDto']>>();
 check<NoExtra<GroupCountDto, Schemas['GroupCountDto']>>();
 check<Fits<UpcomingBirthdayDto, Schemas['UpcomingBirthdayDto']>>();
