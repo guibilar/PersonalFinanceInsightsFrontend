@@ -25,6 +25,8 @@ export interface DocumentListQuery {
   expiresFrom?: string | null;
   /** `yyyy-MM-dd`, included. */
   expiresTo?: string | null;
+  /** `soon`: from the server's today to `Documents:Expiry:SoonDays` ahead (T86). */
+  expiring?: 'soon' | null;
   page?: number;
   pageSize?: number;
 }

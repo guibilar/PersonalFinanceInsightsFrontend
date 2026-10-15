@@ -5,7 +5,6 @@ import {
   checkFiles,
   daysUntil,
   expiryText,
-  expirySoonRange,
   formatSize,
   parseTags,
   previewKind,
@@ -88,13 +87,6 @@ describe('document helpers', () => {
     expect(expiryText(22)).toBe('In 22 days');
     expect(expiryText(-1)).toBe('Expired 1 day ago');
     expect(expiryText(-3)).toBe('Expired 3 days ago');
-  });
-
-  it('has the "Expire soon" window from today to 30 days ahead', () => {
-    expect(expirySoonRange(new Date(2026, 9, 13))).toEqual({
-      expiresFrom: '2026-10-13',
-      expiresTo: '2026-11-12',
-    });
   });
 
   it('formats sizes', () => {

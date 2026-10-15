@@ -8,7 +8,7 @@ import { provideLocationMocks } from '@angular/common/testing';
 import { TaskNewComponent } from './task-new.component';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { DOC_ID, testDocument } from '../../../testing/test-documents';
+import { DOC_ID, TX_ID, testDocument } from '../../../testing/test-documents';
 import { provideReadOnlyUser } from '../../../testing/test-auth';
 import { testTask } from '../../../testing/test-tasks';
 import { ITEM_ID, testItem } from '../../../testing/test-home';
@@ -42,6 +42,7 @@ describe('TaskNewComponent', () => {
           { path: 'tasks', children: [] },
           { path: 'documents/:id', children: [] },
           { path: 'home/items/:id', children: [] },
+          { path: 'money/transactions', children: [] },
         ]),
         provideLocationMocks(),
         ...(extra as []),
@@ -147,6 +148,34 @@ describe('TaskNewComponent', () => {
     await render();
 
     expect(router.url).toBe(`/home/items/${ITEM_ID}`);
+  });
+
+  it('starts from a transaction: the link, then goes back to the transaction', async () => {
+    configure();
+    harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(
+      `/tasks/new?transactionId=${TX_ID}&transaction=PLUMBER%20JOE`,
+      TaskNewComponent,
+    );
+    await render();
+
+    expect(root().querySelector('[data-testid="link-note"]')!.textContent).toContain(
+      '“PLUMBER JOE”',
+    );
+    expect(root().querySelector('a.back-link')!.getAttribute('href')).toBe(
+      `/money/transactions?id=${TX_ID}`,
+    );
+
+    const title = field('input[formcontrolname="title"]');
+    title.value = 'Ask for the invoice';
+    title.dispatchEvent(new Event('input'));
+    submit().click();
+    const post = http.expectOne({ method: 'POST', url: '/api/tasks' });
+    expect(post.request.body.links).toEqual([{ kind: 'Money.Transaction', targetId: TX_ID }]);
+    post.flush(testTask({ title: 'Ask for the invoice' }));
+    await render();
+
+    expect(router.url).toBe(`/money/transactions?id=${TX_ID}`);
   });
 
   it('ignores a document id that is not one, and a day that is not one', async () => {

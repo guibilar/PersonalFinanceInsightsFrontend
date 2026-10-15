@@ -6,7 +6,7 @@ import { DocumentRepository } from '../../../core/api/document-repository';
 import { HomeRepository } from '../../../core/api/home-repository';
 import { TaskRepository } from '../../../core/api/task-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
-import { DOCUMENT_LINK } from '../../../core/models/outputs/task-output-dto';
+import { DOCUMENT_LINK, TRANSACTION_LINK } from '../../../core/models/outputs/task-output-dto';
 import { HOME_ITEM_LINK } from '../../../core/models/outputs/home-output-dto';
 import { TaskLinkInputDto } from '../../../core/models/inputs/task-input-dto';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -16,6 +16,7 @@ import {
   createTaskForm,
   taskDetailsOf,
 } from '../task-fields/task-fields.component';
+import { transactionLink } from '../../transactions/transaction-list/transaction-list-query';
 import { taskError } from '../tasks';
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,6 +35,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
     <a
       class="back-link small d-inline-flex align-items-center gap-1 mb-2"
       [routerLink]="backLink()"
+      [queryParams]="backQuery()"
     >
       ← {{ backLabel() }}
     </a>
@@ -62,11 +64,25 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
                 that you came from.
               }
             </p>
+          } @else if (transactionId()) {
+            <p class="small text-body-secondary" data-testid="link-note">
+              The task links to the transaction
+              @if (transactionName(); as name) {
+                “{{ name }}”.
+              } @else {
+                that you came from.
+              }
+            </p>
           }
           <form novalidate (submit)="$event.preventDefault(); save()">
             <app-task-fields [form]="form" />
             <div class="d-flex justify-content-end gap-2 mt-3">
-              <a class="btn btn-outline-secondary" [routerLink]="backLink()">Cancel</a>
+              <a
+                class="btn btn-outline-secondary"
+                [routerLink]="backLink()"
+                [queryParams]="backQuery()"
+                >Cancel</a
+              >
               <button type="submit" class="btn btn-primary" [disabled]="busy()">
                 {{ busy() ? 'Adding…' : 'Add task' }}
               </button>
@@ -107,6 +123,14 @@ export class TaskNewComponent {
       ? this.query.get('homeItemId')
       : null,
   );
+  /** The finance transaction to link to (T86), when there is no document and no item. Not a GUID: ignored. */
+  readonly transactionId = signal(
+    !this.documentId() && !this.homeItemId() && GUID.test(this.query.get('transactionId') ?? '')
+      ? this.query.get('transactionId')
+      : null,
+  );
+  /** The description of the transaction, from the address, only to name it on the page. */
+  readonly transactionName = signal(this.transactionId() ? this.query.get('transaction') : null);
   readonly form = createTaskForm(undefined, {
     title: this.query.get('title') ?? '',
     dueOn: DAY.test(this.query.get('dueOn') ?? '') ? this.query.get('dueOn') : null,
@@ -132,10 +156,22 @@ export class TaskNewComponent {
     const documentId = this.documentId();
     if (documentId) return ['/documents', documentId];
     const itemId = this.homeItemId();
-    return itemId ? ['/home/items', itemId] : ['/tasks'];
+    if (itemId) return ['/home/items', itemId];
+    return this.transactionId() ? [transactionLink(this.transactionId()!).route] : ['/tasks'];
+  });
+  /** The transaction opens again in the list (T86). */
+  readonly backQuery = computed(() => {
+    const id = this.transactionId();
+    return id ? transactionLink(id).queryParams : null;
   });
   readonly backLabel = computed(() =>
-    this.documentId() ? 'Document' : this.homeItemId() ? 'Item' : 'Tasks',
+    this.documentId()
+      ? 'Document'
+      : this.homeItemId()
+        ? 'Item'
+        : this.transactionId()
+          ? 'Transactions'
+          : 'Tasks',
   );
 
   save(): void {
@@ -144,11 +180,14 @@ export class TaskNewComponent {
     if (this.form.invalid) return;
     const documentId = this.documentId();
     const itemId = this.homeItemId();
+    const transactionId = this.transactionId();
     const links: TaskLinkInputDto[] = documentId
       ? [{ kind: DOCUMENT_LINK, targetId: documentId }]
       : itemId
         ? [{ kind: HOME_ITEM_LINK, targetId: itemId }]
-        : [];
+        : transactionId
+          ? [{ kind: TRANSACTION_LINK, targetId: transactionId }]
+          : [];
     this.busy.set(true);
     this.repository.create({ ...taskDetailsOf(this.form), links }).subscribe({
       next: (task) => {
@@ -158,7 +197,7 @@ export class TaskNewComponent {
           label: 'Open',
           route: `/tasks/${task.id}`,
         });
-        void this.router.navigate(this.backLink());
+        void this.router.navigate(this.backLink(), { queryParams: this.backQuery() });
       },
       error: (error: unknown) => {
         this.busy.set(false);

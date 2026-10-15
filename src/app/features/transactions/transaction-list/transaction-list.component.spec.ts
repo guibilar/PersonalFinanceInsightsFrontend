@@ -98,9 +98,14 @@ describe('TransactionListComponent', () => {
       .match('/api/Tags')
       .filter((r) => !r.cancelled)
       .forEach((r) => r.flush(TEST_TAGS));
-    // The documents and the Home items of an open edit; tested in their own components.
+    // The documents, the Home items, and the tasks of an open edit; tested in their own components.
     http
-      .match((r) => r.url === '/api/documents/by-link' || r.url === '/api/home/items/by-link')
+      .match(
+        (r) =>
+          r.url === '/api/documents/by-link' ||
+          r.url === '/api/home/items/by-link' ||
+          r.url === '/api/tasks/by-link',
+      )
       .filter((r) => !r.cancelled)
       .forEach((r) => r.flush([]));
   }
