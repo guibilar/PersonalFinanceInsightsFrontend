@@ -4,6 +4,8 @@ const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
 module.exports = tseslint.config(
+  // T50: generated from the Hestia OpenAPI document (npm run openapi:generate).
+  { ignores: ['src/app/core/models/generated/**'] },
   {
     files: ['**/*.ts'],
     extends: [
