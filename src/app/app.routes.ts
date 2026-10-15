@@ -45,19 +45,11 @@ export const routes: Routes = [
           import('./features/modules/modules.component').then((m) => m.ModulesComponent),
       },
       {
+        // Search (Hestia.Api, T17): one search across all modules.
         path: 'search',
         title: 'Search · Personal Finances',
         loadComponent: () =>
-          import('./features/placeholder/placeholder.component').then(
-            (m) => m.PlaceholderComponent,
-          ),
-        data: {
-          heading: 'Search',
-          summary: 'One search across every module',
-          icon: 'search',
-          emptyTitle: 'Nothing to search yet',
-          emptyText: 'Search comes later. Transactions has its own search under Money.',
-        },
+          import('./features/search/search-page.component').then((m) => m.SearchPageComponent),
       },
       {
         // The Money module: the finance pages, with their sub-menu.

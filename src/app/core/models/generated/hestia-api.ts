@@ -1020,6 +1020,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One search across all modules: the best hits of each module, in module order.
+     * @description q: 2 to 200 characters. module: only one module (for example Documents), with more hits. limit: the hits of each module, 1 to 50 (5; 20 with module).
+     */
+    get: operations['Search'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/tasks': {
     parameters: {
       query?: never;
@@ -1863,6 +1883,33 @@ export interface components {
     SaveJournalEntryRequest: {
       text: null | string;
     };
+    SearchDto: {
+      query: string;
+      /** Format: int32 */
+      total: number | string;
+      modules: components['schemas']['SearchModuleDto'][];
+    };
+    SearchHit: {
+      id: string;
+      module: string;
+      kind: string;
+      title: string;
+      text: null | string;
+      /** Format: date */
+      day: null | string;
+      /** Format: double */
+      amount: null | number | string;
+      link: null | string;
+    };
+    SearchModuleDto: {
+      module: string;
+      status: components['schemas']['SearchModuleStatus'];
+      /** Format: int32 */
+      total: number | string;
+      hits: components['schemas']['SearchHit'][];
+    };
+    /** @enum {unknown} */
+    SearchModuleStatus: 'Complete' | 'Failed';
     SignedOutSessionsDto: {
       /** Format: int32 */
       count: number | string;
@@ -3442,6 +3489,30 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  Search: {
+    parameters: {
+      query?: {
+        q?: string;
+        module?: string;
+        limit?: number | string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SearchDto'];
+        };
       };
     };
   };

@@ -16,7 +16,7 @@ round centre action; the menu button at the top opens the modules and the accoun
 | Timeline  | `/timeline`    | What happened in all modules, day by day (below)                                                                                         |
 | Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item", "Add person" and "Write in journal"; Note is coming soon |
 | Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home, People and Journal                                                                          |
-| Search    | `/search`      | A placeholder for now                                                                                                                    |
+| Search    | `/search`      | One search across all modules (below)                                                                                                    |
 | Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                                                         |
 | Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                                                    |
 | Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                                                   |
@@ -331,6 +331,20 @@ The Timeline (T16) shows what happened in all modules, day by day, newest first.
 
 The models are in `core/models/outputs/timeline-output-dto.ts`. The page is in `features/timeline/`.
 
+## Search
+
+Search (T17) is one search across all modules. It needs Hestia.Api (`GET /api/search`); each module searches its own
+data with the same rules as its own list (full-text for documents and the journal).
+
+- Type at least 2 characters; the search starts after a pause, and the text is in the address (`/search?q=dishwasher`).
+- The best hits of each module show in sections (Transactions, Documents, Tasks, Items, People, Journal), with "9
+  results in 3 modules" at the top. A hit has its icon, its title, its day and second line, and the amount of a
+  transaction. A tap opens its page.
+- "Show all 7" asks one module for more (`&module=Tasks`); "Search all modules" goes back.
+- A module that could not search is named; the others show.
+
+The models are in `core/models/outputs/search-output-dto.ts`. The page is in `features/search/`.
+
 ## Journal
 
 The Journal module (T21) keeps one entry per day. It needs Hestia.Api (`/api/journal`, the Journal module of
@@ -505,7 +519,7 @@ src/app/
               sidebar and bottom bar), modules/ (the module registry and the main menu)
   shared/     ui/ (cards, modal, confirm dialog, toasts, tag picker, skeletons...), charts/ (theme, chart helper),
               utils/ (formatting, months, date presets, flows, problem details...)
-  features/   today/, capture/, modules/, timeline/, placeholder/ (Search)               (lazy-loaded routes)
+  features/   today/, capture/, modules/, timeline/, search/               (lazy-loaded routes)
               documents/ (the Documents module: list, upload, detail, transaction and document pickers)
               tasks/ (the Tasks module: list, new task, task, the Tasks section of a document)
               home/ (the Home module: Home page, room, new item, item, the item picker, and the Home sections of a
