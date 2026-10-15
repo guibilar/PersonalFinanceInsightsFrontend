@@ -78,6 +78,11 @@ export const routes: Routes = [
         loadChildren: () => import('./features/people/people.routes').then((m) => m.PEOPLE_ROUTES),
       },
       {
+        // The Inbox module (Hestia.Api, T18): quick notes to sort later.
+        path: 'inbox',
+        loadChildren: () => import('./features/inbox/inbox.routes').then((m) => m.INBOX_ROUTES),
+      },
+      {
         // The Journal module (Hestia.Api, T21): one page, with the day in the address.
         path: 'journal',
         loadChildren: () =>

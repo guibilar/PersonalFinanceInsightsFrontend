@@ -59,6 +59,14 @@ export const MODULES: readonly AppModule[] = [
     status: 'active',
   },
   {
+    id: 'inbox',
+    name: 'Inbox',
+    description: 'Quick notes, to sort later',
+    icon: 'note',
+    route: '/inbox',
+    status: 'active',
+  },
+  {
     id: 'journal',
     name: 'Journal',
     description: 'Notes on the day, and on this day in other years',

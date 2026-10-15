@@ -648,6 +648,78 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/inbox': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The notes to sort, newest first (done=true: the sorted ones, last sorted first).
+     * @description q: words in the text.
+     */
+    get: operations['ListInbox'];
+    put?: never;
+    /** Adds a note (at most 4000 characters). */
+    post: operations['AddInboxNote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/inbox/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetInboxNote'];
+    /** Changes the text of a note. */
+    put: operations['UpdateInboxNote'];
+    post?: never;
+    delete: operations['DeleteInboxNote'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/inbox/{id}/done': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marks a note sorted, with where it went (sortedTo, for example Task). The client adds the thing first. */
+    post: operations['SortInboxNote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/inbox/{id}/reopen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Puts a sorted note back with the open ones (an undo). */
+    post: operations['ReopenInboxNote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/journal/summary': {
     parameters: {
       query?: never;
@@ -1476,6 +1548,24 @@ export interface components {
       /** Format: int32 */
       warrantiesEnding: number | string;
     };
+    InboxDoneRequest: {
+      sortedTo?: null | string;
+    };
+    InboxItemDto: {
+      /** Format: uuid */
+      id: string;
+      text: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: date-time */
+      doneAt: null | string;
+      sortedTo: null | string;
+    };
+    InboxTextRequest: {
+      text: null | string;
+    };
     InteractionDto: {
       /** Format: uuid */
       id: string;
@@ -1688,6 +1778,19 @@ export interface components {
     };
     PaginatedListOfDocumentSummaryDto: {
       items?: components['schemas']['DocumentSummaryDto'][];
+      /** Format: int32 */
+      page?: number | string;
+      /** Format: int32 */
+      pageSize?: number | string;
+      /** Format: int32 */
+      totalCount?: number | string;
+      /** Format: int32 */
+      totalPages?: number | string;
+      hasPreviousPage?: boolean;
+      hasNextPage?: boolean;
+    };
+    PaginatedListOfInboxItemDto: {
+      items?: components['schemas']['InboxItemDto'][];
       /** Format: int32 */
       page?: number | string;
       /** Format: int32 */
@@ -2875,6 +2978,171 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  ListInbox: {
+    parameters: {
+      query?: {
+        done?: boolean;
+        q?: string;
+        page?: number | string;
+        pageSize?: number | string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaginatedListOfInboxItemDto'];
+        };
+      };
+    };
+  };
+  AddInboxNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InboxTextRequest'];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxItemDto'];
+        };
+      };
+    };
+  };
+  GetInboxNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxItemDto'];
+        };
+      };
+    };
+  };
+  UpdateInboxNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InboxTextRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxItemDto'];
+        };
+      };
+    };
+  };
+  DeleteInboxNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SortInboxNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': null | components['schemas']['InboxDoneRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxItemDto'];
+        };
+      };
+    };
+  };
+  ReopenInboxNote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxItemDto'];
+        };
       };
     };
   };

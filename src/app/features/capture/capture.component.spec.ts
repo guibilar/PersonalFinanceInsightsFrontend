@@ -15,7 +15,7 @@ describe('CaptureComponent', () => {
     });
   });
 
-  it('adds a transaction, a document, a task or an item, imports statements, and shows the other actions as coming soon', async () => {
+  it('adds a transaction, a document, a task, an item, a person or a quick note, imports statements, and opens the journal', async () => {
     const fixture = TestBed.createComponent(CaptureComponent);
     await fixture.whenStable();
     const buttons = Array.from(
@@ -29,7 +29,6 @@ describe('CaptureComponent', () => {
     ).toEqual([
       ['Add', false],
       ['Import', false],
-      ['Note', true],
     ]);
     const links = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>(
@@ -46,6 +45,7 @@ describe('CaptureComponent', () => {
       ['Add task', '/tasks/new'],
       ['Add item', '/home/items/new'],
       ['Add person', '/people/new'],
+      ['Quick note', '/inbox'],
       ['Write in journal', '/journal'],
     ]);
 
@@ -79,8 +79,8 @@ describe('CaptureComponent', () => {
       ['Add task', true],
       ['Add item', true],
       ['Add person', true],
+      ['Quick note', true],
       ['Write in journal', true],
-      ['Note', true],
     ]);
     expect(root.querySelector('a.capture-action')).toBeNull();
   });
