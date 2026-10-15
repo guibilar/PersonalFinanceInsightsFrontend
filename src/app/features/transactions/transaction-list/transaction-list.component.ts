@@ -15,7 +15,7 @@ import {
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { Subscription, map, of, switchMap } from 'rxjs';
+import { Subscription, catchError, map, of, switchMap } from 'rxjs';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { AuthService } from '../../../core/auth/auth.service';
 import { CategoryRuleRepository } from '../../../core/api/category-rule-repository';
@@ -24,6 +24,8 @@ import { AccountRepository } from '../../../core/api/account-repository';
 import { CategoryRepository } from '../../../core/api/category-repository';
 import { ReportsRepository } from '../../../core/api/reports-repository';
 import { TagRepository } from '../../../core/api/tag-repository';
+import { DocumentRepository } from '../../../core/api/document-repository';
+import { MONEY_TRANSACTION_LINK } from '../../../core/models/outputs/document-output-dto';
 import {
   SortDirection,
   TransactionFilterInputDto,
@@ -142,6 +144,8 @@ export class TransactionListComponent {
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly reportsRepository = inject(ReportsRepository);
   private readonly tagRepository = inject(TagRepository);
+  private readonly documentRepository = inject(DocumentRepository);
+  private readonly dataChanges = inject(DataChangesService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toasts = inject(ToastService);
@@ -205,6 +209,27 @@ export class TransactionListComponent {
     params: () => this.filter(),
     stream: ({ params }) => this.transactionRepository.filter(params),
   });
+
+  /**
+   * How many documents each transaction of the page has (T72), for the icon on its row. None in the deleted view, and
+   * none when Hestia does not answer (finance alone).
+   */
+  readonly documentCounts = rxResource({
+    params: () => {
+      const items = this.transactions.value()?.items ?? [];
+      if (this.showDeleted() || items.length === 0) return undefined;
+      return { ids: items.map((t) => t.id), version: this.dataChanges.version() };
+    },
+    stream: ({ params }) =>
+      this.documentRepository
+        .countByLink(MONEY_TRANSACTION_LINK, params.ids)
+        .pipe(catchError(() => of<Record<string, number>>({}))),
+  });
+
+  /** The documents of a transaction, from [documentCounts]; 0 while they load. */
+  documentCount(id: string): number {
+    return this.documentCounts.value()?.[id.toLowerCase()] ?? 0;
+  }
 
   /** The totals strip is always there; the chart below it opens on demand (or from a link with ?overTime=1). */
   readonly breakdownOpen = signal(this.route.snapshot.queryParamMap.get('overTime') === '1');

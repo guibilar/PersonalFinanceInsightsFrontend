@@ -1,6 +1,12 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpInterceptorFn,
+  HttpResponse,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
+import { of } from 'rxjs';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -20,6 +26,16 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { DataChangesService } from '../../../core/data/data-changes.service';
 import { TransactionAddLauncher } from '../../../core/data/transaction-add-launcher.service';
 import { signInAsReadOnly } from '../../../testing/test-auth';
+
+/**
+ * The document counts of the rows (T72) answer at once with "none", so they never keep a test waiting; the icon has its
+ * own test with its own answer.
+ */
+let documentCounts: Record<string, number> = {};
+const answerDocumentCounts: HttpInterceptorFn = (request, next) =>
+  request.url === '/api/documents/by-link/counts'
+    ? of(new HttpResponse({ status: 200, body: documentCounts }))
+    : next(request);
 
 describe('TransactionListComponent', () => {
   let fixture: ComponentFixture<TransactionListComponent>;
@@ -55,7 +71,7 @@ describe('TransactionListComponent', () => {
       imports: [TransactionListComponent],
       providers: [
         provideZonelessChangeDetection(),
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([answerDocumentCounts])),
         provideHttpClientTesting(),
         provideRouter([]),
       ],
@@ -168,6 +184,41 @@ describe('TransactionListComponent', () => {
     );
     expect(component.hasCriteria()).toBe(true);
     expect(component.accounts().map((a) => a.name)).toEqual(['Visa']);
+  });
+
+  it('marks the rows that have documents (T72)', async () => {
+    documentCounts = { t1: 2, t2: 0 };
+    TestBed.tick();
+    const base = {
+      date: '2026-09-10',
+      amount: 5,
+      category: TEST_CATEGORIES.other,
+      categoryLocked: false,
+      accountId: 'a2',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flow: Flow.Spending,
+      flowLocked: false,
+      budgetId: '',
+    };
+    http.expectOne('/api/Transaction/Filter').flush({
+      ...emptyPage,
+      items: [
+        { ...base, id: 'T1', description: 'BEST BUY' },
+        { ...base, id: 't2', description: 'COFFEE' },
+      ],
+      totalCount: 2,
+      totalPages: 1,
+    });
+    flushBreakdowns();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const icons = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="has-documents"]'),
+    );
+    expect(icons.map((icon) => icon.getAttribute('title'))).toEqual(['2 documents']);
+    documentCounts = {};
   });
 
   it('shows the account name and marks flows other than spending', async () => {
@@ -891,7 +942,7 @@ describe('TransactionListComponent, in the address bar', () => {
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([answerDocumentCounts])),
         provideHttpClientTesting(),
         provideRouter([{ path: 'transactions', component: TransactionListComponent }]),
         provideLocationMocks(),
