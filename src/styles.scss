@@ -99,6 +99,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+// A wide table scrolls inside its box. The box is the containing block of what Bootstrap hides for screen readers
+// (.visually-hidden is absolute): without it, the "Actions" header escaped the box and made the Transactions page
+// 241px wider than a 768px screen.
+.table-responsive {
+  position: relative;
+}
+
 .card {
   box-shadow: var(--bs-box-shadow-sm);
 }
