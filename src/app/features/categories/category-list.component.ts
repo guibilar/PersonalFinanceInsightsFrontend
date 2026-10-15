@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/auth/auth.service';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CategoryRepository } from '../../core/api/category-repository';
@@ -29,6 +30,8 @@ import { valueOf } from '../../shared/utils/resource-value';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CategoryListComponent {
+  /** A read-only user (T60, T75) sees the list without add, edit, delete, or apply actions. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly toasts = inject(ToastService);
 

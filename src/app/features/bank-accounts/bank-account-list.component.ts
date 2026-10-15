@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/auth/auth.service';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -44,6 +45,8 @@ import { MoneyPipe } from '../../shared/pipes/money.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BankAccountListComponent {
+  /** A read-only user (T60, T75) sees the list without add, edit, delete, or apply actions. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly accountRepository = inject(AccountRepository);
   private readonly toasts = inject(ToastService);
 

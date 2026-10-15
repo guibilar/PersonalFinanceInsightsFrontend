@@ -307,8 +307,11 @@ export class TransactionListComponent {
     effect(() => {
       if (this.fragment() !== IMPORT_FRAGMENT) return;
       untracked(() => {
-        this.importAccount.set(this.route.snapshot.queryParamMap.get(IMPORT_ACCOUNT_KEY));
-        this.showImport.set(true);
+        // A read-only user (T75): the link opens the list, not the import; the server would refuse it.
+        if (this.canWrite()) {
+          this.importAccount.set(this.route.snapshot.queryParamMap.get(IMPORT_ACCOUNT_KEY));
+          this.showImport.set(true);
+        }
         void this.router.navigate([], {
           relativeTo: this.route,
           queryParams: { [IMPORT_ACCOUNT_KEY]: null },

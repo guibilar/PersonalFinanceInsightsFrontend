@@ -5,15 +5,17 @@
       Set each imported transaction's category, and what it counts as in the reports
     </p>
   </div>
-  <button
-    type="button"
-    class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-    [disabled]="applying()"
-    (click)="confirmingApply.set(true)"
-  >
-    <app-icon name="refresh" [size]="16" />
-    {{ applying() ? 'Applying…' : 'Apply to transactions' }}
-  </button>
+  @if (canWrite()) {
+    <button
+      type="button"
+      class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+      [disabled]="applying()"
+      (click)="confirmingApply.set(true)"
+    >
+      <app-icon name="refresh" [size]="16" />
+      {{ applying() ? 'Applying…' : 'Apply to transactions' }}
+    </button>
+  }
 </div>
 
 <ul class="nav nav-tabs mb-4" role="tablist" aria-label="Kinds of rules">
@@ -48,13 +50,15 @@
       <p class="text-body-secondary mb-0">
         The first rule whose keyword is in a description sets the transaction's category
       </p>
-      <button
-        type="button"
-        class="btn btn-primary d-inline-flex align-items-center gap-2"
-        (click)="editing.set(null)"
-      >
-        <app-icon name="plus" [size]="16" /> New rule
-      </button>
+      @if (canWrite()) {
+        <button
+          type="button"
+          class="btn btn-primary d-inline-flex align-items-center gap-2"
+          (click)="editing.set(null)"
+        >
+          <app-icon name="plus" [size]="16" /> New rule
+        </button>
+      }
     </div>
 
     <div class="card mb-3">
@@ -97,9 +101,11 @@
       <div class="card">
         <div class="card-body text-center text-body-secondary py-5">
           <p class="mb-2">No rules yet, so every imported transaction lands in Other.</p>
-          <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
-            New rule
-          </button>
+          @if (canWrite()) {
+            <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
+              New rule
+            </button>
+          }
         </div>
       </div>
     } @else if (visibleRules().length === 0) {
@@ -133,44 +139,52 @@
                 </span>
               </div>
               <div class="d-flex flex-shrink-0">
-                <button
-                  type="button"
-                  class="btn btn-icon"
-                  [attr.aria-label]="'Move ' + rule.keyword + ' up'"
-                  title="Move up"
-                  [disabled]="moving() || movePosition(rule, -1) === null"
-                  (click)="move(rule, -1)"
-                >
-                  <app-icon name="arrow-up" [size]="16" />
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-icon"
-                  [attr.aria-label]="'Move ' + rule.keyword + ' down'"
-                  title="Move down"
-                  [disabled]="moving() || movePosition(rule, 1) === null"
-                  (click)="move(rule, 1)"
-                >
-                  <app-icon name="arrow-down" [size]="16" />
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-icon"
-                  [attr.aria-label]="'Edit ' + rule.keyword"
-                  title="Edit"
-                  (click)="editing.set(rule)"
-                >
-                  <app-icon name="pencil" [size]="16" />
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-icon btn-icon-danger"
-                  [attr.aria-label]="'Delete ' + rule.keyword"
-                  title="Delete"
-                  (click)="deleting.set(rule)"
-                >
-                  <app-icon name="trash" [size]="16" />
-                </button>
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-icon"
+                    [attr.aria-label]="'Move ' + rule.keyword + ' up'"
+                    title="Move up"
+                    [disabled]="moving() || movePosition(rule, -1) === null"
+                    (click)="move(rule, -1)"
+                  >
+                    <app-icon name="arrow-up" [size]="16" />
+                  </button>
+                }
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-icon"
+                    [attr.aria-label]="'Move ' + rule.keyword + ' down'"
+                    title="Move down"
+                    [disabled]="moving() || movePosition(rule, 1) === null"
+                    (click)="move(rule, 1)"
+                  >
+                    <app-icon name="arrow-down" [size]="16" />
+                  </button>
+                }
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-icon"
+                    [attr.aria-label]="'Edit ' + rule.keyword"
+                    title="Edit"
+                    (click)="editing.set(rule)"
+                  >
+                    <app-icon name="pencil" [size]="16" />
+                  </button>
+                }
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-icon btn-icon-danger"
+                    [attr.aria-label]="'Delete ' + rule.keyword"
+                    title="Delete"
+                    (click)="deleting.set(rule)"
+                  >
+                    <app-icon name="trash" [size]="16" />
+                  </button>
+                }
               </div>
             </li>
           }

@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/auth/auth.service';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -54,6 +55,8 @@ const PAGE_SIZE = 12;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BudgetListComponent {
+  /** A read-only user (T60, T75) sees the list without add, edit, delete, or apply actions. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly budgetRepository = inject(BudgetRepository);
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly toasts = inject(ToastService);

@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/auth/auth.service';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FlowRuleRepository } from '../../core/api/flow-rule-repository';
@@ -32,6 +33,8 @@ import { FlowRuleFormComponent } from './flow-rule-form.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FlowRuleListComponent {
+  /** A read-only user (T60, T75) sees the list without add, edit, delete, or apply actions. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly ruleRepository = inject(FlowRuleRepository);
   private readonly toasts = inject(ToastService);
 
