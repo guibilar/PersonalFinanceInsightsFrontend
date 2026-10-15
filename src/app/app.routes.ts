@@ -86,6 +86,11 @@ export const routes: Routes = [
         path: 'home',
         loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES),
       },
+      {
+        // The People module (Hestia.Api): the People page, a new person and one person.
+        path: 'people',
+        loadChildren: () => import('./features/people/people.routes').then((m) => m.PEOPLE_ROUTES),
+      },
       // The finance pages' old addresses, before Money was a module.
       ...LEGACY_FINANCE_REDIRECTS,
     ],

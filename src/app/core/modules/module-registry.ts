@@ -56,7 +56,7 @@ export const MODULES: readonly AppModule[] = [
     description: 'Birthdays, gifts and lent items',
     icon: 'users',
     route: '/people',
-    status: 'coming-soon',
+    status: 'active',
   },
   {
     id: 'journal',
