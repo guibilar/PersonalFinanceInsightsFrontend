@@ -12,7 +12,7 @@ import { provideLocationMocks } from '@angular/common/testing';
 import { DocumentListComponent } from './document-list.component';
 import { DocumentSummaryDto } from '../../../core/models/outputs/document-output-dto';
 import { isoDay } from '../../../shared/utils/date-presets';
-import { DOC_ID, testPage, testSummary } from '../../../testing/test-documents';
+import { DOC_ID, PDF_ID, testPage, testSummary } from '../../../testing/test-documents';
 import { signInAsReadOnly } from '../../../testing/test-auth';
 
 describe('DocumentListComponent', () => {
@@ -115,6 +115,25 @@ describe('DocumentListComponent', () => {
       '/documents/d2',
     ]);
     expect(root().querySelector('[data-ocr="Failed"]')!.classList).toContain('text-bg-danger');
+  });
+
+  it('shows the thumbnail of the first file, and the icon when it does not load (T61)', async () => {
+    await harness.navigateByUrl('/documents', DocumentListComponent);
+    await answer([testSummary({ expiresOn: null })]);
+
+    const image = root().querySelector<HTMLImageElement>(
+      '[data-testid="documents"] [data-testid="thumbnail"]',
+    )!;
+    expect(image.getAttribute('src')).toBe(`/api/documents/${DOC_ID}/files/${PDF_ID}/thumbnail`);
+    expect(image.getAttribute('loading')).toBe('lazy');
+
+    // The server has no thumbnail (404): the icon of the type instead.
+    image.dispatchEvent(new Event('error'));
+    await settle();
+    expect(root().querySelector('[data-testid="documents"] [data-testid="thumbnail"]')).toBeNull();
+    expect(
+      root().querySelector('[data-testid="documents"] [data-testid="thumbnail-icon"]'),
+    ).not.toBeNull();
   });
 
   it('has no "Add document" for a read-only user', async () => {

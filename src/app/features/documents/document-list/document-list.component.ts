@@ -24,7 +24,8 @@ import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { formatDay } from '../../../shared/utils/format';
 import { keptValueOf, valueOf } from '../../../shared/utils/resource-value';
-import { KIND_FILTER_LABELS, daysUntil, expiryText, ocrLabel } from '../documents';
+import { KIND_FILTER_LABELS, daysUntil, expiryText, fileIcon, ocrLabel } from '../documents';
+import { DocumentThumbnailComponent } from '../document-thumbnail/document-thumbnail.component';
 
 const PAGE_SIZE = 20;
 
@@ -38,6 +39,7 @@ const PAGE_SIZE = 20;
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    DocumentThumbnailComponent,
     ErrorStateComponent,
     IconComponent,
     PaginatedContentComponent,
@@ -55,6 +57,7 @@ export class DocumentListComponent {
   readonly canWrite = inject(AuthService).canWrite;
 
   readonly kinds = DOCUMENT_KINDS;
+  readonly fileIcon = fileIcon;
   readonly kindLabels = KIND_FILTER_LABELS;
   private readonly today = new Date();
 
@@ -143,6 +146,10 @@ export class DocumentListComponent {
   }
 
   /** "Warranty · Nov 9, 2026" (the issue day, else the day it was added). */
+  thumbnailUrl(documentId: string, fileId: string): string {
+    return this.repository.thumbnailUrl(documentId, fileId);
+  }
+
   subtitle(document: DocumentSummaryDto): string {
     const day = document.issuedOn ?? document.createdAt;
     return `${document.kind} · ${formatDay(day)}`;

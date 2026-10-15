@@ -135,7 +135,14 @@
             @for (document of items; track document.id) {
               <li class="list-group-item p-0">
                 <a class="document-row" [routerLink]="['/documents', document.id]">
-                  <span class="file-icon"><app-icon name="file-text" [size]="18" /></span>
+                  @if (document.files[0]; as file) {
+                    <app-document-thumbnail
+                      [url]="thumbnailUrl(document.id, file.id)"
+                      [icon]="fileIcon(file)"
+                    />
+                  } @else {
+                    <span class="file-icon"><app-icon name="file-text" [size]="18" /></span>
+                  }
                   <span class="flex-grow-1 min-w-0">
                     <span class="d-block fw-medium text-truncate">{{ document.title }}</span>
                     <span class="d-block small text-body-secondary">
