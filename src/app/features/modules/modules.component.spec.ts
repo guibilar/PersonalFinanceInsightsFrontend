@@ -28,12 +28,12 @@ describe('ModulesComponent', () => {
     const home = root.querySelector<HTMLAnchorElement>('a[data-module="home"]')!;
     expect(home.getAttribute('href')).toBe('/home');
     expect(home.textContent).not.toContain('Coming soon');
+    const people = root.querySelector<HTMLAnchorElement>('a[data-module="people"]')!;
+    expect(people.getAttribute('href')).toBe('/people');
+    expect(people.textContent).not.toContain('Coming soon');
 
     const comingSoon = Array.from(root.querySelectorAll('.coming-soon'));
-    expect(comingSoon.map((card) => card.getAttribute('data-module'))).toEqual([
-      'people',
-      'journal',
-    ]);
+    expect(comingSoon.map((card) => card.getAttribute('data-module'))).toEqual(['journal']);
     for (const card of comingSoon) {
       expect(card.tagName).not.toBe('A');
       expect(card.textContent).toContain('Coming soon');

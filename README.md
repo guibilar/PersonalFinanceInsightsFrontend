@@ -10,17 +10,18 @@ The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, *
 screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
 round centre action; the menu button at the top opens the modules and the account actions.
 
-| Page      | Path           | What it shows                                                                                          |
-| --------- | -------------- | ------------------------------------------------------------------------------------------------------ |
-| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                        |
-| Timeline  | `/timeline`    | A placeholder for now                                                                                  |
-| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task" and "Add item"; Note is coming soon |
-| Modules   | `/modules`     | Every module: Money, Documents, Tasks and Home open, the others show "Coming soon"                     |
-| Search    | `/search`      | A placeholder for now                                                                                  |
-| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                       |
-| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                  |
-| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                 |
-| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                        |
+| Page      | Path           | What it shows                                                                                                        |
+| --------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                                      |
+| Timeline  | `/timeline`    | A placeholder for now                                                                                                |
+| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item" and "Add person"; Note is coming soon |
+| Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home and People open, Journal shows "Coming soon"                             |
+| Search    | `/search`      | A placeholder for now                                                                                                |
+| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                                     |
+| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                                |
+| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                               |
+| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                                      |
+| People    | `/people/…`    | Birthdays, gift ideas, lent items, and who to reach out to (below)                                                   |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -285,6 +286,33 @@ and their warranties. It needs Hestia.Api (`/api/home`, the Home module of Hesti
 The models are in `core/models/outputs/home-output-dto.ts` and `core/models/inputs/home-input-dto.ts`, written by
 hand from the HestiaBackend contracts (`HomeDtos.cs`). The pages are in `features/home/`.
 
+## People
+
+The People module is a small personal CRM: the people the user cares about, when the user last talked to them, a
+reach-out reminder, birthdays, gift ideas, and things lent or borrowed. It needs Hestia.Api (`/api/people`, the People
+module of HestiaBackend).
+
+| Page       | Path           | What it shows                                                                    |
+| ---------- | -------------- | -------------------------------------------------------------------------------- |
+| People     | `/people`      | Reach out, upcoming birthdays, lent and borrowed, all people with groups, search |
+| New person | `/people/new`  | Name, nickname, relationship, groups, birthday, email, phone, reminder, notes    |
+| Person     | `/people/<id>` | The strip, quick actions, gift ideas, open loans, history, links, edit, delete   |
+
+- **People page.** "Reach out" lists the people with an overdue reminder ("Last contact 6 weeks ago"), most overdue
+  first. "Upcoming birthdays" lists the next 30 days with the new age and the open gift ideas. "Lent and borrowed"
+  lists the open loans of everybody. All people are by name, with the last contact; the group chips and the search
+  are in the address (`/people?group=family&q=ana`). The page uses the day of the server (`date` of the summary).
+- **Person.** The strip shows the birthday, the last contact, and the reminder. "Log contact" (kind, day, note; no day
+  is today), "Gift idea" (title, price, occasion), and "Lend item" (lent or borrowed, due day) open a form under the
+  buttons. A gift idea's checkbox marks it as given today (unchecked: an idea again). An open loan has "Got it back" (or
+  "Gave it back"). The history has the contacts and the loans, newest first; a contact can be deleted. Links (documents,
+  tasks, home items, transactions) open their page and can be removed.
+- **Today.** The People alerts (reach out, birthday, overdue loan) link to `/people/<id>`.
+- A read-only user can only read: no add, edit, delete, log, gift, loan, or unlink.
+
+The models are in `core/models/outputs/people-output-dto.ts` and `core/models/inputs/people-input-dto.ts`, written by
+hand from the HestiaBackend contracts (`PeopleDtos.cs`). The pages are in `features/people/`.
+
 ## Accounts and flows
 
 Statements are imported into an **account** (`/money/accounts`): a name, a type (chequing, savings, credit card or
@@ -429,6 +457,7 @@ src/app/
               tasks/ (the Tasks module: list, new task, task, the Tasks section of a document)
               home/ (the Home module: Home page, room, new item, item, the item picker, and the Home sections of a
               document, a task and a transaction)
+              people/ (the People module: People page, new person, person)
               money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
               transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
               bank-accounts/ (Accounts)

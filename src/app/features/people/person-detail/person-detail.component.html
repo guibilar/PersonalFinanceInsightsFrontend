@@ -1,0 +1,481 @@
+<a class="back-link small d-inline-flex align-items-center gap-1 mb-2" routerLink="/people"
+  >← People</a
+>
+
+@if (notFound()) {
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h5">This person does not exist any more</h1>
+      <a routerLink="/people">Back to People</a>
+    </div>
+  </div>
+} @else if (personResource.error() && !person()) {
+  <app-error-state message="Could not load the person." (retry)="personResource.reload()" />
+} @else if (!person()) {
+  <app-skeleton [lines]="4" height="3rem" />
+} @else {
+  @let p = person()!;
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <app-person-avatar [name]="p.person.name" [size]="64" />
+    <div class="flex-grow-1 min-w-0">
+      <h1 class="h3 mb-0 text-break" data-testid="name">{{ p.person.name }}</h1>
+      @if (groupsText(p)) {
+        <p class="text-body-secondary mb-0" data-testid="groups">{{ groupsText(p) }}</p>
+      }
+    </div>
+    @if (canWrite() && !editing()) {
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-outline-secondary d-inline-flex align-items-center gap-1"
+          (click)="startEdit(p)"
+        >
+          <app-icon name="pencil" [size]="16" /> Edit
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-danger d-inline-flex align-items-center gap-1"
+          (click)="confirmingDelete.set(true)"
+        >
+          <app-icon name="trash" [size]="16" /> Delete
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (editing()) {
+    <div class="card mb-4">
+      <div class="card-body">
+        <form novalidate (submit)="$event.preventDefault(); saveEdit(p)">
+          <app-person-fields [form]="editForm" />
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" (click)="editing.set(false)">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="busy()">
+              {{ busy() ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+      @if (canWrite()) {
+        <div class="action-grid" data-testid="actions">
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="action() === 'contact' || action() === null"
+            [class.btn-outline-secondary]="action() !== 'contact' && action() !== null"
+            [attr.aria-expanded]="action() === 'contact'"
+            (click)="toggle('contact')"
+          >
+            Log contact
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="action() === 'gift'"
+            [class.btn-outline-secondary]="action() !== 'gift'"
+            [attr.aria-expanded]="action() === 'gift'"
+            (click)="toggle('gift')"
+          >
+            Gift idea
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="action() === 'loan'"
+            [class.btn-outline-secondary]="action() !== 'loan'"
+            [attr.aria-expanded]="action() === 'loan'"
+            (click)="toggle('loan')"
+          >
+            Lend item
+          </button>
+        </div>
+
+        @switch (action()) {
+          @case ('contact') {
+            <form
+              class="card card-body gap-2"
+              novalidate
+              data-testid="contact-form"
+              (submit)="$event.preventDefault(); logContact(p)"
+              [formGroup]="contactForm"
+            >
+              <div class="d-flex flex-wrap gap-2">
+                <div class="flex-grow-1">
+                  <label for="contact-kind" class="form-label small mb-1">Kind</label>
+                  <select id="contact-kind" class="form-select" formControlName="kind">
+                    @for (kind of contactKinds; track kind) {
+                      <option [value]="kind">{{ kind }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label for="contact-day" class="form-label small mb-1">Day</label>
+                  <input
+                    id="contact-day"
+                    type="date"
+                    class="form-control"
+                    formControlName="occurredOn"
+                    [max]="today()"
+                  />
+                </div>
+              </div>
+              <label for="contact-note" class="form-label small mb-0">Note</label>
+              <textarea
+                id="contact-note"
+                class="form-control"
+                rows="2"
+                formControlName="note"
+                placeholder="What did you talk about?"
+              ></textarea>
+              <div class="form-text mt-0">Without a day: today.</div>
+              <button type="submit" class="btn btn-primary align-self-end" [disabled]="busy()">
+                Log contact
+              </button>
+            </form>
+          }
+          @case ('gift') {
+            <form
+              class="card card-body gap-2"
+              novalidate
+              data-testid="gift-form"
+              (submit)="$event.preventDefault(); addGift(p)"
+              [formGroup]="giftForm"
+            >
+              <label for="gift-title" class="form-label small mb-0">Gift idea</label>
+              <input
+                id="gift-title"
+                type="text"
+                class="form-control"
+                formControlName="title"
+                placeholder="Pour-over coffee kettle"
+                [class.is-invalid]="
+                  giftForm.controls.title.touched && giftForm.controls.title.invalid
+                "
+              />
+              <div class="d-flex flex-wrap gap-2">
+                <div>
+                  <label for="gift-price" class="form-label small mb-1">Price</label>
+                  <input
+                    id="gift-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="form-control price-input"
+                    formControlName="price"
+                  />
+                </div>
+                <div class="flex-grow-1">
+                  <label for="gift-occasion" class="form-label small mb-1">Occasion</label>
+                  <input
+                    id="gift-occasion"
+                    type="text"
+                    class="form-control"
+                    formControlName="occasion"
+                    placeholder="Birthday"
+                  />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary align-self-end" [disabled]="busy()">
+                Add idea
+              </button>
+            </form>
+          }
+          @case ('loan') {
+            <form
+              class="card card-body gap-2"
+              novalidate
+              data-testid="loan-form"
+              (submit)="$event.preventDefault(); addLoan(p)"
+              [formGroup]="loanForm"
+            >
+              <label for="loan-item" class="form-label small mb-0">Thing</label>
+              <input
+                id="loan-item"
+                type="text"
+                class="form-control"
+                formControlName="itemName"
+                placeholder="Camping stove"
+                [class.is-invalid]="
+                  loanForm.controls.itemName.touched && loanForm.controls.itemName.invalid
+                "
+              />
+              <div class="d-flex flex-wrap gap-2">
+                <div class="flex-grow-1">
+                  <label for="loan-direction" class="form-label small mb-1">Who has it</label>
+                  <select id="loan-direction" class="form-select" formControlName="direction">
+                    <option value="Lent">I lent it to {{ p.person.name }}</option>
+                    <option value="Borrowed">I borrowed it from {{ p.person.name }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="loan-due" class="form-label small mb-1">Due back</label>
+                  <input
+                    id="loan-due"
+                    type="date"
+                    class="form-control"
+                    formControlName="dueOn"
+                    [min]="today()"
+                  />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary align-self-end" [disabled]="busy()">
+                Add
+              </button>
+            </form>
+          }
+        }
+      }
+
+      <dl class="card strip mb-0" data-testid="strip">
+        <div>
+          <dt>Birthday</dt>
+          <dd>{{ birthday(p) }}</dd>
+        </div>
+        <div>
+          <dt>Last contact</dt>
+          <dd [class.text-warning-emphasis]="p.person.contactOverdue">{{ lastContact(p) }}</dd>
+        </div>
+        <div>
+          <dt>Reminder</dt>
+          <dd>{{ reminder(p) }}</dd>
+        </div>
+      </dl>
+
+      @if (p.person.email || p.person.phone || p.notes) {
+        <section class="card card-body gap-1 small" aria-label="Contact details">
+          @if (p.person.email) {
+            <a [href]="'mailto:' + p.person.email" class="text-break">{{ p.person.email }}</a>
+          }
+          @if (p.person.phone) {
+            <a [href]="'tel:' + p.person.phone">{{ p.person.phone }}</a>
+          }
+          @if (p.notes) {
+            <p class="mb-0 text-body-secondary notes">{{ p.notes }}</p>
+          }
+        </section>
+      }
+    </div>
+
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+      <!-- Gift ideas -->
+      <section aria-labelledby="gifts-heading">
+        <h2 id="gifts-heading" class="h6 mb-2">Gift ideas</h2>
+        @if (p.giftIdeas.length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-gifts">No gift ideas yet.</p>
+        } @else {
+          <ul class="list-group" data-testid="gifts">
+            @for (gift of openGifts(); track gift.id) {
+              <li class="list-group-item check-row">
+                <input
+                  type="checkbox"
+                  class="form-check-input check"
+                  [id]="'gift-' + gift.id"
+                  [disabled]="!canWrite() || busy()"
+                  (change)="toggleGiven(gift)"
+                />
+                <label class="flex-grow-1 min-w-0" [for]="'gift-' + gift.id">
+                  <span class="d-block text-break">{{ gift.title }}</span>
+                  @if (gift.price !== null || gift.occasion) {
+                    <span class="d-block small text-body-secondary">
+                      {{ gift.occasion }}
+                      @if (gift.occasion && gift.price !== null) {
+                        ·
+                      }
+                      @if (gift.price !== null) {
+                        {{ gift.price | money }}
+                      }
+                    </span>
+                  }
+                </label>
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-link text-body-secondary"
+                    [attr.aria-label]="'Delete ' + gift.title"
+                    (click)="deleteGift(gift)"
+                  >
+                    <app-icon name="trash" [size]="14" />
+                  </button>
+                }
+              </li>
+            }
+            @for (gift of givenGifts(); track gift.id) {
+              <li class="list-group-item check-row given">
+                <input
+                  type="checkbox"
+                  class="form-check-input check"
+                  checked
+                  [id]="'gift-' + gift.id"
+                  [disabled]="!canWrite() || busy()"
+                  (change)="toggleGiven(gift)"
+                />
+                <label class="flex-grow-1 min-w-0 text-body-secondary" [for]="'gift-' + gift.id">
+                  <span class="text-decoration-line-through text-break">{{ gift.title }}</span>
+                  <span class="small">
+                    · given {{ day(gift.givenOn!) }}
+                    @if (gift.price !== null) {
+                      · {{ gift.price | money }}
+                    }
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <!-- Open loans -->
+      @if (openLoans().length > 0) {
+        <section aria-labelledby="loans-heading">
+          <h2 id="loans-heading" class="h6 mb-2">Lent and borrowed</h2>
+          <ul class="list-group" data-testid="open-loans">
+            @for (loan of openLoans(); track loan.id) {
+              <li class="list-group-item d-flex align-items-center gap-2">
+                <span class="flex-grow-1 min-w-0">
+                  <span class="d-block text-break">{{ loan.itemName }}</span>
+                  <span class="d-block small text-body-secondary">
+                    {{ loan.direction === 'Lent' ? 'Lent' : 'Borrowed' }} {{ day(loan.lentOn) }}
+                    @if (loan.dueOn) {
+                      · due {{ day(loan.dueOn) }}
+                    }
+                  </span>
+                </span>
+                @if (loan.overdue) {
+                  <span class="badge text-bg-warning">Not returned</span>
+                }
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [disabled]="busy()"
+                    (click)="returned(loan)"
+                  >
+                    {{ loan.direction === 'Lent' ? 'Got it back' : 'Gave it back' }}
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <!-- History -->
+      <section aria-labelledby="history-heading">
+        <h2 id="history-heading" class="h6 mb-2">History</h2>
+        @if (history().length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-history">
+            No contacts logged yet.
+          </p>
+        } @else {
+          <ul class="list-group" data-testid="history">
+            @for (entry of history(); track entry.key) {
+              <li class="list-group-item d-flex align-items-start gap-2">
+                <span class="flex-grow-1 min-w-0">
+                  <span class="d-block small text-body-secondary"
+                    >{{ day(entry.day) }} · {{ entry.label }}</span
+                  >
+                  @if (entry.text) {
+                    <span class="d-block text-break">{{ entry.text }}</span>
+                  }
+                  @if (entry.loan) {
+                    @if (entry.loan.returnedOn) {
+                      <span class="small text-body-secondary"
+                        >Back {{ day(entry.loan.returnedOn) }}</span
+                      >
+                    } @else {
+                      <span class="badge text-bg-warning-subtle text-warning-emphasis"
+                        >Not returned</span
+                      >
+                    }
+                  }
+                </span>
+                @if (canWrite()) {
+                  @if (entry.contact) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-link text-body-secondary"
+                      aria-label="Delete the contact"
+                      (click)="deletingContact.set(entry.contact!)"
+                    >
+                      <app-icon name="trash" [size]="14" />
+                    </button>
+                  } @else if (entry.loan) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-link text-body-secondary"
+                      [attr.aria-label]="'Delete ' + entry.loan.itemName"
+                      (click)="deleteLoan(entry.loan!)"
+                    >
+                      <app-icon name="trash" [size]="14" />
+                    </button>
+                  }
+                }
+              </li>
+            }
+          </ul>
+          @if (p.interactionCount > p.interactions.length) {
+            <p class="small text-body-secondary mt-2 mb-0">
+              The latest {{ p.interactions.length }} of {{ p.interactionCount }} contacts.
+            </p>
+          }
+        }
+      </section>
+
+      <!-- Links -->
+      @if (links().length > 0) {
+        <section aria-labelledby="links-heading">
+          <h2 id="links-heading" class="h6 mb-2">Links</h2>
+          <ul class="list-group" data-testid="links">
+            @for (view of links(); track view.link.id) {
+              <li class="list-group-item d-flex align-items-center gap-2">
+                <app-icon name="link" [size]="14" />
+                <a class="flex-grow-1" [routerLink]="view.route" [queryParams]="view.queryParams">{{
+                  view.label
+                }}</a>
+                @if (canWrite()) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-link text-body-secondary"
+                    (click)="unlink(p, view)"
+                  >
+                    Unlink
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  </div>
+
+  @if (confirmingDelete()) {
+    <app-confirm-dialog
+      [title]="'Delete “' + p.person.name + '”?'"
+      message="The contacts, gift ideas, loans, and links go too. This cannot be undone."
+      [confirmLabel]="busy() ? 'Deleting…' : 'Delete'"
+      [danger]="true"
+      (confirmed)="confirmDelete(p)"
+      (cancelled)="confirmingDelete.set(false)"
+    />
+  }
+  @if (deletingContact(); as contact) {
+    <app-confirm-dialog
+      title="Delete the contact?"
+      [message]="
+        'The contact of ' + day(contact.occurredOn) + ' goes. The last contact can move back.'
+      "
+      [confirmLabel]="busy() ? 'Deleting…' : 'Delete'"
+      [danger]="true"
+      (confirmed)="confirmDeleteContact(contact)"
+      (cancelled)="deletingContact.set(null)"
+    />
+  }
+}

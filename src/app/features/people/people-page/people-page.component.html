@@ -1,0 +1,218 @@
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">People</h1>
+    <p class="text-body-secondary mb-0">Birthdays, gifts, lent items, and who to reach out to</p>
+  </div>
+  @if (canWrite()) {
+    <a class="btn btn-primary d-inline-flex align-items-center gap-2" routerLink="/people/new">
+      <app-icon name="plus" [size]="16" /> Add person
+    </a>
+  }
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+    <!-- Reach out -->
+    <section class="card" aria-labelledby="reach-heading">
+      <div class="card-body">
+        <h2 id="reach-heading" class="h6 mb-3">Reach out</h2>
+        @if (summaryResource.error() && !summary()) {
+          <app-error-state
+            message="Could not load the reminders."
+            (retry)="summaryResource.reload()"
+          />
+        } @else if (!summary()) {
+          <app-skeleton [lines]="2" height="2.5rem" />
+        } @else if (summary()!.reachOut.length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-reach-out">
+            All caught up. A person with a reach-out reminder shows here when it is time.
+          </p>
+        } @else {
+          <ul class="list-group" data-testid="reach-out">
+            @for (person of summary()!.reachOut; track person.id) {
+              <li class="list-group-item p-0">
+                <a class="person-row" [routerLink]="['/people', person.id]">
+                  <app-person-avatar [name]="person.name" />
+                  <span class="flex-grow-1 min-w-0">
+                    <span class="d-block fw-medium text-truncate">{{ person.name }}</span>
+                    <span class="d-block small text-warning-emphasis fw-semibold">{{
+                      lastContact(person)
+                    }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+
+    <!-- Upcoming -->
+    <section class="card" aria-labelledby="upcoming-heading">
+      <div class="card-body">
+        <h2 id="upcoming-heading" class="h6 mb-3">Upcoming birthdays</h2>
+        @if (summaryResource.error() && !summary()) {
+          <p class="text-body-secondary small mb-0">The birthdays show when the people load.</p>
+        } @else if (!summary()) {
+          <app-skeleton [lines]="1" height="2.5rem" />
+        } @else if (summary()!.upcoming.length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-upcoming">
+            No birthdays in the next 30 days.
+          </p>
+        } @else {
+          <ul class="list-group" data-testid="upcoming">
+            @for (birthday of summary()!.upcoming; track birthday.personId) {
+              <li class="list-group-item p-0">
+                <a class="person-row" [routerLink]="['/people', birthday.personId]">
+                  <span class="date-badge" aria-hidden="true">
+                    <span class="month">{{ badge(birthday).month }}</span>
+                    <span class="day">{{ badge(birthday).day }}</span>
+                  </span>
+                  <span class="flex-grow-1 min-w-0">
+                    <span class="d-block fw-medium text-truncate"
+                      >{{ birthday.name }}’s birthday</span
+                    >
+                    <span class="d-block small text-body-secondary">{{
+                      upcomingText(birthday)
+                    }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+
+    <!-- Loans -->
+    <section class="card" aria-labelledby="loans-heading">
+      <div class="card-body">
+        <h2 id="loans-heading" class="h6 mb-3">Lent and borrowed</h2>
+        @if (loansResource.error() && !loans()) {
+          <app-error-state message="Could not load the loans." (retry)="loansResource.reload()" />
+        } @else if (!loans()) {
+          <app-skeleton [lines]="1" height="2rem" />
+        } @else if (loans()!.length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-loans">
+            Nothing lent or borrowed.
+          </p>
+        } @else {
+          <ul class="list-group" data-testid="loans">
+            @for (loan of loans(); track loan.id) {
+              <li class="list-group-item p-0">
+                <a class="person-row" [routerLink]="['/people', loan.personId]">
+                  <span class="flex-grow-1 min-w-0">
+                    <span class="d-block fw-medium text-break">{{ loan.itemName }}</span>
+                    <span class="d-block small text-body-secondary">{{ loanText(loan) }}</span>
+                  </span>
+                  @if (loan.overdue) {
+                    <span class="badge text-bg-warning">Overdue</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  </div>
+
+  <div class="col-12 col-lg-7 d-flex flex-column gap-3">
+    <section aria-label="Find a person">
+      <label for="people-search" class="visually-hidden">Find a person</label>
+      <input
+        type="search"
+        id="people-search"
+        class="form-control"
+        placeholder="Find a person"
+        autocomplete="off"
+        [formControl]="search"
+      />
+    </section>
+
+    <section aria-labelledby="all-heading">
+      <h2 id="all-heading" class="h6 mb-2" data-testid="all-heading">
+        All people
+        @if (list()) {
+          · {{ list()!.totalCount }}
+        }
+      </h2>
+      @if (groups() && groups()!.length > 0) {
+        <div
+          class="d-flex flex-wrap gap-2 mb-3"
+          role="group"
+          aria-label="Groups"
+          data-testid="groups"
+        >
+          <a
+            class="btn btn-sm rounded-pill"
+            [class.btn-dark]="!group()"
+            [class.btn-outline-secondary]="!!group()"
+            [attr.aria-pressed]="!group()"
+            routerLink="/people"
+            [queryParams]="{ q: term() || null }"
+            >All</a
+          >
+          @for (g of groups(); track g.name) {
+            <a
+              class="btn btn-sm rounded-pill"
+              [class.btn-dark]="group() === g.name"
+              [class.btn-outline-secondary]="group() !== g.name"
+              [attr.aria-pressed]="group() === g.name"
+              routerLink="/people"
+              [queryParams]="{ group: g.name, q: term() || null }"
+              >{{ groupName(g.name) }}</a
+            >
+          }
+        </div>
+      }
+
+      @if (listResource.error() && !list()) {
+        <app-error-state message="Could not load the people." (retry)="listResource.reload()" />
+      } @else if (!list()) {
+        <app-skeleton [lines]="4" height="2.5rem" />
+      } @else if (list()!.items.length === 0) {
+        @if (term() || group()) {
+          <p class="text-body-secondary small mb-0" data-testid="no-results">
+            Nobody found.
+            <button
+              type="button"
+              class="btn btn-sm btn-link p-0 align-baseline"
+              (click)="clearFilters()"
+            >
+              Show everybody
+            </button>
+          </p>
+        } @else {
+          <p class="text-body-secondary small mb-0" data-testid="no-people">
+            No people yet. Add the people you care about, with a birthday or a reach-out reminder.
+          </p>
+        }
+      } @else {
+        <ul class="list-group" data-testid="people">
+          @for (person of list()!.items; track person.id) {
+            <li class="list-group-item p-0">
+              <a class="person-row" [routerLink]="['/people', person.id]">
+                <app-person-avatar [name]="person.name" [size]="36" />
+                <span class="flex-grow-1 min-w-0">
+                  <span class="d-block text-truncate">{{ person.name }}</span>
+                  @if (person.relationship) {
+                    <span class="d-block small text-body-secondary text-truncate">{{
+                      person.relationship
+                    }}</span>
+                  }
+                </span>
+                <span class="small text-body-secondary text-nowrap">{{ ago(person) }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+        @if (list()!.totalCount > list()!.items.length) {
+          <p class="small text-body-secondary mt-2 mb-0">
+            The first {{ list()!.items.length }} of {{ list()!.totalCount }}. Search to find fewer.
+          </p>
+        }
+      }
+    </section>
+  </div>
+</div>

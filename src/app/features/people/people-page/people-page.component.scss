@@ -1,0 +1,42 @@
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  min-height: 3rem;
+  color: inherit;
+  text-decoration: none;
+  &:hover {
+    background: var(--bs-tertiary-bg);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+  }
+}
+
+.date-badge {
+  display: inline-flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: 0.75rem;
+  background: var(--bs-warning-bg-subtle);
+  color: var(--bs-warning-text-emphasis);
+  line-height: 1.1;
+  .month {
+    font-size: 0.625rem;
+    font-weight: 600;
+  }
+  .day {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+}
+
+.min-w-0 {
+  min-width: 0;
+}
