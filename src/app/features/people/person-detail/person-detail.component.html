@@ -429,43 +429,122 @@
       </section>
 
       <!-- Links -->
-      @if (links().length > 0 || linkedFrom().length > 0) {
+      @if (links().length > 0 || linkedFrom().length > 0 || canWrite()) {
         <section aria-labelledby="links-heading">
           <h2 id="links-heading" class="h6 mb-2">Links</h2>
-          <ul class="list-group" data-testid="links">
-            @for (view of links(); track view.link.id) {
-              <li class="list-group-item d-flex align-items-center gap-2">
-                <app-icon name="link" [size]="14" />
-                <a class="flex-grow-1" [routerLink]="view.route" [queryParams]="view.queryParams">{{
-                  view.label
-                }}</a>
-                @if (canWrite()) {
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-link text-body-secondary"
-                    (click)="unlink(p, view)"
+          @if (canWrite()) {
+            <div class="d-flex flex-wrap gap-2 mb-2" data-testid="add-link">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                [disabled]="busy()"
+                (click)="picking.set('document')"
+              >
+                Document
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                [disabled]="busy()"
+                (click)="picking.set('task')"
+              >
+                Task
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                [disabled]="busy()"
+                (click)="picking.set('item')"
+              >
+                Home item
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                [disabled]="busy()"
+                (click)="picking.set('transaction')"
+              >
+                Transaction
+              </button>
+            </div>
+          }
+          @if (links().length > 0 || linkedFrom().length > 0) {
+            <ul class="list-group" data-testid="links">
+              @for (view of links(); track view.link.id) {
+                <li class="list-group-item d-flex align-items-center gap-2">
+                  <app-icon name="link" [size]="14" />
+                  <a
+                    class="flex-grow-1"
+                    [routerLink]="view.route"
+                    [queryParams]="view.queryParams"
+                    >{{ view.label }}</a
                   >
-                    Unlink
-                  </button>
-                }
-              </li>
-            }
-            @for (view of linkedFrom(); track view.link.kind + view.link.targetId) {
-              <li class="list-group-item d-flex align-items-center gap-2" data-testid="linked-from">
-                <app-icon name="link" [size]="14" />
-                <a class="flex-grow-1 min-w-0 text-truncate" [routerLink]="view.route">
-                  {{ view.link.title }}
-                </a>
-                <span class="small text-body-secondary text-nowrap"
-                  >{{ view.label }} links here</span
+                  @if (canWrite()) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-link text-body-secondary"
+                      (click)="unlink(p, view)"
+                    >
+                      Unlink
+                    </button>
+                  }
+                </li>
+              }
+              @for (view of linkedFrom(); track view.link.kind + view.link.targetId) {
+                <li
+                  class="list-group-item d-flex align-items-center gap-2"
+                  data-testid="linked-from"
                 >
-              </li>
-            }
-          </ul>
+                  <app-icon name="link" [size]="14" />
+                  <a class="flex-grow-1 min-w-0 text-truncate" [routerLink]="view.route">
+                    {{ view.link.title }}
+                  </a>
+                  <span class="small text-body-secondary text-nowrap"
+                    >{{ view.label }} links here</span
+                  >
+                </li>
+              }
+            </ul>
+          }
         </section>
       }
     </div>
   </div>
+
+  @switch (picking()) {
+    @case ('document') {
+      <app-document-picker
+        [linkedIds]="linkedIds().documents"
+        [busy]="busy()"
+        (picked)="addLink(p, 'Documents.Document', $event.id, $event.title)"
+        (closed)="picking.set(null)"
+      />
+    }
+    @case ('task') {
+      <app-task-picker
+        [linkedIds]="linkedIds().tasks"
+        [busy]="busy()"
+        (picked)="addLink(p, 'Tasks.Task', $event.id, $event.title)"
+        (closed)="picking.set(null)"
+      />
+    }
+    @case ('item') {
+      <app-item-picker
+        [linkedIds]="linkedIds().items"
+        [busy]="busy()"
+        (picked)="addLink(p, 'Home.Item', $event.id, $event.name)"
+        (closed)="picking.set(null)"
+      />
+    }
+    @case ('transaction') {
+      <app-transaction-picker
+        [linkedIds]="linkedIds().transactions"
+        [busy]="busy()"
+        (picked)="addLink(p, 'Money.Transaction', $event.id, $event.description)"
+        (closed)="picking.set(null)"
+      />
+    }
+  }
 
   @if (confirmingDelete()) {
     <app-confirm-dialog
