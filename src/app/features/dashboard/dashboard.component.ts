@@ -147,7 +147,11 @@ export class DashboardComponent {
   readonly alerts = rxResource({
     params: () => ({ version: this.dataChanges.version(), retries: this.alertRetries() }),
     stream: ({ params }) =>
-      this.alertRepository.get(params.retries > 0 || params.version !== this.firstVersion),
+      // The Today order (T74), so the dashboard and Today list the Money items the same way.
+      this.alertRepository.get(
+        params.retries > 0 || params.version !== this.firstVersion,
+        'module',
+      ),
   });
   /** The last answer stays while the next one loads, so a new check does not hide the list for a moment. */
   private readonly alertList = keptValueOf(this.alerts);
