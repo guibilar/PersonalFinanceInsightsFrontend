@@ -126,4 +126,12 @@ describe('DocumentRepository', () => {
       `/api/documents/${DOC_ID}/files/${PDF_ID}?inline=true`,
     );
   });
+  it('counts the documents of some transactions with one POST (T72)', () => {
+    let counts: Record<string, number> | undefined;
+    repository.countByLink('Money.Transaction', ['t1', 't2']).subscribe((c) => (counts = c));
+    const req = http.expectOne({ method: 'POST', url: '/api/documents/by-link/counts' });
+    expect(req.request.body).toEqual({ kind: 'Money.Transaction', targetIds: ['t1', 't2'] });
+    req.flush({ t1: 1, t2: 0 });
+    expect(counts).toEqual({ t1: 1, t2: 0 });
+  });
 });

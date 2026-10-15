@@ -29,6 +29,17 @@ export class DocumentRepository {
   }
 
   /** The documents linked to one finance transaction, newest first. */
+  /**
+   * How many documents link to each of some things (T72), by id in its stored form (lower case), 0 included. At most
+   * 200 ids. A read-only query: the read-only user can call it.
+   */
+  countByLink(kind: string, targetIds: readonly string[]): Observable<Record<string, number>> {
+    return this.http.post<Record<string, number>>(`${this.baseUrl}/by-link/counts`, {
+      kind,
+      targetIds,
+    });
+  }
+
   listByTransaction(transactionId: string): Observable<DocumentSummaryDto[]> {
     const params = new HttpParams().set('kind', MONEY_TRANSACTION_LINK).set('id', transactionId);
     return this.http.get<DocumentSummaryDto[]>(`${this.baseUrl}/by-link`, { params });

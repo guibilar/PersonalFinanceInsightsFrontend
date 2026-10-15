@@ -240,6 +240,17 @@
                   <span class="fw-medium text-truncate" [title]="transaction.description">{{
                     transaction.description
                   }}</span>
+                  <!-- T72: the transaction has documents (receipts, warranties). -->
+                  @if (documentCount(transaction.id); as count) {
+                    <app-icon
+                      name="file-text"
+                      [size]="14"
+                      class="text-body-secondary flex-shrink-0"
+                      data-testid="has-documents"
+                      [attr.title]="count === 1 ? '1 document' : count + ' documents'"
+                      [attr.aria-label]="count === 1 ? '1 document' : count + ' documents'"
+                    />
+                  }
                   <!-- Spending is the usual case; only the others are marked. -->
                   @if (transaction.flow !== Flow.Spending) {
                     <span
