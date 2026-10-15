@@ -12,6 +12,7 @@ import {
   LoanDirection,
   LoanDto,
   PERSON_DOCUMENT_LINK,
+  PERSON_TRANSACTION_LINK,
   PERSON_ITEM_LINK,
   PERSON_TASK_LINK,
   PersonDto,
@@ -27,6 +28,10 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { formatDay } from '../../../shared/utils/format';
 import { keptValueOf } from '../../../shared/utils/resource-value';
 import { transactionLink } from '../../transactions/transaction-list/transaction-list-query';
+import { DocumentPickerComponent } from '../../documents/document-picker/document-picker.component';
+import { TransactionPickerComponent } from '../../documents/transaction-picker/transaction-picker.component';
+import { ItemPickerComponent } from '../../home/item-picker/item-picker.component';
+import { TaskPickerComponent } from '../../tasks/task-picker/task-picker.component';
 import { PersonAvatarComponent } from '../person-avatar/person-avatar.component';
 import {
   PersonFieldsComponent,
@@ -81,6 +86,10 @@ export interface LinkView {
     PersonAvatarComponent,
     PersonFieldsComponent,
     SkeletonComponent,
+    DocumentPickerComponent,
+    ItemPickerComponent,
+    TaskPickerComponent,
+    TransactionPickerComponent,
   ],
   templateUrl: './person-detail.component.html',
   styleUrl: './person-detail.component.scss',
@@ -115,6 +124,8 @@ export class PersonDetailComponent {
   readonly action = signal<PersonAction>(null);
   readonly editing = signal(false);
   readonly busy = signal(false);
+  /** The open link picker (T94). */
+  readonly picking = signal<'document' | 'task' | 'item' | 'transaction' | null>(null);
   readonly confirmingDelete = signal(false);
   readonly deletingContact = signal<InteractionDto | null>(null);
   readonly limits = PEOPLE_LIMITS;
@@ -394,6 +405,29 @@ export class PersonDetailComponent {
       'Deleted the contact',
       'Could not delete the contact.',
       () => this.deletingContact.set(null),
+    );
+  }
+
+  /** The ids that the person links to, by kind: a picker shows them as linked. */
+  readonly linkedIds = computed(() => {
+    const links = this.person()?.links ?? [];
+    const of = (kind: string) => links.filter((l) => l.kind === kind).map((l) => l.targetId);
+    return {
+      documents: of(PERSON_DOCUMENT_LINK),
+      tasks: of(PERSON_TASK_LINK),
+      items: of(PERSON_ITEM_LINK),
+      transactions: of(PERSON_TRANSACTION_LINK),
+    };
+  });
+
+  /** Links the person to a document, a task, a home item, or a transaction picked in a picker (T94). */
+  addLink(person: PersonDto, kind: string, targetId: string, name: string): void {
+    if (this.busy()) return;
+    this.run(
+      this.repository.addLink(person.person.id, { kind, targetId }),
+      `Linked to “${name}”`,
+      'Could not add the link.',
+      () => this.picking.set(null),
     );
   }
 

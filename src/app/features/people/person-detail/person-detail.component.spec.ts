@@ -119,6 +119,47 @@ describe('PersonDetailComponent', () => {
       ]);
     });
 
+    it('links a task picked in the task picker', async () => {
+      await open();
+
+      button('Task').click();
+      await settle();
+      const tasks = http.expectOne((r) => r.url === '/api/tasks');
+      expect(tasks.request.params.get('status')).toBe('Open');
+      tasks.flush({
+        items: [
+          {
+            id: 'task-1',
+            title: 'Call Marco',
+            notes: null,
+            dueOn: '2026-10-16',
+            tags: [],
+            status: 'Open',
+            doneAt: null,
+            repeat: null,
+            links: [],
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
+        page: 1,
+        pageSize: 10,
+        totalCount: 1,
+        totalPages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      });
+      await settle();
+      document.querySelector<HTMLButtonElement>('[aria-label="Link Call Marco"]')!.click();
+
+      const post = http.expectOne({ method: 'POST', url: `/api/people/${PERSON_ID}/links` });
+      expect(post.request.body).toEqual({ kind: 'Tasks.Task', targetId: 'task-1' });
+      post.flush({ id: 'l1', kind: 'Tasks.Task', targetId: 'task-1', createdAt: '' });
+      await reload();
+      expect(messages()).toEqual(['Linked to “Call Marco”']);
+      expect(document.querySelector('app-task-picker')).toBeNull();
+    });
+
     it('logs a contact for today', async () => {
       await open();
       const changes = TestBed.inject(DataChangesService).version();
