@@ -75,4 +75,18 @@ describe('MoneyLayoutComponent', () => {
     expect(root.querySelector('.import-button')).toBeNull();
     expect(root.querySelectorAll('.money-item').length).toBeGreaterThan(0);
   });
+
+  it('keeps the narrow tab row inside the page: only the row scrolls sideways', async () => {
+    const fixture = TestBed.createComponent(MoneyLayoutComponent);
+    const root = fixture.nativeElement as HTMLElement;
+    root.style.display = 'block';
+    root.style.width = '360px';
+    await fixture.whenStable();
+
+    const row = root.querySelector('.money-groups')!;
+    expect(row.scrollWidth).toBeGreaterThan(row.clientWidth);
+    // The hidden group names (for screen readers) stay in the row; before, they made the whole page 370px wider.
+    const page = document.documentElement;
+    expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
+  });
 });

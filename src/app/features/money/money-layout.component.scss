@@ -120,6 +120,9 @@ $lg: 1400px;
   }
 
   .money-groups {
+    // The containing block of the hidden group names (absolute, below): without it they escape the row's scroll
+    // area and make the whole page wider than a phone.
+    position: relative;
     display: flex;
     gap: 0.25rem;
     width: 100%;
