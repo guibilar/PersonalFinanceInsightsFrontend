@@ -110,6 +110,16 @@
                     />
                   </a>
                 }
+                @if (pdfUrls().get(file.id); as url) {
+                  <!-- T62: the PDF in a frame of this site (the file's own address). -->
+                  <iframe
+                    class="pdf-preview"
+                    loading="lazy"
+                    data-testid="pdf-preview"
+                    [src]="url"
+                    [title]="'Preview of ' + file.fileName"
+                  ></iframe>
+                }
                 <div class="d-flex align-items-center gap-2 mt-2">
                   <app-icon [name]="icon(file)" [size]="16" class="text-body-secondary" />
                   <span class="flex-grow-1 min-w-0 text-truncate" [title]="file.fileName">{{

@@ -20,6 +20,7 @@ ENV API_UPSTREAM=http://backend:5096
 # Root-owned files: readable by nginx, not writable.
 COPY docker/default.conf.template /etc/nginx/templates/default.conf.template
 COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY docker/security-headers-files.conf /etc/nginx/snippets/security-headers-files.conf
 COPY --from=build /app/dist/PersonalFinancesFrontend/browser/ /usr/share/nginx/html/
 
 EXPOSE 5095

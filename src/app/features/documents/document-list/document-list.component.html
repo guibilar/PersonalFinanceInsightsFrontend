@@ -33,6 +33,23 @@
   }
 </div>
 
+@if (tags().length > 0) {
+  <!-- T62: the tags of the documents shown; a tap lists only that tag, a second tap all. -->
+  <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Tag" data-testid="tag-filters">
+    @for (t of tags(); track t) {
+      <button
+        type="button"
+        class="btn btn-sm rounded-pill kind-chip"
+        [class.active]="tag() === t"
+        [attr.aria-pressed]="tag() === t"
+        (click)="selectTag(t)"
+      >
+        #{{ t }}
+      </button>
+    }
+  </div>
+}
+
 <form class="search mb-4" role="search" (submit)="$event.preventDefault()">
   <label for="document-search" class="visually-hidden">Search documents</label>
   <app-icon name="search" [size]="16" class="search-icon text-body-secondary" />
