@@ -11,7 +11,7 @@ describe('ModulesComponent', () => {
     });
   });
 
-  it('opens Money, Documents, Tasks and Home, and shows the other modules as coming soon', async () => {
+  it('opens every module: Money, Documents, Tasks, Home, People and Journal', async () => {
     const fixture = TestBed.createComponent(ModulesComponent);
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
@@ -32,11 +32,10 @@ describe('ModulesComponent', () => {
     expect(people.getAttribute('href')).toBe('/people');
     expect(people.textContent).not.toContain('Coming soon');
 
-    const comingSoon = Array.from(root.querySelectorAll('.coming-soon'));
-    expect(comingSoon.map((card) => card.getAttribute('data-module'))).toEqual(['journal']);
-    for (const card of comingSoon) {
-      expect(card.tagName).not.toBe('A');
-      expect(card.textContent).toContain('Coming soon');
-    }
+    const journal = root.querySelector<HTMLAnchorElement>('a[data-module="journal"]')!;
+    expect(journal.getAttribute('href')).toBe('/journal');
+    expect(journal.textContent).not.toContain('Coming soon');
+
+    expect(root.querySelectorAll('.coming-soon').length).toBe(0);
   });
 });

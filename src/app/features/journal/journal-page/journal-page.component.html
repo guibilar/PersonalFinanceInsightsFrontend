@@ -1,0 +1,210 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Journal</h1>
+    <p class="text-body-secondary mb-0">A few lines a day, and the same day in other years</p>
+  </div>
+  @if (summary(); as s) {
+    @if (streak(s.streak); as label) {
+      <span class="badge rounded-pill streak-badge" data-testid="streak">{{ label }}</span>
+    }
+  }
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+    @if (summaryResource.error() && !summary()) {
+      <app-error-state message="Could not load the journal." (retry)="summaryResource.reload()" />
+    } @else if (!summary()) {
+      <app-skeleton [lines]="3" height="3rem" />
+    } @else {
+      <!-- The week: a tap opens that day. -->
+      <nav aria-label="The last 7 days" class="week" data-testid="week">
+        @for (d of summary()!.week; track d.day) {
+          <a
+            class="week-day"
+            [routerLink]="[]"
+            [queryParams]="dayParams(d.day)"
+            queryParamsHandling="merge"
+            [class.written]="d.written"
+            [class.selected]="d.day === day()"
+            [attr.aria-current]="d.day === day() ? 'date' : null"
+            [attr.aria-label]="dayTitle(d.day) + (d.written ? ', written' : ', not written')"
+          >
+            <span class="week-letter" aria-hidden="true">{{ letter(d.day) }}</span>
+            <span class="week-number" aria-hidden="true">{{ number(d.day) }}</span>
+          </a>
+        }
+      </nav>
+
+      <!-- The entry of the day -->
+      <section class="card" aria-labelledby="entry-heading">
+        <div class="card-body d-flex flex-column gap-2">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <h2 id="entry-heading" class="h6 mb-0 text-body-secondary">{{ dayTitle(day()!) }}</h2>
+            @if (!isToday()) {
+              <a
+                class="small"
+                [routerLink]="[]"
+                [queryParams]="{ day: null }"
+                queryParamsHandling="merge"
+                >Back to today</a
+              >
+            }
+          </div>
+          @if (entryError()) {
+            <app-error-state
+              message="Could not load the entry."
+              (retry)="earlierResource.reload()"
+            />
+          } @else if (entry() === undefined) {
+            <app-skeleton [lines]="3" />
+          } @else {
+            <label class="visually-hidden" for="journal-text"
+              >The entry of {{ dayTitle(day()!) }}</label
+            >
+            <textarea
+              id="journal-text"
+              class="form-control entry-text"
+              rows="7"
+              [maxlength]="limit"
+              [formControl]="text"
+              [placeholder]="canWrite() ? 'What happened today?' : ''"
+              data-testid="entry-text"
+            ></textarea>
+            @if (!canWrite()) {
+              <p class="small text-body-secondary mb-0" data-testid="read-only">
+                This account can only read the journal.
+              </p>
+            } @else {
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="!changed() || !text.value.trim() || saving()"
+                  (click)="save()"
+                  data-testid="save"
+                >
+                  {{ saving() ? 'Saving…' : 'Save' }}
+                </button>
+                @if (entry()) {
+                  <button
+                    type="button"
+                    class="btn btn-link text-danger"
+                    [disabled]="saving()"
+                    (click)="confirmingDelete.set(true)"
+                    data-testid="delete"
+                  >
+                    Delete
+                  </button>
+                }
+                @if (text.value.length > limit - 1000) {
+                  <span class="small text-body-secondary ms-auto"
+                    >{{ text.value.length }} / {{ limit }}</span
+                  >
+                }
+              </div>
+            }
+          }
+        </div>
+      </section>
+
+      <!-- On this day: only for today -->
+      @if (isToday()) {
+        <section aria-labelledby="otd-heading">
+          <h2 id="otd-heading" class="section-title">On this day</h2>
+          @if (summary()!.onThisDay.length === 0) {
+            <p class="text-body-secondary small mb-0" data-testid="no-on-this-day">
+              Nothing from this day in earlier years yet.
+            </p>
+          } @else {
+            <ul class="list-unstyled d-flex flex-column gap-2 mb-0" data-testid="on-this-day">
+              @for (o of summary()!.onThisDay; track o.entry.id) {
+                <li>
+                  <a
+                    class="card memory"
+                    [routerLink]="[]"
+                    [queryParams]="dayParams(o.entry.day)"
+                    queryParamsHandling="merge"
+                  >
+                    <span class="card-body d-flex flex-column gap-1">
+                      <span class="small fw-semibold text-body-secondary">{{
+                        ago(o.entry.day, o.yearsAgo)
+                      }}</span>
+                      <span class="entry-excerpt">{{ o.entry.excerpt }}</span>
+                    </span>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
+  </div>
+
+  <!-- All entries, with a search -->
+  <div class="col-12 col-lg-5">
+    <section class="card" aria-labelledby="entries-heading">
+      <div class="card-body d-flex flex-column gap-3">
+        <h2 id="entries-heading" class="h6 mb-0">
+          Entries
+          @if (summary(); as s) {
+            <span class="text-body-secondary fw-normal">· {{ s.entryCount }}</span>
+          }
+        </h2>
+        <label class="visually-hidden" for="journal-search">Search the journal</label>
+        <input
+          id="journal-search"
+          type="search"
+          class="form-control"
+          placeholder="Search the journal"
+          [maxlength]="200"
+          [formControl]="search"
+        />
+        @if (listResource.error() && !list()) {
+          <app-error-state message="Could not load the entries." (retry)="listResource.reload()" />
+        } @else if (!list()) {
+          <app-skeleton [lines]="4" height="2.5rem" />
+        } @else if (list()!.items.length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="no-entries">
+            {{ term() ? 'No entry matches.' : 'No entries yet. Write the first one for today.' }}
+          </p>
+        } @else {
+          <ul class="list-group list-group-flush" data-testid="entries">
+            @for (e of list()!.items; track e.id) {
+              <li class="list-group-item p-0">
+                <a
+                  class="entry-row"
+                  [routerLink]="[]"
+                  [queryParams]="dayParams(e.day)"
+                  queryParamsHandling="merge"
+                  [class.active-entry]="e.day === day()"
+                >
+                  <span class="small fw-semibold text-body-secondary">{{ shortDay(e.day) }}</span>
+                  <span class="entry-excerpt text-truncate-2">{{ e.excerpt }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (list()!.totalCount > list()!.items.length) {
+            <p class="small text-body-secondary mb-0" data-testid="more">
+              The newest {{ list()!.items.length }} of {{ list()!.totalCount }}. Search to find
+              older entries.
+            </p>
+          }
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+@if (confirmingDelete()) {
+  <app-confirm-dialog
+    [title]="'Delete the entry of ' + dayTitle(day()!) + '?'"
+    message="This cannot be undone."
+    [confirmLabel]="saving() ? 'Deleting…' : 'Delete'"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="confirmingDelete.set(false)"
+  />
+}

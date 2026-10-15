@@ -189,7 +189,8 @@ describe('TodayComponent', () => {
     expect(items[0].querySelector('[data-severity="Bad"]')).not.toBeNull();
 
     expect(root().querySelector('[data-module-status]')).toBeNull();
-    expect(placeholders()).toEqual(['journal']);
+    // Every module is active (T21): no placeholder for a module to come.
+    expect(placeholders()).toEqual([]);
     expect(root().textContent).toContain('Tuesday, October 13');
   });
 
@@ -269,7 +270,8 @@ describe('TodayComponent', () => {
     expect(root().textContent).toContain('Money could not load.');
     expect(tileLabels()).toEqual(['Expiring soon']);
     // Documents is active, so it is never a placeholder; with cards it links to its module.
-    expect(placeholders()).toEqual(['journal']);
+    // Every module is active (T21): no placeholder for a module to come.
+    expect(placeholders()).toEqual([]);
     expect(root().querySelector('a[href="/documents"]')!.textContent).toContain('Open Documents');
 
     clickButton('Retry');
@@ -282,7 +284,7 @@ describe('TodayComponent', () => {
     await fixture.whenStable();
 
     expect(root().textContent).toContain('Could not load Today.');
-    expect(placeholders().length).toBe(1);
+    expect(placeholders().length).toBe(0);
 
     clickButton('Retry');
     await answer(completeAnswer(), '/api/today?refresh=true');

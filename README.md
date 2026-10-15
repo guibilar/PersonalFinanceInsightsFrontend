@@ -10,18 +10,19 @@ The main menu is the same as on Android: **Today**, **Timeline**, **Capture**, *
 screens it is the sidebar, with the active modules below it. On narrow screens it is a bottom bar, with Capture as the
 round centre action; the menu button at the top opens the modules and the account actions.
 
-| Page      | Path           | What it shows                                                                                                        |
-| --------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                                      |
-| Timeline  | `/timeline`    | A placeholder for now                                                                                                |
-| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item" and "Add person"; Note is coming soon |
-| Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home and People open, Journal shows "Coming soon"                             |
-| Search    | `/search`      | A placeholder for now                                                                                                |
-| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                                     |
-| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                                |
-| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                               |
-| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                                      |
-| People    | `/people/…`    | Birthdays, gift ideas, lent items, and who to reach out to (below)                                                   |
+| Page      | Path           | What it shows                                                                                                                            |
+| --------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Today     | `/today`       | Cards from the Today API: Money tiles, "Needs attention", modules still to come                                                          |
+| Timeline  | `/timeline`    | A placeholder for now                                                                                                                    |
+| Capture   | `/capture`     | "Add transaction", "Import statements", "Add document", "Add task", "Add item", "Add person" and "Write in journal"; Note is coming soon |
+| Modules   | `/modules`     | Every module: Money, Documents, Tasks, Home, People and Journal                                                                          |
+| Search    | `/search`      | A placeholder for now                                                                                                                    |
+| Money     | `/money/…`     | The finance pages below, with their own sub-menu                                                                                         |
+| Documents | `/documents/…` | Receipts, warranties, leases and other papers (below)                                                                                    |
+| Tasks     | `/tasks/…`     | To-dos and repeated home tasks (below)                                                                                                   |
+| Home      | `/home/…`      | Rooms, the things in them, their value and their upkeep (below)                                                                          |
+| People    | `/people/…`    | Birthdays, gift ideas, lent items, and who to reach out to (below)                                                                       |
+| Journal   | `/journal`     | One entry a day, the streak, and the same day in other years (below)                                                                     |
 
 `/` opens Today. The modules are listed once, in `core/modules/module-registry.ts` (name, icon, route and status);
 the Modules page, the sidebar and Today read that list. To add a module, add it there and give it its routes.
@@ -313,6 +314,27 @@ module of HestiaBackend).
 The models are in `core/models/outputs/people-output-dto.ts` and `core/models/inputs/people-input-dto.ts`, written by
 hand from the HestiaBackend contracts (`PeopleDtos.cs`). The pages are in `features/people/`.
 
+## Journal
+
+The Journal module (T21) keeps one entry per day. It needs Hestia.Api (`/api/journal`, the Journal module of
+HestiaBackend).
+
+| Page    | Path                          | What it shows                                                                  |
+| ------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| Journal | `/journal`, `?day=2026-10-08` | The streak, the week, the entry of one day, "On this day", all entries, search |
+
+- **The day.** The editor shows today, or the day in the address (a day after today, or not a real day, shows today).
+  A day of the week strip, an "On this day" card, or an entry of the list opens that day. "Back to today" goes back.
+- **Write.** "Save" writes the whole text of the day (it is off until the text changes). "Delete" asks first. After a
+  change, every page loads again (data changes), so the streak, the week, and the list are new.
+- **On this day.** For today only: the same day in earlier years, the latest first ("Oct 10, 2025 · 1 year ago").
+- **Entries.** The newest 50, with the search in the address (`/journal?q=river`, full-text on the server).
+- **Today.** The Journal tile (`journal.streak`) shows the streak and links to `/journal`.
+- A read-only user can only read: the text cannot change, and there is no Save or Delete.
+
+The models are in `core/models/outputs/journal-output-dto.ts`, written by hand from the HestiaBackend contracts
+(`JournalDtos.cs`). The page is in `features/journal/`.
+
 ## Accounts and flows
 
 Statements are imported into an **account** (`/money/accounts`): a name, a type (chequing, savings, credit card or
@@ -472,6 +494,7 @@ src/app/
               home/ (the Home module: Home page, room, new item, item, the item picker, and the Home sections of a
               document, a task and a transaction)
               people/ (the People module: People page, new person, person)
+              journal/ (the Journal module: one page)
               money/ (the Money routes, sub-menu and old-address redirects), and its pages: dashboard/,
               transactions/, budgets/, recurring/ (Subscriptions), net-worth/, review/, rules/, categories/, tags/,
               bank-accounts/ (Accounts)
