@@ -366,6 +366,56 @@ describe('TodayComponent', () => {
     expect(link.getAttribute('href')).toBe('/documents/d1');
   });
 
+  it('shows no section for a module with only "Needs attention" items, and puts System last (T81)', async () => {
+    const body = completeAnswer();
+    body.modules = [
+      { module: 'System', status: 'Complete' },
+      { module: 'Money', status: 'Complete' },
+      { module: 'People', status: 'Complete' },
+    ];
+    body.cards.push(
+      attention({
+        id: 'system.broker-down',
+        kind: 'broker-down',
+        text: 'No event broker since {since}',
+        values: { since: { type: 'Date', date: '2026-10-13' } },
+        module: 'System',
+      }),
+      attention({
+        id: 'people.reach-out.p1',
+        kind: 'reach-out',
+        text: 'Reach out to Marco',
+        module: 'People',
+        link: '/people/p1',
+      }),
+    );
+    await answer(body);
+
+    const headings = Array.from(
+      root().querySelectorAll('h2[id^="today-"]:not(#today-attention):not(#today-more)'),
+    ).map((h) => h.textContent!.trim());
+    expect(headings).toEqual(['Money']);
+    const system = root().querySelector('[data-card="system.broker-down"]')!;
+    expect(system.querySelector('a')).toBeNull();
+    expect(root().querySelector('[data-card="people.reach-out.p1"] a')!.getAttribute('href')).toBe(
+      '/people/p1',
+    );
+  });
+
+  it('keeps a section with a load problem, also without tiles, and System after the others', async () => {
+    const body = completeAnswer();
+    body.modules = [
+      { module: 'System', status: 'Failed' },
+      { module: 'Money', status: 'Complete' },
+    ];
+    await answer(body);
+
+    const headings = Array.from(
+      root().querySelectorAll('h2[id^="today-"]:not(#today-attention):not(#today-more)'),
+    ).map((h) => h.textContent!.trim());
+    expect(headings).toEqual(['Money', 'System']);
+  });
+
   it('gives no link for a path outside the app', async () => {
     const body = completeAnswer();
     body.cards = [
