@@ -32,25 +32,26 @@ export interface ChartTheme {
 }
 
 export const CHART_THEMES: Record<'light' | 'dark', ChartTheme> = {
+  // Hearth: warm inks on cream; the series are slate blue, terracotta, sage and plum.
   light: {
-    text: '#4b5563',
-    muted: '#6b7280',
-    strong: '#111827',
-    grid: '#e9ecf2',
-    axis: '#c9cfdb',
-    surface: '#ffffff',
-    tooltip: '#ffffff',
-    series: { blue: '#2a78d6', orange: '#eb6834', aqua: '#1baf7a', magenta: '#e87ba4' },
+    text: '#5b524a',
+    muted: '#7a6f64',
+    strong: '#2b2622',
+    grid: '#efe7dc',
+    axis: '#d9cdbd',
+    surface: '#fffdf9',
+    tooltip: '#fffdf9',
+    series: { blue: '#3f6f8f', orange: '#c2643c', aqua: '#5f8f5a', magenta: '#a35d84' },
   },
   dark: {
-    text: '#cbd5e1',
-    muted: '#94a3b8',
-    strong: '#f1f5f9',
-    grid: '#262d3b',
-    axis: '#3b4558',
-    surface: '#171b24',
-    tooltip: '#212836',
-    series: { blue: '#3987e5', orange: '#d95926', aqua: '#199e70', magenta: '#d55181' },
+    text: '#d8cfc4',
+    muted: '#a89c8f',
+    strong: '#f5efe7',
+    grid: '#352f29',
+    axis: '#4a4239',
+    surface: '#26211d',
+    tooltip: '#312b26',
+    series: { blue: '#6f9cbc', orange: '#e0805a', aqua: '#86b37f', magenta: '#c987ab' },
   },
 };
 

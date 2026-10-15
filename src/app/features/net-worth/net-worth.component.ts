@@ -158,25 +158,29 @@ export function netWorthChart(
                   Earlier months leave out accounts whose history starts later.
                 </p>
               }
-              <table class="visually-hidden">
-                <caption>
-                  Net worth at the end of each month
-                </caption>
-                <tr>
-                  <th scope="col">Month</th>
-                  <th scope="col">Assets</th>
-                  <th scope="col">Owed on cards</th>
-                  <th scope="col">Net worth</th>
-                </tr>
-                @for (month of report.months; track month.month) {
+              <!-- The chart's numbers, for screen readers. Hidden on a wrapper: a table does not shrink to the 1px of
+                   .visually-hidden, and it made the page wider than a phone. -->
+              <div class="visually-hidden">
+                <table>
+                  <caption>
+                    Net worth at the end of each month
+                  </caption>
                   <tr>
-                    <th scope="row">{{ month.month }}</th>
-                    <td>{{ month.assets | money }}</td>
-                    <td>{{ month.liabilities | money }}</td>
-                    <td>{{ month.netWorth | money }}</td>
+                    <th scope="col">Month</th>
+                    <th scope="col">Assets</th>
+                    <th scope="col">Owed on cards</th>
+                    <th scope="col">Net worth</th>
                   </tr>
-                }
-              </table>
+                  @for (month of report.months; track month.month) {
+                    <tr>
+                      <th scope="row">{{ month.month }}</th>
+                      <td>{{ month.assets | money }}</td>
+                      <td>{{ month.liabilities | money }}</td>
+                      <td>{{ month.netWorth | money }}</td>
+                    </tr>
+                  }
+                </table>
+              </div>
             </div>
           </div>
         }

@@ -259,6 +259,23 @@ describe('ShellComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('.signed-in-as')?.textContent).toContain('alex');
+    expect(element.querySelector('.avatar')?.textContent?.trim()).toBe('A');
+
+    // The account actions are in a small menu (they were seven rows of the sidebar).
+    expect(element.querySelector('#account-menu')).toBeNull();
+    element.querySelector<HTMLButtonElement>('.account-toggle')!.click();
+    await fixture.whenStable();
+    expect(
+      Array.from(element.querySelectorAll('#account-menu [role="menuitem"]')).map((item) =>
+        item.textContent!.trim(),
+      ),
+    ).toEqual(['Change password', 'Sign out other devices', 'Sign out']);
+    // A click elsewhere closes it.
+    document.body.click();
+    await fixture.whenStable();
+    expect(element.querySelector('#account-menu')).toBeNull();
+    element.querySelector<HTMLButtonElement>('.account-toggle')!.click();
+    await fixture.whenStable();
 
     const signOut = Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find(
       (b) => b.textContent?.trim() === 'Sign out',

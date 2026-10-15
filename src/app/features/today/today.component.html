@@ -1,7 +1,8 @@
-<div class="d-flex align-items-start gap-2 mb-4">
+<div class="d-flex align-items-start gap-2 mb-4 today-header">
   <div class="min-w-0">
-    <h1 class="h3 mb-1">Today</h1>
-    <p class="text-body-secondary mb-0">{{ dateLabel() }}</p>
+    <p class="today-date mb-1">{{ dateLabel() }}</p>
+    <h1 class="greeting mb-1" data-testid="greeting">{{ greeting() }}</h1>
+    <p class="text-body-secondary mb-0">Here is how things are at home today.</p>
   </div>
   <!-- T69: the bell: how many items need attention; a click goes to the list. -->
   <button
@@ -25,46 +26,75 @@
     class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
     [disabled]="todayResource.isLoading()"
     [attr.aria-busy]="todayResource.isLoading()"
+    aria-label="Refresh"
+    title="Refresh"
     (click)="refresh()"
   >
-    <app-icon name="refresh" [size]="14" /> Refresh
+    <app-icon name="refresh" [size]="14" /> <span class="d-none d-sm-inline">Refresh</span>
   </button>
 </div>
 
 @if (today()) {
-  @for (section of sections(); track section.id) {
-    <section class="mb-4" [attr.aria-labelledby]="'today-' + section.id">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <h2 [id]="'today-' + section.id" class="h6 mb-0">{{ section.name }}</h2>
-        @if (section.route) {
-          <a [routerLink]="section.route" class="small ms-auto text-decoration-none"
-            >Open {{ section.name }}</a
-          >
-        }
-      </div>
+  <!-- A module with several tiles has the whole width; one with a single tile sits beside the next. -->
+  <div class="today-sections mb-4">
+    @for (section of sections(); track section.id) {
+      <section
+        class="today-section"
+        [class.wide]="section.tiles.length > 1 || section.status === 'Failed'"
+        [attr.data-accent]="section.id"
+        [attr.aria-labelledby]="'today-' + section.id"
+      >
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="section-icon" aria-hidden="true"
+            ><app-icon [name]="section.icon" [size]="16"
+          /></span>
+          <h2 [id]="'today-' + section.id" class="section-title mb-0">{{ section.name }}</h2>
+          @if (section.route) {
+            <a [routerLink]="section.route" class="small ms-auto text-decoration-none"
+              >Open {{ section.name }}</a
+            >
+          }
+        </div>
 
-      @if (section.status === 'Failed') {
-        <app-error-state
-          [message]="section.name + ' could not load.'"
-          (retry)="refresh()"
-          [attr.data-module-status]="section.id"
-        />
-      } @else {
-        @if (section.status === 'Partial') {
-          <p
-            class="small text-warning-emphasis mb-2 d-flex align-items-center gap-1"
+        @if (section.status === 'Failed') {
+          <app-error-state
+            [message]="section.name + ' could not load.'"
+            (retry)="refresh()"
             [attr.data-module-status]="section.id"
+          />
+        } @else {
+          @if (section.status === 'Partial') {
+            <p
+              class="small text-warning-emphasis mb-2 d-flex align-items-center gap-1"
+              [attr.data-module-status]="section.id"
+            >
+              <app-icon name="alert-circle" [size]="14" />
+              Some {{ section.name }} figures could not load.
+            </p>
+          }
+          <div
+            class="row g-3"
+            [class]="
+              section.tiles.length > 1
+                ? 'row row-cols-1 row-cols-sm-2 row-cols-xxl-4 g-3'
+                : 'row row-cols-1 g-3'
+            "
           >
-            <app-icon name="alert-circle" [size]="14" />
-            Some {{ section.name }} figures could not load.
-          </p>
-        }
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
-          @for (card of section.tiles; track card.id) {
-            <div class="col" [attr.data-card]="card.id">
-              @let tile = linkOf(card);
-              @if (tile) {
-                <a [routerLink]="tile" class="stat-link">
+            @for (card of section.tiles; track card.id) {
+              <div class="col" [attr.data-card]="card.id">
+                @let tile = linkOf(card);
+                @if (tile) {
+                  <a [routerLink]="tile" class="stat-link">
+                    <app-stat-card
+                      [label]="card.title"
+                      [icon]="tileIcon(card)"
+                      [value]="valueText(card)"
+                      [hint]="text(card) || null"
+                      [hintIcon]="trendIcon(card)"
+                      [tone]="tone(card)"
+                    />
+                  </a>
+                } @else {
                   <app-stat-card
                     [label]="card.title"
                     [icon]="tileIcon(card)"
@@ -73,23 +103,14 @@
                     [hintIcon]="trendIcon(card)"
                     [tone]="tone(card)"
                   />
-                </a>
-              } @else {
-                <app-stat-card
-                  [label]="card.title"
-                  [icon]="tileIcon(card)"
-                  [value]="valueText(card)"
-                  [hint]="text(card) || null"
-                  [hintIcon]="trendIcon(card)"
-                  [tone]="tone(card)"
-                />
-              }
-            </div>
-          }
-        </div>
-      }
-    </section>
-  }
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
 
   @if (attention().length > 0) {
     <app-attention-list class="d-block mb-4" [items]="attention()" headingId="today-attention" />
@@ -98,7 +119,7 @@
   <app-error-state message="Could not load Today." (retry)="refresh()" />
 } @else {
   <section class="mb-4" aria-label="Loading">
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xxl-4 g-3">
       @for (n of [1, 2, 3, 4]; track n) {
         <div class="col">
           <div class="card h-100">

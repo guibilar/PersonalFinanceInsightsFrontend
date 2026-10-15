@@ -12,8 +12,8 @@
     <app-icon name="menu" />
   </button>
   <a routerLink="/today" class="brand">
-    <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
-    Hestia
+    <app-logo [size]="28" />
+    <span class="brand-name">Hestia</span>
   </a>
   <button
     type="button"
@@ -39,8 +39,8 @@
 >
   <div class="sidebar-header">
     <a routerLink="/today" class="brand" [attr.title]="collapsed() ? 'Hestia' : null">
-      <span class="brand-mark"><app-icon name="logo" [size]="18" /></span>
-      <span class="label">Hestia</span>
+      <app-logo [size]="32" />
+      <span class="label brand-name">Hestia</span>
     </a>
     <button
       type="button"
@@ -111,75 +111,84 @@
   </div>
 
   <div class="sidebar-footer">
-    @if (auth.user(); as user) {
-      <div
-        class="nav-item signed-in-as"
-        [attr.title]="collapsed() ? 'Signed in as ' + user.username : null"
+    <!-- Who is signed in, with the account actions in a small menu. -->
+    <div class="account" [class.menu-open]="accountMenuOpen()">
+      @if (auth.user(); as user) {
+        <div
+          class="signed-in-as"
+          [attr.title]="collapsed() ? 'Signed in as ' + user.username : null"
+        >
+          <span class="avatar" aria-hidden="true">{{ initial(user.username) }}</span>
+          <span class="label text-truncate">
+            <span class="visually-hidden">Signed in as </span>{{ user.username }}
+          </span>
+        </div>
+      }
+      <button
+        type="button"
+        class="btn btn-icon account-toggle"
+        aria-label="Account"
+        aria-controls="account-menu"
+        [attr.aria-expanded]="accountMenuOpen()"
+        title="Account"
+        (click)="accountMenuOpen.set(!accountMenuOpen())"
       >
-        <app-icon name="user" />
-        <span class="label text-truncate">
-          <span class="visually-hidden">Signed in as </span>{{ user.username }}
-        </span>
-      </div>
-    }
-    <button
-      type="button"
-      class="nav-item"
-      (click)="changingPassword.set(true)"
-      [attr.title]="collapsed() ? 'Change password' : null"
-    >
-      <app-icon name="key" />
-      <span class="label">Change password</span>
-    </button>
-    <button
-      type="button"
-      class="nav-item"
-      (click)="confirmingSignOutOthers.set(true)"
-      [attr.title]="collapsed() ? 'Sign out other devices' : null"
-    >
-      <app-icon name="devices" />
-      <span class="label">Sign out other devices</span>
-    </button>
-    <button
-      type="button"
-      class="nav-item"
-      (click)="signOut()"
-      [attr.title]="collapsed() ? 'Sign out' : null"
-    >
-      <app-icon name="log-out" />
-      <span class="label">Sign out</span>
-    </button>
-    <button
-      type="button"
-      class="nav-item privacy-toggle"
-      (click)="toggleAmountsHidden()"
-      [attr.aria-pressed]="amountsHidden()"
-      [attr.title]="collapsed() ? (amountsHidden() ? 'Show amounts' : 'Hide amounts') : null"
-    >
-      <app-icon [name]="amountsHidden() ? 'eye-off' : 'eye'" />
-      <span class="label">Hide amounts</span>
-    </button>
-    <button
-      type="button"
-      class="nav-item"
-      (click)="theme.toggle()"
-      [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-      [attr.title]="collapsed() ? 'Toggle theme' : null"
-    >
-      <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" />
-      <span class="label">{{ theme.theme() === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
-    </button>
-    <button
-      type="button"
-      class="nav-item d-none d-md-flex"
-      (click)="toggleCollapsed()"
-      [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-      [attr.aria-expanded]="!collapsed()"
-      [attr.title]="collapsed() ? 'Expand sidebar' : null"
-    >
-      <app-icon name="sidebar" />
-      <span class="label">Collapse</span>
-    </button>
+        <app-icon name="more" />
+      </button>
+      @if (accountMenuOpen()) {
+        <ul id="account-menu" class="account-menu" role="menu">
+          <li role="none">
+            <button type="button" role="menuitem" class="menu-item" (click)="openChangePassword()">
+              <app-icon name="key" /> Change password
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" role="menuitem" class="menu-item" (click)="openSignOutOthers()">
+              <app-icon name="devices" /> Sign out other devices
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" role="menuitem" class="menu-item" (click)="signOut()">
+              <app-icon name="log-out" /> Sign out
+            </button>
+          </li>
+        </ul>
+      }
+    </div>
+    <!-- The room's switches: amounts, light, and the width of this menu. -->
+    <div class="tools" role="group" aria-label="Display">
+      <button
+        type="button"
+        class="btn btn-icon privacy-toggle"
+        (click)="toggleAmountsHidden()"
+        [attr.aria-pressed]="amountsHidden()"
+        [attr.aria-label]="amountsHidden() ? 'Show amounts' : 'Hide amounts'"
+        [attr.title]="amountsHidden() ? 'Show amounts' : 'Hide amounts'"
+      >
+        <app-icon [name]="amountsHidden() ? 'eye-off' : 'eye'" />
+      </button>
+      <button
+        type="button"
+        class="btn btn-icon theme-toggle"
+        (click)="theme.toggle()"
+        [attr.aria-label]="
+          theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+        "
+        [attr.title]="theme.theme() === 'dark' ? 'Light mode' : 'Dark mode'"
+      >
+        <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" />
+      </button>
+      <button
+        type="button"
+        class="btn btn-icon d-none d-md-inline-flex"
+        (click)="toggleCollapsed()"
+        [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-expanded]="!collapsed()"
+        [attr.title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
+        <app-icon name="sidebar" />
+      </button>
+    </div>
   </div>
 </nav>
 

@@ -4,10 +4,11 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { AuthService, safeReturnUrl } from '../../core/auth/auth.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { LogoComponent } from '../../shared/ui/logo/logo.component';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, IconComponent, LogoComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,0 +1,38 @@
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+
+/**
+ * The Hestia mark ("Hearth", T23): a house whose doorway is a glowing hearth, cream on terracotta. Decorative: the name
+ * next to it says what it is. The same drawing is `public/favicon.svg`.
+ */
+@Component({
+  selector: 'app-logo',
+  template: `
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 32 32"
+      [attr.width]="size()"
+      [attr.height]="size()"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect width="32" height="32" rx="9" fill="#B5562F" />
+      <path d="M20.6 7.2h2.6v5.6l-2.6-2.2z" fill="#FAF6EF" />
+      <path
+        d="M16 5.6 5.2 14.6a1 1 0 0 0 1.3 1.6l1.6-1.3V24a1.6 1.6 0 0 0 1.6 1.6h12.6a1.6 1.6 0 0 0 1.6-1.6v-9.1l1.6 1.3a1 1 0 0 0 1.3-1.6z"
+        fill="#FAF6EF"
+      />
+      <path d="M12.4 25.6v-4.4a3.6 3.6 0 0 1 7.2 0v4.4z" fill="#F2B45A" />
+      <path d="M14.3 25.6v-2.6a1.7 1.7 0 0 1 3.4 0v2.6z" fill="#E07A3A" />
+    </svg>
+  `,
+  styles: `
+    :host {
+      display: inline-flex;
+      flex-shrink: 0;
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class LogoComponent {
+  readonly size = input(32);
+}

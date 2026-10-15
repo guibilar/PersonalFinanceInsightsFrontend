@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import {
   NavigationEnd,
   NavigationSkipped,
@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { ThemeService } from '../../theme/theme.service';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
+import { LogoComponent } from '../../../shared/ui/logo/logo.component';
 import { BottomBarComponent } from '../bottom-bar/bottom-bar.component';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -46,6 +47,7 @@ const COLLAPSED_STORAGE_KEY = 'sidebar-collapsed';
     RouterLink,
     RouterLinkActive,
     IconComponent,
+    LogoComponent,
     BottomBarComponent,
     ModalComponent,
     ChangePasswordFormComponent,
@@ -71,6 +73,8 @@ export class ShellComponent {
   readonly mobileOpen = signal(false);
   readonly changingPassword = signal(false);
   readonly confirmingSignOutOthers = signal(false);
+  /** The small menu of the account (password, sign-out). */
+  readonly accountMenuOpen = signal(false);
   /** The import panel opens from Money and Capture; the shell shows it over any page. */
   protected readonly importer = inject(StatementImportLauncher);
   /** "Add transaction" opens from Capture and the Transactions page; the shell shows it over any page too. */
@@ -87,7 +91,37 @@ export class ShellComponent {
         filter((event) => event instanceof NavigationEnd || event instanceof NavigationSkipped),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.mobileOpen.set(false));
+      .subscribe(() => {
+        this.mobileOpen.set(false);
+        this.accountMenuOpen.set(false);
+      });
+  }
+
+  /** A click outside the account closes its menu. */
+  @HostListener('document:click', ['$event'])
+  closeAccountMenu(event: MouseEvent): void {
+    if (!(event.target as Element | null)?.closest?.('.account')) this.accountMenuOpen.set(false);
+  }
+
+  /** Escape closes the account menu, wherever the focus is. */
+  @HostListener('document:keydown.escape')
+  closeAccountMenuOnEscape(): void {
+    this.accountMenuOpen.set(false);
+  }
+
+  /** The first letter of the user name, for the avatar. */
+  initial(name: string): string {
+    return (name.trim()[0] ?? '?').toUpperCase();
+  }
+
+  openChangePassword(): void {
+    this.accountMenuOpen.set(false);
+    this.changingPassword.set(true);
+  }
+
+  openSignOutOthers(): void {
+    this.accountMenuOpen.set(false);
+    this.confirmingSignOutOthers.set(true);
   }
 
   onImported(summary: ImportSummary): void {
@@ -125,6 +159,7 @@ export class ShellComponent {
   }
 
   signOut(): void {
+    this.accountMenuOpen.set(false);
     this.auth.logout().subscribe({
       error: () => this.toasts.error('Could not sign out. Try again.'),
     });
