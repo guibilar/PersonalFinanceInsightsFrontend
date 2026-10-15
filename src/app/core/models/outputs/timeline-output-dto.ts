@@ -35,8 +35,10 @@ export interface TimelineDto {
   today: string;
   from: string;
   to: string;
-  /** The `before` of the next page. */
+  /** The `before` of the next page: it ends on the latest earlier day with an entry. */
   earlier: string;
   days: TimelineDayDto[];
   modules: TimelineModuleDto[];
+  /** False when no module has anything earlier (no "Show earlier"). Missing from an older host: true. */
+  hasEarlier?: boolean;
 }

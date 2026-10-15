@@ -103,6 +103,7 @@ describe('TimelinePageComponent', () => {
         from: '2026-09-13',
         to: '2026-09-26',
         earlier: '2026-09-13',
+        hasEarlier: false,
         days: [
           {
             day: '2026-09-20',
@@ -128,6 +129,11 @@ describe('TimelinePageComponent', () => {
     expect(
       root().querySelector('[data-entry="money.transaction.t2"] .amount')!.classList,
     ).toContain('text-success');
+    // Nothing earlier in any module: no "Show earlier" (it went on through empty weeks for ever).
+    expect(root().querySelector('[data-testid="earlier"]')).toBeNull();
+    expect(text(root().querySelector('[data-testid="start"]')!)).toBe(
+      'That is everything: nothing happened earlier.',
+    );
   });
 
   it('says which module failed, and loads again after a change in any module', async () => {

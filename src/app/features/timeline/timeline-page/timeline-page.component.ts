@@ -100,7 +100,11 @@ export class TimelinePageComponent {
     this.load(null);
   }
 
+  /** False when the last page says that no module has anything earlier. */
+  readonly hasEarlier = computed(() => this.pages().at(-1)?.hasEarlier !== false);
+
   showEarlier(): void {
+    if (!this.hasEarlier()) return;
     const before = this.pages().at(-1)?.earlier;
     if (before && !this.loading()) this.load(before);
   }

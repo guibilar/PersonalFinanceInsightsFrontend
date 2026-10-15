@@ -2123,6 +2123,8 @@ export interface components {
       earlier: string;
       days: components['schemas']['TimelineDayDto'][];
       modules: components['schemas']['TimelineModuleDto'][];
+      /** @default true */
+      hasEarlier: boolean;
     };
     TimelineEntry: {
       id: string;

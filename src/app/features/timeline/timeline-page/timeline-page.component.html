@@ -83,15 +83,21 @@
     </section>
   }
   <div class="d-flex align-items-center gap-3">
-    <button
-      type="button"
-      class="btn btn-outline-secondary"
-      [disabled]="loading()"
-      (click)="showEarlier()"
-      data-testid="earlier"
-    >
-      {{ loading() ? 'Loading…' : 'Show earlier' }}
-    </button>
+    @if (hasEarlier()) {
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        [disabled]="loading()"
+        (click)="showEarlier()"
+        data-testid="earlier"
+      >
+        {{ loading() ? 'Loading…' : 'Show earlier' }}
+      </button>
+    } @else {
+      <span class="small text-body-secondary" data-testid="start"
+        >That is everything: nothing happened earlier.</span
+      >
+    }
     @if (error()) {
       <span class="small text-danger">Could not load more.</span>
     }
