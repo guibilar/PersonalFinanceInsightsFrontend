@@ -4,7 +4,7 @@ import { Routes } from '@angular/router';
 export const JOURNAL_ROUTES: Routes = [
   {
     path: '',
-    title: 'Journal · Personal Finances',
+    title: 'Journal · Hestia',
     loadComponent: () =>
       import('./journal-page/journal-page.component').then((m) => m.JournalPageComponent),
   },

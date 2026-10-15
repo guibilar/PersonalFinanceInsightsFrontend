@@ -1,8 +1,8 @@
-# Personal Finances Frontend
+# Hestia — web app
 
-Angular 22 frontend for the Personal Finance Insights API: where the money goes, what is coming, and what you are
-worth, from the bank statements you import. The app is growing into Hestia, a personal "everything app": finance is
-its first module, **Money**.
+Angular 22 frontend of **Hestia**, a personal "everything app" (T23: the app shows the name Hestia, with a flame icon
+in ember orange). Its first module, **Money**, is the Personal Finance Insights app: where the money goes, what is
+coming, and what you are worth, from the bank statements you import. The repository keeps its old name.
 
 ## The shell and the modules
 

@@ -5,18 +5,18 @@ export const TASKS_ROUTES: Routes = [
   {
     // Today links here: the tile (/tasks) and the alert for many overdue tasks (/tasks?due=overdue).
     path: '',
-    title: 'Tasks · Personal Finances',
+    title: 'Tasks · Hestia',
     loadComponent: () => import('./task-list/task-list.component').then((m) => m.TaskListComponent),
   },
   {
     path: 'new',
-    title: 'New task · Personal Finances',
+    title: 'New task · Hestia',
     loadComponent: () => import('./task-new/task-new.component').then((m) => m.TaskNewComponent),
   },
   {
     // The alert for one overdue task links here, as /tasks/<id>.
     path: ':id',
-    title: 'Task · Personal Finances',
+    title: 'Task · Hestia',
     loadComponent: () =>
       import('./task-detail/task-detail.component').then((m) => m.TaskDetailComponent),
   },

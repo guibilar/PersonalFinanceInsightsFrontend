@@ -4,24 +4,24 @@ import { Routes } from '@angular/router';
 export const HOME_ROUTES: Routes = [
   {
     path: '',
-    title: 'Home · Personal Finances',
+    title: 'Home · Hestia',
     loadComponent: () => import('./home-page/home-page.component').then((m) => m.HomePageComponent),
   },
   {
     // A room id, or "none" for the items without a room.
     path: 'rooms/:id',
-    title: 'Room · Personal Finances',
+    title: 'Room · Hestia',
     loadComponent: () => import('./room-page/room-page.component').then((m) => m.RoomPageComponent),
   },
   {
     path: 'items/new',
-    title: 'New item · Personal Finances',
+    title: 'New item · Hestia',
     loadComponent: () => import('./item-new/item-new.component').then((m) => m.ItemNewComponent),
   },
   {
     // The warranty alert links here, as /home/items/<id>.
     path: 'items/:id',
-    title: 'Item · Personal Finances',
+    title: 'Item · Hestia',
     loadComponent: () =>
       import('./item-detail/item-detail.component').then((m) => m.ItemDetailComponent),
   },
