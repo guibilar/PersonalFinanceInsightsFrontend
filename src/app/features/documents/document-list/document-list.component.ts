@@ -24,7 +24,7 @@ import { PaginatedContentComponent } from '../../../shared/ui/paginated-content/
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { formatDay } from '../../../shared/utils/format';
 import { keptValueOf, valueOf } from '../../../shared/utils/resource-value';
-import { KIND_FILTER_LABELS, daysUntil, expiryText, expirySoonRange, ocrLabel } from '../documents';
+import { KIND_FILTER_LABELS, daysUntil, expiryText, ocrLabel } from '../documents';
 
 const PAGE_SIZE = 20;
 
@@ -81,12 +81,12 @@ export class DocumentListComponent {
   /** The last page stays while the next one loads, so the search box keeps its focus. */
   readonly result = keptValueOf(this.documents);
 
-  /** The ones that expire from today to 30 days ahead, soonest first. Not shown during a search. */
+  /** The ones that expire soon (the server's today to 30 days ahead, T86), soonest first. Not shown during a search. */
   readonly expiring = rxResource({
     params: () => (this.q() ? undefined : { kind: this.kind() }),
     stream: ({ params }) =>
       this.repository
-        .list({ ...params, ...expirySoonRange(this.today), pageSize: 50 })
+        .list({ ...params, expiring: 'soon', pageSize: 50 })
         .pipe(
           map((page) =>
             [...page.items].sort((a, b) => (a.expiresOn ?? '').localeCompare(b.expiresOn ?? '')),

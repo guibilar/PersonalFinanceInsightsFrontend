@@ -153,10 +153,3 @@ export function changeError(error: unknown, fallback: string): string {
   }
   return validationDetail(error, fallback);
 }
-
-/** The "Expire soon" window: from today to 30 days ahead. */
-export function expirySoonRange(today: Date): { expiresFrom: string; expiresTo: string } {
-  const end = new Date(today);
-  end.setDate(end.getDate() + 30);
-  return { expiresFrom: isoDay(today), expiresTo: isoDay(end) };
-}

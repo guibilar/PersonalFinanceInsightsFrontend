@@ -25,13 +25,13 @@ describe('DocumentListComponent', () => {
   const rows = (testId: string) =>
     Array.from(root().querySelectorAll(`[data-testid="${testId}"] li`)).map(text);
 
-  /** The two list requests: the expiring ones (with expiresFrom) and the page. */
+  /** The two list requests: the expiring ones (with expiring=soon) and the page. */
   function pending(): { page?: TestRequest; expiring?: TestRequest } {
     TestBed.tick();
     const requests = http.match((r) => r.url === '/api/documents');
     return {
-      page: requests.find((r) => !r.request.params.has('expiresFrom')),
-      expiring: requests.find((r) => r.request.params.has('expiresFrom')),
+      page: requests.find((r) => !r.request.params.has('expiring')),
+      expiring: requests.find((r) => r.request.params.has('expiring')),
     };
   }
 
@@ -101,8 +101,9 @@ describe('DocumentListComponent', () => {
     expect(page!.request.params.get('page')).toBe('1');
     expect(page!.request.params.get('pageSize')).toBe('20');
     expect(page!.request.params.has('kind')).toBe(false);
-    expect(expiring!.request.params.get('expiresFrom')).toBe(isoDay(new Date()));
-    expect(expiring!.request.params.get('expiresTo')).toBe(addDays(30));
+    // The server's today decides the window (T86), not the browser's.
+    expect(expiring!.request.params.get('expiring')).toBe('soon');
+    expect(expiring!.request.params.has('expiresFrom')).toBe(false);
 
     expect(rows('documents')).toEqual([
       'Dishwasher warranty Warranty · Nov 9, 2024 · 2 files #kitchen #appliances Reading text…',
