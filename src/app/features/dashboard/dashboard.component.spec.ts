@@ -502,6 +502,17 @@ describe('DashboardComponent', () => {
           link: '/money/budgets',
         }),
         alert({
+          id: 'money.budget-warning.b2',
+          kind: 'budget-warning',
+          text: '{budget} is nearly used up ({used} used, {left} left)',
+          values: {
+            budget: { type: 'Text', text: 'Fuel' },
+            used: { type: 'Percent', number: 84 },
+            left: { type: 'Money', number: 32 },
+          },
+          link: '/money/budgets',
+        }),
+        alert({
           id: 'documents.expires-soon.d1',
           module: 'Documents',
           kind: 'expires-soon',
@@ -542,6 +553,7 @@ describe('DashboardComponent', () => {
     // Only Money: the other modules' alerts are for Today and the bell.
     expect(attentionTexts(root)).toEqual([
       'Groceries is over its limit (120% used)',
+      'Fuel is nearly used up (84% used, $32.00 left)',
       "Wealthsimple TFSA: statements reach Jun 30, 2026. Import last month's",
       'NETFLIX went up from $16.49 to $18.99',
       '4 transactions are in Other because no rule names their merchants',
@@ -550,6 +562,7 @@ describe('DashboardComponent', () => {
       a.getAttribute('href'),
     );
     expect(links).toEqual([
+      '/money/budgets',
       '/money/budgets',
       '/money/transactions#import',
       '/money/subscriptions',
@@ -560,6 +573,12 @@ describe('DashboardComponent', () => {
         .querySelector('[data-card="money.budget-over.b1"] .attention-icon')!
         .getAttribute('data-severity'),
     ).toBe('Bad');
+    // The 80 % warning (T71) has the budget icon too.
+    const iconOf = (id: string) =>
+      root.querySelector(`[data-card="${id}"] .attention-icon app-icon`)!.innerHTML;
+    expect(iconOf('money.budget-warning.b2')).toContain('<');
+    expect(iconOf('money.budget-warning.b2')).toBe(iconOf('money.budget-over.b1'));
+    expect(iconOf('money.budget-warning.b2')).not.toBe(iconOf('money.unsorted'));
     expect(root.querySelector('[data-attention-status]')).toBeNull();
   });
 
