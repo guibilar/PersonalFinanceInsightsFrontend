@@ -678,7 +678,9 @@ describe('DashboardComponent', () => {
     const fixture = TestBed.createComponent(DashboardComponent);
     TestBed.tick();
     flushReportsAgain();
-    http.expectOne('/api/alerts?order=module').flush(null, { status: 404, statusText: 'Not Found' });
+    http
+      .expectOne('/api/alerts?order=module')
+      .flush(null, { status: 404, statusText: 'Not Found' });
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
 
