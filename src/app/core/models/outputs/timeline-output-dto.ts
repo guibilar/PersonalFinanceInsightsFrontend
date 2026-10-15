@@ -39,6 +39,6 @@ export interface TimelineDto {
   earlier: string;
   days: TimelineDayDto[];
   modules: TimelineModuleDto[];
-  /** False when no module has anything earlier (no "Show earlier"). Missing from an older host: true. */
-  hasEarlier?: boolean;
+  /** False when no module has anything earlier (no "Show earlier"). An older host leaves it out: the page reads that as true. */
+  hasEarlier: boolean;
 }
