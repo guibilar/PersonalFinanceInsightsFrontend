@@ -200,6 +200,10 @@ export class DocumentDetailComponent {
     });
   }
 
+  thumbnailUrl(file: DocumentFileDto): string {
+    return this.repository.thumbnailUrl(this.id(), file.id);
+  }
+
   fileUrl(file: DocumentFileDto, inline = false): string {
     return this.repository.fileUrl(this.id(), file.id, inline);
   }

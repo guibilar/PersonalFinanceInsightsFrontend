@@ -110,6 +110,18 @@
                     />
                   </a>
                 }
+                @if (file.contentType === 'image/heic') {
+                  <!-- T61: browsers do not show HEIC; the server's thumbnail does. -->
+                  <a [href]="fileUrl(file)" [attr.download]="file.fileName">
+                    <img
+                      class="file-preview"
+                      loading="lazy"
+                      data-testid="heic-preview"
+                      [src]="thumbnailUrl(file)"
+                      [alt]="'Preview of ' + file.fileName"
+                    />
+                  </a>
+                }
                 @if (pdfUrls().get(file.id); as url) {
                   <!-- T62: the PDF in a frame of this site (the file's own address). -->
                   <iframe

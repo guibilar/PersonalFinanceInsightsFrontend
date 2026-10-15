@@ -171,6 +171,20 @@ describe('DocumentDetailComponent', () => {
     expect(text.textContent).toContain('LIMITED WARRANTY two years');
   });
 
+  it('shows the thumbnail of a HEIC photo, which browsers do not show (T61)', async () => {
+    const heic = {
+      ...testDocument().files[1],
+      fileName: 'IMG_2031.HEIC',
+      contentType: 'image/heic',
+    };
+    await open(testDocument({ files: [heic] }));
+
+    const image = root().querySelector<HTMLImageElement>('[data-testid="heic-preview"]')!;
+    expect(image.getAttribute('src')).toBe(`/api/documents/${DOC_ID}/files/${PHOTO_ID}/thumbnail`);
+    expect(image.getAttribute('alt')).toBe('Preview of IMG_2031.HEIC');
+    expect(image.closest('a')!.getAttribute('download')).toBe('IMG_2031.HEIC');
+  });
+
   it('edits the details and saves them all', async () => {
     const changes = TestBed.inject(DataChangesService);
     const before = changes.version();

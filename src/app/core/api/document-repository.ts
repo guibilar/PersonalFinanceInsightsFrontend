@@ -109,4 +109,12 @@ export class DocumentRepository {
     const url = `${this.baseUrl}/${documentId}/files/${fileId}`;
     return inline ? `${url}?inline=true` : url;
   }
+
+  /**
+   * The address of the small JPEG preview of a file (T61): the first page of a PDF, or the photo. The server answers 404
+   * when it cannot make one: show the icon of the type then.
+   */
+  thumbnailUrl(documentId: string, fileId: string): string {
+    return `${this.baseUrl}/${documentId}/files/${fileId}/thumbnail`;
+  }
 }
