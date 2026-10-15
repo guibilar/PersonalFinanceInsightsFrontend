@@ -26,6 +26,7 @@ import {
 import { signInAsReadOnly } from '../../../testing/test-auth';
 import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
 import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
+import { LinkedPeopleComponent } from '../../people/linked-people/linked-people.component';
 
 /** The Tasks section has its own tests (DocumentTasksComponent); here it only shows which document it got. */
 @Component({ selector: 'app-document-tasks', template: '{{ document().id }}' })
@@ -39,6 +40,18 @@ class DocumentTasksStub {
   template: '<span data-testid="linked-items-stub">{{ kind() }} {{ ownerId() }}</span>',
 })
 class LinkedItemsStub {
+  readonly kind = input.required<string>();
+  readonly ownerId = input.required<string>();
+  readonly ownerLinks = input<unknown[]>([]);
+  readonly changed = output<void>();
+}
+
+/** The People section has its own tests (LinkedPeopleComponent); here it only shows what it got. */
+@Component({
+  selector: 'app-linked-people',
+  template: '<span data-testid="linked-people-stub">{{ kind() }} {{ ownerId() }}</span>',
+})
+class LinkedPeopleStub {
   readonly kind = input.required<string>();
   readonly ownerId = input.required<string>();
   readonly ownerLinks = input<unknown[]>([]);
@@ -101,8 +114,8 @@ describe('DocumentDetailComponent', () => {
 
   beforeEach(async () => {
     TestBed.overrideComponent(DocumentDetailComponent, {
-      remove: { imports: [DocumentTasksComponent, LinkedItemsComponent] },
-      add: { imports: [DocumentTasksStub, LinkedItemsStub] },
+      remove: { imports: [DocumentTasksComponent, LinkedItemsComponent, LinkedPeopleComponent] },
+      add: { imports: [DocumentTasksStub, LinkedItemsStub, LinkedPeopleStub] },
     });
     TestBed.configureTestingModule({
       providers: [

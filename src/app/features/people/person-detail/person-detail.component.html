@@ -429,7 +429,7 @@
       </section>
 
       <!-- Links -->
-      @if (links().length > 0) {
+      @if (links().length > 0 || linkedFrom().length > 0) {
         <section aria-labelledby="links-heading">
           <h2 id="links-heading" class="h6 mb-2">Links</h2>
           <ul class="list-group" data-testid="links">
@@ -448,6 +448,17 @@
                     Unlink
                   </button>
                 }
+              </li>
+            }
+            @for (view of linkedFrom(); track view.link.kind + view.link.targetId) {
+              <li class="list-group-item d-flex align-items-center gap-2" data-testid="linked-from">
+                <app-icon name="link" [size]="14" />
+                <a class="flex-grow-1 min-w-0 text-truncate" [routerLink]="view.route">
+                  {{ view.link.title }}
+                </a>
+                <span class="small text-body-secondary text-nowrap"
+                  >{{ view.label }} links here</span
+                >
               </li>
             }
           </ul>

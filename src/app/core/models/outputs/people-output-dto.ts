@@ -9,6 +9,8 @@ export const PERSON_DOCUMENT_LINK = 'Documents.Document';
 export const PERSON_TRANSACTION_LINK = 'Money.Transaction';
 export const PERSON_TASK_LINK = 'Tasks.Task';
 export const PERSON_ITEM_LINK = 'Home.Item';
+/** The link kind of a person, for the links of documents and tasks (`People.Person`, T93). */
+export const PEOPLE_PERSON_LINK = 'People.Person';
 
 /** A birthday: month and day, and the year when it is known. */
 export interface BirthdayDto {
@@ -98,6 +100,16 @@ export interface PersonDto {
   /** Open loans first, then returned ones. */
   loans: LoanDto[];
   links: PersonLinkDto[];
+  /** The documents and the tasks that link to the person (T93): documents first, each group by title. */
+  linkedFrom: PersonLinkedFromDto[];
+}
+
+/** A document or a task that links to the person. The link belongs to it: it is removed there. */
+export interface PersonLinkedFromDto {
+  /** `Documents.Document` or `Tasks.Task`. */
+  kind: string;
+  targetId: string;
+  title: string;
 }
 
 export interface GroupCountDto {

@@ -24,6 +24,7 @@ import {
 import { signInAsReadOnly } from '../../../testing/test-auth';
 import { TASK_ID, TODAY, testTask } from '../../../testing/test-tasks';
 import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
+import { LinkedPeopleComponent } from '../../people/linked-people/linked-people.component';
 
 /** The Home items section has its own tests (LinkedItemsComponent); here it only shows what it got. */
 @Component({
@@ -31,6 +32,18 @@ import { LinkedItemsComponent } from '../../home/linked-items/linked-items.compo
   template: '<span data-testid="linked-items-stub">{{ kind() }} {{ ownerId() }}</span>',
 })
 class LinkedItemsStub {
+  readonly kind = input.required<string>();
+  readonly ownerId = input.required<string>();
+  readonly ownerLinks = input<unknown[]>([]);
+  readonly changed = output<void>();
+}
+
+/** The People section has its own tests (LinkedPeopleComponent); here it only shows what it got. */
+@Component({
+  selector: 'app-linked-people',
+  template: '<span data-testid="linked-people-stub">{{ kind() }} {{ ownerId() }}</span>',
+})
+class LinkedPeopleStub {
   readonly kind = input.required<string>();
   readonly ownerId = input.required<string>();
   readonly ownerLinks = input<unknown[]>([]);
@@ -97,8 +110,8 @@ describe('TaskDetailComponent', () => {
 
   beforeEach(async () => {
     TestBed.overrideComponent(TaskDetailComponent, {
-      remove: { imports: [LinkedItemsComponent] },
-      add: { imports: [LinkedItemsStub] },
+      remove: { imports: [LinkedItemsComponent, LinkedPeopleComponent] },
+      add: { imports: [LinkedItemsStub, LinkedPeopleStub] },
     });
     TestBed.configureTestingModule({
       providers: [
@@ -122,14 +135,20 @@ describe('TaskDetailComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('shows a Home item link in the Home items section, not with the other links', async () => {
+  it('shows Home item and person links in their own sections, not with the other links', async () => {
     await open(
-      testTask({ links: [{ id: 'l-home', kind: 'Home.Item', targetId: 'item-1', createdAt: '' }] }),
+      testTask({
+        links: [
+          { id: 'l-home', kind: 'Home.Item', targetId: 'item-1', createdAt: '' },
+          { id: 'l-person', kind: 'People.Person', targetId: 'person-1', createdAt: '' },
+        ],
+      }),
     );
 
     expect(lookups()).toEqual([]);
     expect(root().querySelector('[data-testid="links"]')).toBeNull();
     expect(text('[data-testid="linked-items-stub"]')).toBe(`Tasks.Task ${TASK_ID}`);
+    expect(text('[data-testid="linked-people-stub"]')).toBe(`Tasks.Task ${TASK_ID}`);
   });
 
   it('shows the details, the repeat, and the last times it was done', async () => {

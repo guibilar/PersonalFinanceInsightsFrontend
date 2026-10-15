@@ -18,6 +18,7 @@ import {
 } from '../../../core/models/outputs/task-output-dto';
 import { TaskLinkInputDto } from '../../../core/models/inputs/task-input-dto';
 import { HOME_ITEM_LINK } from '../../../core/models/outputs/home-output-dto';
+import { PEOPLE_PERSON_LINK } from '../../../core/models/outputs/people-output-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
@@ -30,6 +31,7 @@ import { keptValueOf } from '../../../shared/utils/resource-value';
 import { DocumentPickerComponent } from '../../documents/document-picker/document-picker.component';
 import { TransactionPickerComponent } from '../../documents/transaction-picker/transaction-picker.component';
 import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
+import { LinkedPeopleComponent } from '../../people/linked-people/linked-people.component';
 import { transactionLink } from '../../transactions/transaction-list/transaction-list-query';
 import { TaskDoneService } from '../task-done.service';
 import {
@@ -61,6 +63,7 @@ export interface TaskLinkView {
     ErrorStateComponent,
     IconComponent,
     LinkedItemsComponent,
+    LinkedPeopleComponent,
     SkeletonComponent,
     TaskFieldsComponent,
     TransactionPickerComponent,
@@ -108,7 +111,10 @@ export class TaskDetailComponent {
    * not a change, so the linked things are not asked for again.
    */
   private readonly links = computed(
-    () => this.task()?.links.filter((link) => link.kind !== HOME_ITEM_LINK),
+    () =>
+      this.task()?.links.filter(
+        (link) => link.kind !== HOME_ITEM_LINK && link.kind !== PEOPLE_PERSON_LINK,
+      ),
     {
       equal: (a, b) => a?.map((l) => l.id).join() === b?.map((l) => l.id).join(),
     },
