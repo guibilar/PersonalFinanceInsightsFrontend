@@ -22,6 +22,7 @@ export function testTimeline(changes: Partial<TimelineDto> = {}): TimelineDto {
     from: '2026-09-27',
     to: '2026-10-10',
     earlier: '2026-09-27',
+    hasEarlier: true,
     days: [
       {
         day: '2026-10-10',
