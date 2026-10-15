@@ -898,8 +898,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * A page of tasks: by due date (tasks without one last), then the manual order.
-     * @description Filters: status (Open, Done), tag, due (today; overdue: open and due before today; upcoming: the next 7 days after today; none: no due date), q (words in the title, the notes, or the tags). "Today" is in the time zone of the host (Tasks:TimeZone).
+     * A page of tasks: by due date (tasks without one last), then the manual order; done tasks: the last done first.
+     * @description Filters: status (Open, Done), tag, due (today; overdue: open and due before today; upcoming: the next 7 days after today; later: after those days; none: no due date), q (words in the title, the notes, or the tags). "Today" is in the time zone of the host (Tasks:TimeZone).
      */
     get: operations['ListTasks'];
     put?: never;
@@ -923,6 +923,23 @@ export interface paths {
     };
     /** The counts of open tasks due today, overdue, and upcoming (7 days), for the badges. */
     get: operations['GetTaskSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/tasks/tags': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The tags in use, by name, with the count of tasks (open and done) that have each one. */
+    get: operations['ListTaskTags'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1613,6 +1630,11 @@ export interface components {
       createdAt: string;
     };
     SignedOutSessionsDto: {
+      /** Format: int32 */
+      count: number | string;
+    };
+    TagCountDto: {
+      name: string;
       /** Format: int32 */
       count: number | string;
     };
@@ -3007,6 +3029,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['TaskCountsDto'];
+        };
+      };
+    };
+  };
+  ListTaskTags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TagCountDto'][];
         };
       };
     };
