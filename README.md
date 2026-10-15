@@ -444,6 +444,20 @@ layout and focus behaviour that a simulated DOM doesn't have. Before the first r
 browser once: `npx playwright install chromium-headless-shell` (add `chromium` for the visible browser
 that `npm test` opens).
 
+## The Hestia models and the OpenAPI document
+
+The models of the Hestia modules in `src/app/core/models/outputs/` are written by hand (with comments). T50 keeps them
+equal to the server:
+
+- `openapi/hestia.json` is a pinned copy of HestiaBackend's `docs/openapi/hestia.json` (T48).
+- `npm run openapi:generate` makes `src/app/core/models/generated/hestia-api.ts` from it (openapi-typescript), and
+  `openapi/models-check.ts` (`scripts/openapi-models-check.py`): for each hand-written model with a schema of the same
+  name, the model must have every field the server sends, with a type that fits, and no field that it does not send.
+- CI runs `npm run openapi:check`: the generated files are current, and `tsc -p tsconfig.openapi.json` compiles the
+  check. An error there names the line of the model in `openapi/models-check.ts`.
+- After a server change: `npm run openapi:update` (downloads the document from HestiaBackend `main`, then generates),
+  fix the models, and commit. CI warns when the pinned copy is older than `main`.
+
 ## Project structure
 
 ```

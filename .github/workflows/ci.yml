@@ -24,6 +24,23 @@ jobs:
         run: npm audit --omit=dev --audit-level=moderate
       - run: npm run lint
       - run: npm run format:check
+      # T50: the hand-written Hestia models match the pinned OpenAPI document (openapi/hestia.json).
+      - name: Hestia models match the OpenAPI document
+        shell: bash
+        run: |
+          if ! npm run openapi:check; then
+            echo "::error title=Hestia models differ from openapi/hestia.json::A model in src/app/core/models/outputs no longer fits its schema, or the generated files are not current. Run npm run openapi:generate, read the tsc errors in openapi/models-check.ts, and fix the model."
+            exit 1
+          fi
+      # T50: a newer document on HestiaBackend main is only a warning: update it with npm run openapi:update.
+      - name: The pinned OpenAPI document is current
+        shell: bash
+        continue-on-error: true
+        run: |
+          latest=$(curl -fsSL https://raw.githubusercontent.com/guibilar/HestiaBackend/main/docs/openapi/hestia.json) || exit 0
+          if [ "$latest" != "$(cat openapi/hestia.json)" ]; then
+            echo "::warning title=openapi/hestia.json is older than HestiaBackend main::Run npm run openapi:update and commit."
+          fi
       - name: Browser for the unit tests
         run: npx playwright install --with-deps --only-shell chromium
       - name: Unit tests
