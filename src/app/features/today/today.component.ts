@@ -63,6 +63,15 @@ const TONES: Record<TodaySeverity, StatTone> = {
   ],
   templateUrl: './today.component.html',
   styles: `
+    .bell {
+      line-height: 1;
+    }
+    .bell-count {
+      position: absolute;
+      top: -0.4rem;
+      right: -0.4rem;
+      font-size: 0.65rem;
+    }
     .placeholder-card {
       border-style: dashed;
       background: transparent;
@@ -159,6 +168,22 @@ export class TodayComponent {
   readonly attention = computed(() =>
     (this.today()?.cards ?? []).filter((card) => card.type === 'Attention'),
   );
+
+  /** The bell's label (T69): how many items need attention. */
+  readonly bellLabel = computed(() => {
+    const count = this.attention().length;
+    if (count === 0) return 'Nothing needs attention';
+    return count === 1 ? '1 item needs attention' : `${count} items need attention`;
+  });
+
+  /** The bell (T69): to the "Needs attention" list, with the focus on its heading. */
+  showAttention(): void {
+    const heading = document.getElementById('today-attention');
+    if (!heading) return;
+    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  }
 
   /** Registry modules that are still to come and that the server has no cards for. */
   readonly comingSoon = computed(() => {

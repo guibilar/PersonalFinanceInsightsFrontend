@@ -3,9 +3,26 @@
     <h1 class="h3 mb-1">Today</h1>
     <p class="text-body-secondary mb-0">{{ dateLabel() }}</p>
   </div>
+  <!-- T69: the bell: how many items need attention; a click goes to the list. -->
   <button
     type="button"
-    class="btn btn-sm btn-outline-secondary ms-auto d-inline-flex align-items-center gap-1"
+    class="btn btn-sm btn-outline-secondary ms-auto position-relative bell"
+    data-testid="bell"
+    [disabled]="attention().length === 0"
+    [attr.aria-label]="bellLabel()"
+    [title]="bellLabel()"
+    (click)="showAttention()"
+  >
+    <app-icon name="bell" [size]="16" />
+    @if (attention().length > 0) {
+      <span class="badge rounded-pill bg-danger bell-count" aria-hidden="true">{{
+        attention().length
+      }}</span>
+    }
+  </button>
+  <button
+    type="button"
+    class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
     [disabled]="todayResource.isLoading()"
     [attr.aria-busy]="todayResource.isLoading()"
     (click)="refresh()"
