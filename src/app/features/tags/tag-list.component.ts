@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/auth/auth.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,6 +40,8 @@ const NOT_BLANK = Validators.pattern(/\S/);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TagListComponent {
+  /** A read-only user (T60, T75) sees the list without add, edit, delete, or apply actions. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly tagRepository = inject(TagRepository);
   private readonly toasts = inject(ToastService);
   private readonly fb = inject(NonNullableFormBuilder);

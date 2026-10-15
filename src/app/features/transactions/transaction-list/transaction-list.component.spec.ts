@@ -1144,6 +1144,21 @@ describe('TransactionListComponent, in the address bar', () => {
       expect(router.url).toBe('/transactions');
     });
 
+    it('opens nothing for a read-only user, and still takes the link from the address (T75)', async () => {
+      await signInAsReadOnly(http);
+      const list = await harness.navigateByUrl(
+        '/transactions?importAccount=a2#import',
+        TransactionListComponent,
+      );
+      await settle();
+      harness.fixture.detectChanges();
+
+      expect(list.showImport()).toBe(false);
+      expect(list.importAccount()).toBeNull();
+      expect(importDialog()).toBeNull();
+      expect(router.url).toBe('/transactions');
+    });
+
     it('keeps the query string of the link', async () => {
       const list = await harness.navigateByUrl(
         '/transactions?accountId=a1#import',

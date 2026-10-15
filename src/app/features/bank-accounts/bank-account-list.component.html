@@ -5,13 +5,15 @@
       The bank accounts, cards and investments your statements come from, and what each holds
     </p>
   </div>
-  <button
-    type="button"
-    class="btn btn-primary d-inline-flex align-items-center gap-2"
-    (click)="editing.set(null)"
-  >
-    <app-icon name="plus" [size]="16" /> New account
-  </button>
+  @if (canWrite()) {
+    <button
+      type="button"
+      class="btn btn-primary d-inline-flex align-items-center gap-2"
+      (click)="editing.set(null)"
+    >
+      <app-icon name="plus" [size]="16" /> New account
+    </button>
+  }
 </div>
 
 @if (accounts.error()) {
@@ -24,9 +26,11 @@
   <div class="card">
     <div class="card-body text-center text-body-secondary py-5">
       <p class="mb-2">No accounts yet. Add one to import its statements.</p>
-      <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
-        New account
-      </button>
+      @if (canWrite()) {
+        <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
+          New account
+        </button>
+      }
     </div>
   </div>
 } @else {
@@ -108,15 +112,17 @@
             }
           </button>
           <div class="d-flex flex-shrink-0">
-            <button
-              type="button"
-              class="btn btn-icon"
-              [attr.aria-label]="'Edit ' + account.name"
-              title="Edit"
-              (click)="editing.set(account)"
-            >
-              <app-icon name="pencil" [size]="16" />
-            </button>
+            @if (canWrite()) {
+              <button
+                type="button"
+                class="btn btn-icon"
+                [attr.aria-label]="'Edit ' + account.name"
+                title="Edit"
+                (click)="editing.set(account)"
+              >
+                <app-icon name="pencil" [size]="16" />
+              </button>
+            }
             <!-- Wrapped so the reason shows on hover even though the button is disabled. -->
             <span
               [title]="
@@ -125,15 +131,17 @@
                   : 'Delete'
               "
             >
-              <button
-                type="button"
-                class="btn btn-icon btn-icon-danger"
-                [attr.aria-label]="'Delete ' + account.name"
-                [disabled]="account.transactionCount > 0"
-                (click)="deleting.set(account)"
-              >
-                <app-icon name="trash" [size]="16" />
-              </button>
+              @if (canWrite()) {
+                <button
+                  type="button"
+                  class="btn btn-icon btn-icon-danger"
+                  [attr.aria-label]="'Delete ' + account.name"
+                  [disabled]="account.transactionCount > 0"
+                  (click)="deleting.set(account)"
+                >
+                  <app-icon name="trash" [size]="16" />
+                </button>
+              }
             </span>
           </div>
         </li>

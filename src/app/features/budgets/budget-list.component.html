@@ -3,13 +3,15 @@
     <h1 class="h3 mb-1">Budgets</h1>
     <p class="text-body-secondary mb-0">Set limits and see how much is left</p>
   </div>
-  <button
-    type="button"
-    class="btn btn-primary d-inline-flex align-items-center gap-2"
-    (click)="editing.set(null)"
-  >
-    <app-icon name="plus" [size]="16" /> New budget
-  </button>
+  @if (canWrite()) {
+    <button
+      type="button"
+      class="btn btn-primary d-inline-flex align-items-center gap-2"
+      (click)="editing.set(null)"
+    >
+      <app-icon name="plus" [size]="16" /> New budget
+    </button>
+  }
 </div>
 
 <app-budget-toolbar [criteria]="criteria()" (criteriaChange)="onCriteriaChange($event)" />
@@ -49,9 +51,11 @@
           </button>
         } @else {
           <p class="mb-2">No budgets yet. Create one to track a spending limit.</p>
-          <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
-            New budget
-          </button>
+          @if (canWrite()) {
+            <button type="button" class="btn btn-primary btn-sm" (click)="editing.set(null)">
+              New budget
+            </button>
+          }
         }
       </div>
     </div>
@@ -79,24 +83,28 @@
                   @if (budget.status === Status.Inactive) {
                     <span class="badge rounded-pill text-bg-secondary">Inactive</span>
                   }
-                  <button
-                    type="button"
-                    class="btn btn-icon"
-                    [attr.aria-label]="'Edit ' + budget.name"
-                    title="Edit"
-                    (click)="editing.set(budget)"
-                  >
-                    <app-icon name="pencil" [size]="16" />
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-icon btn-icon-danger"
-                    [attr.aria-label]="'Delete ' + budget.name"
-                    title="Delete"
-                    (click)="deleting.set(budget)"
-                  >
-                    <app-icon name="trash" [size]="16" />
-                  </button>
+                  @if (canWrite()) {
+                    <button
+                      type="button"
+                      class="btn btn-icon"
+                      [attr.aria-label]="'Edit ' + budget.name"
+                      title="Edit"
+                      (click)="editing.set(budget)"
+                    >
+                      <app-icon name="pencil" [size]="16" />
+                    </button>
+                  }
+                  @if (canWrite()) {
+                    <button
+                      type="button"
+                      class="btn btn-icon btn-icon-danger"
+                      [attr.aria-label]="'Delete ' + budget.name"
+                      title="Delete"
+                      (click)="deleting.set(budget)"
+                    >
+                      <app-icon name="trash" [size]="16" />
+                    </button>
+                  }
                 </div>
               </div>
               <p

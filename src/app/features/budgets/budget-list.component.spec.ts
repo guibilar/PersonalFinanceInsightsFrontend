@@ -1,3 +1,4 @@
+import { signInAsReadOnly } from '../../testing/test-auth';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -78,6 +79,20 @@ describe('BudgetListComponent', () => {
     // Reloaded with the budgets after each change; its own test is below.
     http.match('/api/Reports/forecast').forEach((r) => r.flush(EMPTY_FORECAST));
     http.verify();
+  });
+
+  it('has no new, edit, or delete buttons for a read-only user (T75)', async () => {
+    const labels = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).map((b) =>
+        (b.getAttribute('aria-label') ?? b.textContent!).trim(),
+      );
+    const writes = (all: string[]) => all.filter((l) => /new budget|^edit|^delete/i.test(l));
+    expect(writes(labels()).length).toBeGreaterThan(0);
+
+    await signInAsReadOnly(http);
+    fixture.detectChanges();
+
+    expect(writes(labels())).toEqual([]);
   });
 
   it('says where a monthly budget is heading at its usual pace', async () => {

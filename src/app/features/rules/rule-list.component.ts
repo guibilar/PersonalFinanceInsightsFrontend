@@ -1,3 +1,4 @@
+import { AuthService } from '../../core/auth/auth.service';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -55,6 +56,8 @@ type RulesTab = 'categories' | 'flows';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RuleListComponent {
+  /** A read-only user (T60, T75) sees the list without add, edit, delete, or apply actions. */
+  protected readonly canWrite = inject(AuthService).canWrite;
   private readonly ruleRepository = inject(CategoryRuleRepository);
   private readonly categoryRepository = inject(CategoryRepository);
   private readonly transactionRepository = inject(TransactionRepository);

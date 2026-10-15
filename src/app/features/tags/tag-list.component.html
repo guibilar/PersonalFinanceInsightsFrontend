@@ -85,25 +85,29 @@
               >
             </div>
             <div class="d-flex flex-shrink-0">
-              <button
-                type="button"
-                class="btn btn-icon"
-                [id]="'rename-button-' + tag.id"
-                [attr.aria-label]="'Rename ' + tag.name"
-                title="Rename"
-                (click)="startRename(tag)"
-              >
-                <app-icon name="pencil" [size]="16" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-icon btn-icon-danger"
-                [attr.aria-label]="'Delete ' + tag.name"
-                title="Delete"
-                (click)="deleting.set(tag)"
-              >
-                <app-icon name="trash" [size]="16" />
-              </button>
+              @if (canWrite()) {
+                <button
+                  type="button"
+                  class="btn btn-icon"
+                  [id]="'rename-button-' + tag.id"
+                  [attr.aria-label]="'Rename ' + tag.name"
+                  title="Rename"
+                  (click)="startRename(tag)"
+                >
+                  <app-icon name="pencil" [size]="16" />
+                </button>
+              }
+              @if (canWrite()) {
+                <button
+                  type="button"
+                  class="btn btn-icon btn-icon-danger"
+                  [attr.aria-label]="'Delete ' + tag.name"
+                  title="Delete"
+                  (click)="deleting.set(tag)"
+                >
+                  <app-icon name="trash" [size]="16" />
+                </button>
+              }
             </div>
           }
         </li>
