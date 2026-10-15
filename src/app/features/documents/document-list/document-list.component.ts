@@ -68,6 +68,8 @@ export class DocumentListComponent {
     return DOCUMENT_KINDS.find((k) => k === kind) ?? null;
   });
   readonly q = computed(() => this.params().get('q')?.trim() ?? '');
+  /** The tag filter (T62), or null for all tags. */
+  readonly tag = computed(() => this.params().get('tag')?.trim().toLowerCase() || null);
   readonly page = computed(() => Math.max(1, Number(this.params().get('page')) || 1));
 
   readonly search = new FormControl(this.route.snapshot.queryParamMap.get('q') ?? '', {
@@ -75,7 +77,7 @@ export class DocumentListComponent {
   });
 
   readonly documents = rxResource({
-    params: () => ({ kind: this.kind(), q: this.q(), page: this.page() }),
+    params: () => ({ kind: this.kind(), tag: this.tag(), q: this.q(), page: this.page() }),
     stream: ({ params }) => this.repository.list({ ...params, pageSize: PAGE_SIZE }),
   });
   /** The last page stays while the next one loads, so the search box keeps its focus. */
@@ -83,7 +85,7 @@ export class DocumentListComponent {
 
   /** The ones that expire soon (the server's today to 30 days ahead, T86), soonest first. Not shown during a search. */
   readonly expiring = rxResource({
-    params: () => (this.q() ? undefined : { kind: this.kind() }),
+    params: () => (this.q() ? undefined : { kind: this.kind(), tag: this.tag() }),
     stream: ({ params }) =>
       this.repository
         .list({ ...params, expiring: 'soon', pageSize: 50 })
@@ -94,6 +96,19 @@ export class DocumentListComponent {
         ),
   });
   readonly expiringSoon = computed(() => valueOf(this.expiring) ?? []);
+
+  /** The tags of the documents shown, and the chosen one, by name: the tag chips (T62). */
+  readonly tags = computed(() => {
+    const tags = new Set((this.result()?.items ?? []).flatMap((d) => d.tags));
+    const chosen = this.tag();
+    if (chosen) tags.add(chosen);
+    return [...tags].sort((a, b) => a.localeCompare(b));
+  });
+
+  /** A tag, or the same tag again to show all (T62). */
+  selectTag(tag: string): void {
+    this.setFilters({ tag: this.tag() === tag ? null : tag, page: null });
+  }
 
   constructor() {
     this.search.valueChanges

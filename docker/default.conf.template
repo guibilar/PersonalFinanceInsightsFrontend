@@ -51,6 +51,17 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $forwarded_proto;
         include /etc/nginx/snippets/security-headers.conf;
+
+        # T62: a document's file may be framed by this site (the PDF preview); nothing else may. A nested location
+        # inherits neither proxy_pass nor add_header, so both are here again.
+        location ~ ^/api/documents/[^/]+/files/[^/]+$ {
+            proxy_read_timeout 300s;
+            proxy_pass ${API_UPSTREAM};
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $forwarded_proto;
+            include /etc/nginx/snippets/security-headers-files.conf;
+        }
     }
 
     # Files without a content hash in their name must be revalidated, or updates never reach browsers.

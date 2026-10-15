@@ -19,6 +19,12 @@ if echo "$page" | grep -qi '^server: nginx/'; then fail "nginx version is expose
 header -H 'X-Forwarded-Proto: https' "$BASE/" | grep -qi '^strict-transport-security: max-age=' || fail "HSTS missing over HTTPS"
 if echo "$page" | grep -qi '^strict-transport-security'; then fail "HSTS sent over plain HTTP"; fi
 
+# T62: a document's file may be framed by this site (the PDF preview); other API paths may not.
+files=$(header "$BASE/api/documents/d1/files/f1?inline=true")
+echo "$files" | grep -qi '^x-frame-options: SAMEORIGIN' || fail "a document file must allow same-origin framing"
+echo "$files" | grep -qi "^content-security-policy: frame-ancestors 'self'" || fail "a document file must allow only this site to frame it"
+header "$BASE/api/documents/d1" | grep -qi '^x-frame-options: DENY' || fail "a document (not a file) must not be framed"
+
 # Client-side routes fall back to the app; the theme bootstrap is served and revalidated.
 curl -sf "$BASE/transactions" | grep -q '<app-root>' || fail "SPA fallback for /transactions"
 curl -sf "$BASE/money/transactions" | grep -q '<app-root>' || fail "SPA fallback for /money/transactions"

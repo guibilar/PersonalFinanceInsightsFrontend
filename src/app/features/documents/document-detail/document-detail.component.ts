@@ -9,6 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -158,6 +159,21 @@ export class DocumentDetailComponent {
   readonly size = formatSize;
   readonly icon = fileIcon;
   readonly preview = previewKind;
+  private readonly sanitizer = inject(DomSanitizer);
+  /**
+   * The PDF previews (T62), by file id: the file's own same-origin address (nginx lets only document files be framed).
+   * Made once per document, so the frames do not load again on each change.
+   */
+  readonly pdfUrls = computed(() => {
+    const doc = this.document();
+    const urls = new Map<string, SafeResourceUrl>();
+    for (const file of doc?.files ?? []) {
+      if (previewKind(file) === 'pdf') {
+        urls.set(file.id, this.sanitizer.bypassSecurityTrustResourceUrl(this.fileUrl(file, true)));
+      }
+    }
+    return urls;
+  });
 
   constructor() {
     // Poll while the text is read: every few seconds, up to the limit.

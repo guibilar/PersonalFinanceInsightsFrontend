@@ -157,6 +157,14 @@ describe('DocumentDetailComponent', () => {
     const download = root().querySelector('a[aria-label="Download warranty.pdf"]')!;
     expect(download.getAttribute('href')).toBe(`/api/documents/${DOC_ID}/files/${PDF_ID}`);
     expect(download.getAttribute('download')).toBe('warranty.pdf');
+    // T62: the PDF also shows in a frame, from its own address; the photo does not.
+    const frames = Array.from(
+      root().querySelectorAll<HTMLIFrameElement>('[data-testid="pdf-preview"]'),
+    );
+    expect(frames.map((f) => f.getAttribute('src'))).toEqual([
+      `/api/documents/${DOC_ID}/files/${PDF_ID}?inline=true`,
+    ]);
+    expect(frames[0].getAttribute('title')).toBe('Preview of warranty.pdf');
 
     const text = root().querySelector<HTMLDetailsElement>('[data-testid="ocr"] details')!;
     expect(text.open).toBe(false);

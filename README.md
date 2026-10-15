@@ -535,6 +535,9 @@ nginx also:
   100 MB on `/api/documents` (the Documents limit), with 5-minute timeouts for a slow upload;
 - sends security headers on every response (`docker/security-headers.conf`): a Content-Security-Policy that
   only allows this origin's scripts, no framing, `nosniff`, a same-origin referrer policy;
+- lets this site frame the files of documents (`/api/documents/{id}/files/{fileId}`, `docker/security-headers-files.conf`:
+  `X-Frame-Options: SAMEORIGIN`, `frame-ancestors 'self'`), for the PDF preview on the document page (T62); every
+  other response keeps `DENY`;
 - hides its version, and caches hashed bundles for a year while `index.html`, `theme.js` and the favicon
   are revalidated.
 

@@ -185,6 +185,30 @@ describe('DocumentListComponent', () => {
     await answer([testSummary()]);
   });
 
+  it('filters by a tag of the documents shown, through the address, and back (T62)', async () => {
+    await harness.navigateByUrl('/documents', DocumentListComponent);
+    await answer([testSummary({ tags: ['kitchen', 'appliances'] })]);
+
+    const chips = () =>
+      Array.from(root().querySelectorAll<HTMLButtonElement>('[data-testid="tag-filters"] button'));
+    expect(chips().map((b) => b.textContent!.trim())).toEqual(['#appliances', '#kitchen']);
+
+    chips()[1].click();
+    await settle();
+    expect(router.url).toBe('/documents?tag=kitchen');
+    const { page, expiring } = await answer([testSummary({ tags: ['kitchen'] })]);
+    expect(page!.request.params.get('tag')).toBe('kitchen');
+    expect(expiring!.request.params.get('tag')).toBe('kitchen');
+    expect(chips().map((b) => [b.textContent!.trim(), b.getAttribute('aria-pressed')])).toEqual([
+      ['#kitchen', 'true'],
+    ]);
+
+    chips()[0].click();
+    await settle();
+    expect(router.url).toBe('/documents');
+    await answer([testSummary()]);
+  });
+
   it('searches after a pause in the typing, best match first, without the expire-soon list', async () => {
     await harness.navigateByUrl('/documents', DocumentListComponent);
     await answer([testSummary()], [testSummary({ expiresOn: addDays(5) })]);
