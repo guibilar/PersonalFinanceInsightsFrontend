@@ -67,13 +67,23 @@ describe('ShellComponent', () => {
       'Home',
       'People',
       'Inbox',
+      'Calendar',
       'Journal',
     ]);
     expect(
       Array.from(root.querySelectorAll('.sidebar .nav-group .nav-item')).map((item) =>
         item.getAttribute('href'),
       ),
-    ).toEqual(['/money', '/documents', '/tasks', '/home', '/people', '/inbox', '/journal']);
+    ).toEqual([
+      '/money',
+      '/documents',
+      '/tasks',
+      '/home',
+      '/people',
+      '/inbox',
+      '/calendar',
+      '/journal',
+    ]);
     expect(root.querySelector('[data-testid="overdue-badge"]')).toBeNull();
   });
 
