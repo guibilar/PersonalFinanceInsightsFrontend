@@ -4,9 +4,18 @@
     <p class="text-body-secondary mb-0">Birthdays, gifts, lent items, and who to reach out to</p>
   </div>
   @if (canWrite()) {
-    <a class="btn btn-primary d-inline-flex align-items-center gap-2" routerLink="/people/new">
-      <app-icon name="plus" [size]="16" /> Add person
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+      <a
+        class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+        routerLink="/people/import"
+        data-testid="import-contacts"
+      >
+        <app-icon name="upload" [size]="16" /> Import contacts
+      </a>
+      <a class="btn btn-primary d-inline-flex align-items-center gap-2" routerLink="/people/new">
+        <app-icon name="plus" [size]="16" /> Add person
+      </a>
+    </div>
   }
 </div>
 

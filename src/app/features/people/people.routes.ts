@@ -15,6 +15,13 @@ export const PEOPLE_ROUTES: Routes = [
       import('./person-new/person-new.component').then((m) => m.PersonNewComponent),
   },
   {
+    // T105: contacts from a vCard file or the phone.
+    path: 'import',
+    title: 'Import contacts · Hestia',
+    loadComponent: () =>
+      import('./people-import/people-import.component').then((m) => m.PeopleImportComponent),
+  },
+  {
     // The People alerts (reach out, birthday, overdue loan) link here, as /people/<id>.
     path: ':id',
     title: 'Person · Hestia',

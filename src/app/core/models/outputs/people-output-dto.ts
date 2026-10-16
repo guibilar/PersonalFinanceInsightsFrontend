@@ -139,3 +139,45 @@ export interface PeopleSummaryDto {
   openLoans: number;
   overdueLoans: number;
 }
+
+/** A contact as read from a vCard file or the phone (the fields of a new person). */
+export interface ImportedPersonDto {
+  name: string | null;
+  nickname?: string | null;
+  relationship?: string | null;
+  groups?: string[] | null;
+  birthday?: BirthdayDto | null;
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  contactEveryDays?: number | null;
+}
+
+/** What an import does with one contact (T105). */
+export type PeopleImportAction = 'Add' | 'Merge' | 'Same' | 'Skip';
+
+/** One contact of an import. */
+export interface PeopleImportItemDto {
+  /** The place in the file or list, from 0. */
+  index: number;
+  action: PeopleImportAction;
+  person: ImportedPersonDto;
+  /** The person that the contact matches (Merge, Same), or the new person after an import (Add). */
+  existingId: string | null;
+  existingName: string | null;
+  /** `email`, `phone`, or `name`. */
+  matchedBy: string | null;
+  /** For a merge: the details that the import adds, for example `birthday`. */
+  newFields: string[];
+  reason: string | null;
+}
+
+/** `POST /api/people/import`: the counts, and each contact in order. */
+export interface PeopleImportResultDto {
+  dryRun: boolean;
+  added: number;
+  merged: number;
+  unchanged: number;
+  skipped: number;
+  people: PeopleImportItemDto[];
+}

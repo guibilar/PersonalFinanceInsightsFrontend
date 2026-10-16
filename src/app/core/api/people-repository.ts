@@ -12,6 +12,8 @@ import {
   PersonDto,
   PersonLinkDto,
   PersonSummaryDto,
+  ImportedPersonDto,
+  PeopleImportResultDto,
 } from '../models/outputs/people-output-dto';
 import {
   CreatePersonInputDto,
@@ -139,6 +141,19 @@ export class PeopleRepository {
   }
 
   /** The people linked to one thing, for example a home item. */
+  /**
+   * Imports contacts (T105): the text of a vCard file, or a list of people (the phone's contacts). `dryRun` gives the
+   * preview; `only` imports the chosen indexes.
+   */
+  importPeople(request: {
+    vCard?: string | null;
+    people?: ImportedPersonDto[] | null;
+    dryRun: boolean;
+    only?: number[] | null;
+  }): Observable<PeopleImportResultDto> {
+    return this.http.post<PeopleImportResultDto>(`${this.baseUrl}/import`, request);
+  }
+
   listByLink(kind: string, id: string): Observable<PersonSummaryDto[]> {
     const params = new HttpParams().set('kind', kind).set('id', id);
     return this.http.get<PersonSummaryDto[]>(`${this.baseUrl}/by-link`, { params });
