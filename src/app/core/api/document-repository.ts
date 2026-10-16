@@ -8,6 +8,7 @@ import {
   DocumentLinkDto,
   DocumentSummaryDto,
   MONEY_TRANSACTION_LINK,
+  DocumentSuggestionsDto,
 } from '../models/outputs/document-output-dto';
 import { DocumentDetailsInputDto, DocumentListQuery } from '../models/inputs/document-input-dto';
 
@@ -78,6 +79,11 @@ export class DocumentRepository {
   }
 
   /** Deletes the document, its links and its files. */
+  /** What the text of a receipt says, and the transactions that can be its purchase (T100). */
+  suggestions(id: string): Observable<DocumentSuggestionsDto> {
+    return this.http.get<DocumentSuggestionsDto>(`${this.baseUrl}/${id}/suggestions`);
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

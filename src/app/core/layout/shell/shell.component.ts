@@ -29,6 +29,7 @@ import { TransactionOutputDto } from '../../models/outputs/transaction-output-dt
 import { DataChangesService } from '../../data/data-changes.service';
 import { StatementImportLauncher } from '../../data/statement-import-launcher.service';
 import { TransactionAddLauncher } from '../../data/transaction-add-launcher.service';
+import { DocumentRepository } from '../../api/document-repository';
 import { MAIN_MENU, activeModules } from '../../modules/module-registry';
 import { TaskCountsService } from '../../data/task-counts.service';
 import { amountsHidden, toggleAmountsHidden } from '../../../shared/utils/privacy';
@@ -79,6 +80,7 @@ export class ShellComponent {
   protected readonly importer = inject(StatementImportLauncher);
   /** "Add transaction" opens from Capture and the Transactions page; the shell shows it over any page too. */
   protected readonly adder = inject(TransactionAddLauncher);
+  private readonly documents = inject(DocumentRepository);
   protected readonly dataChanges = inject(DataChangesService);
   /** The overdue count on the Tasks entry. It loads again after each data change. */
   protected readonly overdueTasks = inject(TaskCountsService).overdue;
@@ -131,12 +133,27 @@ export class ShellComponent {
   }
 
   onTransactionAdded(added: TransactionOutputDto): void {
+    const documentId = this.adder.prefill()?.documentId;
     this.adder.close();
     this.adder.lastAdded.set({ date: added.date, accountId: added.accountId });
-    this.dataChanges.changed();
-    this.toasts.success(`Added “${added.description}” to ${added.accountName}`, {
-      label: 'View',
-      ...transactionLink(added.id),
+    const done = (linked: boolean) => {
+      this.dataChanges.changed();
+      this.toasts.success(
+        `Added “${added.description}” to ${added.accountName}${linked ? ', with the receipt' : ''}`,
+        { label: 'View', ...transactionLink(added.id) },
+      );
+    };
+    if (!documentId) {
+      done(false);
+      return;
+    }
+    // T100: the transaction came from a receipt: the receipt links to it.
+    this.documents.linkTransaction(documentId, added.id).subscribe({
+      next: () => done(true),
+      error: () => {
+        done(false);
+        this.toasts.error('The transaction was added, but the receipt could not be linked to it.');
+      },
     });
   }
 

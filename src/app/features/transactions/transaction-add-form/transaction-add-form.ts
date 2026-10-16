@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TransactionPrefill } from '../../../core/data/transaction-add-launcher.service';
 import { Flow } from '../../../core/models/enums/flow';
 import { StatementFormat } from '../../../core/models/enums/statement-format';
 import { TransactionType } from '../../../core/models/enums/transaction-type';
@@ -53,6 +54,8 @@ export class TransactionAddForm implements OnInit {
    * worth of transactions by hand shouldn't mean picking the same day and account again each time.
    */
   readonly previous = input<{ date: string; accountId: string } | null>(null);
+  /** Values from a receipt (T100): the description, the amount, and the day. They win over `previous`. */
+  readonly prefill = input<TransactionPrefill | null>(null);
   /** The API's reason when an identical transaction exists; the same one can still be added on purpose. */
   readonly duplicate = input<string | null>(null);
   /**
@@ -97,10 +100,20 @@ export class TransactionAddForm implements OnInit {
 
   ngOnInit(): void {
     const previous = this.previous();
-    if (!previous) return;
-    this.form.patchValue({ date: previous.date });
-    if (this.accounts().some((a) => a.id === previous.accountId)) {
-      this.form.patchValue({ accountId: previous.accountId });
+    if (previous) {
+      this.form.patchValue({ date: previous.date });
+      if (this.accounts().some((a) => a.id === previous.accountId)) {
+        this.form.patchValue({ accountId: previous.accountId });
+      }
+    }
+    const prefill = this.prefill();
+    if (prefill) {
+      this.form.patchValue({
+        description: prefill.description.slice(0, TEXT_LIMITS.transactionDescription),
+        ...(prefill.amount !== null ? { amount: prefill.amount } : {}),
+        ...(prefill.date ? { date: prefill.date } : {}),
+        transactionType: TransactionType.Debit,
+      });
     }
   }
 

@@ -222,6 +222,53 @@ describe('ShellComponent', () => {
     });
   });
 
+  it('links the receipt to a transaction added from it (T100)', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    await fixture.whenStable();
+    const adder = TestBed.inject(TransactionAddLauncher);
+    const http = TestBed.inject(HttpTestingController);
+    adder.open({
+      description: 'Costco Wholesale',
+      amount: 33.05,
+      date: '2026-10-03',
+      documentId: 'd1',
+    });
+    TestBed.tick();
+    http.expectOne('/api/Accounts').flush([]);
+    http.expectOne('/api/Categories').flush([]);
+    await fixture.whenStable();
+
+    fixture.componentInstance.onTransactionAdded({
+      id: 't9',
+      date: '2026-10-03',
+      amount: 33.05,
+      description: 'Costco Wholesale',
+      category: TEST_CATEGORIES.other,
+      categoryLocked: false,
+      transactionType: TransactionType.Debit,
+      accountId: 'a1',
+      accountName: 'Visa',
+      accountType: AccountType.CreditCard,
+      flow: Flow.Spending,
+      flowLocked: false,
+      budgetId: '',
+    });
+    const link = http.expectOne('/api/documents/d1/links');
+    expect(link.request.body).toEqual({ kind: 'Money.Transaction', targetId: 't9' });
+    link.flush({
+      id: 'l1',
+      kind: 'Money.Transaction',
+      targetId: 't9',
+      createdAt: '2026-10-16T00:00:00Z',
+    });
+    await fixture.whenStable();
+
+    expect(adder.prefill()).toBeNull();
+    expect(TestBed.inject(ToastService).toasts()[0].message).toBe(
+      'Added “Costco Wholesale” to Visa, with the receipt',
+    );
+  });
+
   it('hides and shows the amounts from the sidebar', async () => {
     const fixture = TestBed.createComponent(ShellComponent);
     await fixture.whenStable();

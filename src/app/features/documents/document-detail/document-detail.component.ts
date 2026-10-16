@@ -42,6 +42,7 @@ import {
   detailsOf,
 } from '../document-details-fields/document-details-fields.component';
 import { TransactionPickerComponent } from '../transaction-picker/transaction-picker.component';
+import { DocumentSuggestionsComponent } from '../document-suggestions/document-suggestions.component';
 import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
 import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
 import { LinkedPeopleComponent } from '../../people/linked-people/linked-people.component';
@@ -79,6 +80,7 @@ export interface LinkView {
     ConfirmDialogComponent,
     DocumentDetailsFieldsComponent,
     DocumentTasksComponent,
+    DocumentSuggestionsComponent,
     ErrorStateComponent,
     LinkedItemsComponent,
     LinkedPeopleComponent,

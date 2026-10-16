@@ -44,6 +44,7 @@
   <div class="row g-4">
     <div class="col-12 col-lg-7 d-flex flex-column gap-4">
       <!-- Details -->
+      <app-document-suggestions [document]="doc" [canWrite]="canWrite()" (changed)="reload()" />
       <section class="card" aria-labelledby="details-heading">
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between mb-3">
