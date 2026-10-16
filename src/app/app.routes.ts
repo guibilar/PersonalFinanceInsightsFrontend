@@ -88,6 +88,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/journal/journal.routes').then((m) => m.JOURNAL_ROUTES),
       },
+      {
+        // The Calendar module (Hestia.Api, T103, T104): events, and the dates of all modules.
+        path: 'calendar',
+        loadChildren: () =>
+          import('./features/calendar/calendar.routes').then((m) => m.CALENDAR_ROUTES),
+      },
       // The finance pages' old addresses, before Money was a module.
       ...LEGACY_FINANCE_REDIRECTS,
     ],

@@ -1,7 +1,7 @@
 import { AppModule, MAIN_MENU, MODULES, activeModules } from './module-registry';
 
 describe('module registry', () => {
-  it('has Money, Documents, Tasks, Home, People, Inbox and Journal active', () => {
+  it('has Money, Documents, Tasks, Home, People, Inbox, Calendar and Journal active', () => {
     expect(MODULES.map((module) => [module.name, module.status])).toEqual([
       ['Money', 'active'],
       ['Documents', 'active'],
@@ -9,6 +9,7 @@ describe('module registry', () => {
       ['Home', 'active'],
       ['People', 'active'],
       ['Inbox', 'active'],
+      ['Calendar', 'active'],
       ['Journal', 'active'],
     ]);
   });
@@ -22,7 +23,7 @@ describe('module registry', () => {
     for (const route of routes) expect(route).toMatch(/^\/[a-z-]+$/);
   });
 
-  it('opens Money, Documents, Tasks, Home, People, Inbox and Journal at their routes', () => {
+  it('opens Money, Documents, Tasks, Home, People, Inbox, Calendar and Journal at their routes', () => {
     expect(activeModules().map((module) => module.route)).toEqual([
       '/money',
       '/documents',
@@ -30,6 +31,7 @@ describe('module registry', () => {
       '/home',
       '/people',
       '/inbox',
+      '/calendar',
       '/journal',
     ]);
   });

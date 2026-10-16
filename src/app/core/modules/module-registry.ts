@@ -67,6 +67,14 @@ export const MODULES: readonly AppModule[] = [
     status: 'active',
   },
   {
+    id: 'calendar',
+    name: 'Calendar',
+    description: 'Events, birthdays and every date at home',
+    icon: 'calendar',
+    route: '/calendar',
+    status: 'active',
+  },
+  {
     id: 'journal',
     name: 'Journal',
     description: 'Notes on the day, and on this day in other years',

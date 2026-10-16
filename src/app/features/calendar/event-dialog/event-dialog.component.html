@@ -1,0 +1,194 @@
+<app-modal [title]="title()" (closed)="closed.emit()">
+  <form
+    [formGroup]="form"
+    (ngSubmit)="save()"
+    class="d-flex flex-column gap-3"
+    novalidate
+    data-testid="event-form"
+  >
+    <div>
+      <label class="form-label" for="event-title">Title</label>
+      <input
+        id="event-title"
+        class="form-control"
+        formControlName="title"
+        [maxlength]="limits.title"
+        placeholder="Dentist, dinner with Ana…"
+        data-testid="event-title"
+      />
+    </div>
+
+    <div class="form-check form-switch">
+      <input
+        id="event-all-day"
+        class="form-check-input"
+        type="checkbox"
+        role="switch"
+        formControlName="allDay"
+        data-testid="event-all-day"
+      />
+      <label class="form-check-label" for="event-all-day">All day</label>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-7">
+        <label class="form-label" for="event-start-date">{{
+          allDay() ? 'First day' : 'Starts'
+        }}</label>
+        <input
+          id="event-start-date"
+          type="date"
+          class="form-control"
+          formControlName="startDate"
+          (change)="startChanged()"
+          data-testid="event-start-date"
+        />
+      </div>
+      @if (!allDay()) {
+        <div class="col-5">
+          <label class="form-label" for="event-start-time">Time</label>
+          <input
+            id="event-start-time"
+            type="time"
+            class="form-control"
+            formControlName="startTime"
+            data-testid="event-start-time"
+          />
+        </div>
+      }
+      <div class="col-7">
+        <label class="form-label" for="event-end-date">{{ allDay() ? 'Last day' : 'Ends' }}</label>
+        <input
+          id="event-end-date"
+          type="date"
+          class="form-control"
+          formControlName="endDate"
+          data-testid="event-end-date"
+        />
+      </div>
+      @if (!allDay()) {
+        <div class="col-5">
+          <label class="form-label" for="event-end-time">Time</label>
+          <input
+            id="event-end-time"
+            type="time"
+            class="form-control"
+            formControlName="endTime"
+            data-testid="event-end-time"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="row g-2">
+      <div class="col-12 col-sm-7">
+        <label class="form-label" for="event-repeat">Repeat</label>
+        <select
+          id="event-repeat"
+          class="form-select"
+          formControlName="repeat"
+          data-testid="event-repeat"
+        >
+          @for (preset of presets; track preset.rule) {
+            <option [value]="preset.rule">{{ preset.label }}</option>
+          }
+          @if (hasCustom()) {
+            <option [value]="custom">As imported</option>
+          }
+        </select>
+      </div>
+      @if (repeatValue() && repeatValue() !== custom) {
+        <div class="col-12 col-sm-5">
+          <label class="form-label" for="event-until">Until (optional)</label>
+          <input
+            id="event-until"
+            type="date"
+            class="form-control"
+            formControlName="until"
+            [min]="minUntil()"
+            data-testid="event-until"
+          />
+        </div>
+      }
+    </div>
+
+    <div>
+      <label class="form-label" for="event-location">Place</label>
+      <input
+        id="event-location"
+        class="form-control"
+        formControlName="location"
+        [maxlength]="limits.location"
+        data-testid="event-location"
+      />
+    </div>
+    <div>
+      <label class="form-label" for="event-notes">Notes</label>
+      <textarea
+        id="event-notes"
+        class="form-control"
+        rows="3"
+        formControlName="notes"
+        [maxlength]="limits.notes"
+        data-testid="event-notes"
+      ></textarea>
+    </div>
+
+    @if (error(); as message) {
+      <div class="alert alert-danger py-2 mb-0" role="alert" data-testid="event-error">
+        {{ message }}
+      </div>
+    }
+
+    @if (canWrite()) {
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        @if (event()) {
+          <button
+            type="button"
+            class="btn btn-link text-danger px-0"
+            [disabled]="saving()"
+            (click)="confirmingDelete.set(true)"
+            data-testid="event-delete"
+          >
+            {{ event()!.repeat ? 'Delete all' : 'Delete' }}
+          </button>
+          @if (event()!.repeat && target().occurrence) {
+            <button
+              type="button"
+              class="btn btn-link px-0 ms-2"
+              [disabled]="saving()"
+              (click)="skip()"
+              data-testid="event-skip"
+            >
+              Skip {{ shortDay(target().occurrence!) }}
+            </button>
+          }
+        }
+        <button type="button" class="btn btn-outline-secondary ms-auto" (click)="closed.emit()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="saving()"
+          data-testid="event-save"
+        >
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    }
+  </form>
+</app-modal>
+
+@if (confirmingDelete()) {
+  <app-confirm-dialog
+    title="Delete the event?"
+    [message]="
+      event()?.repeat ? 'All its days go from the calendar.' : 'It goes from the calendar.'
+    "
+    confirmLabel="Delete"
+    [danger]="true"
+    (confirmed)="remove()"
+    (cancelled)="confirmingDelete.set(false)"
+  />
+}

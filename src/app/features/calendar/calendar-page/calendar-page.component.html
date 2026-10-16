@@ -1,0 +1,286 @@
+<div
+  class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4"
+  data-accent="calendar"
+>
+  <div>
+    <h1 class="h3 mb-1">Calendar</h1>
+    <p class="text-body-secondary mb-0">Events, and the dates of everything else at home</p>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <div class="btn-group" role="group" aria-label="View">
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="view() === 'month'"
+        [class.btn-outline-secondary]="view() !== 'month'"
+        [attr.aria-pressed]="view() === 'month'"
+        (click)="setView('month')"
+        data-testid="view-month"
+      >
+        Month
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="view() === 'agenda'"
+        [class.btn-outline-secondary]="view() !== 'agenda'"
+        [attr.aria-pressed]="view() === 'agenda'"
+        (click)="setView('agenda')"
+        data-testid="view-agenda"
+      >
+        Agenda
+      </button>
+    </div>
+    @if (canWrite()) {
+      <label
+        class="btn btn-sm btn-outline-secondary mb-0"
+        [class.disabled]="importing()"
+        data-testid="import"
+      >
+        <app-icon name="upload" [size]="16" />
+        <span class="ms-1">{{ importing() ? 'Reading…' : 'Import .ics' }}</span>
+        <input
+          #file
+          type="file"
+          class="visually-hidden"
+          accept=".ics,text/calendar"
+          [disabled]="importing()"
+          (change)="chooseFile(file)"
+          data-testid="import-file"
+        />
+      </label>
+      <button
+        type="button"
+        class="btn btn-sm btn-primary"
+        (click)="addEvent()"
+        data-testid="add-event"
+      >
+        <app-icon name="plus" [size]="16" />
+        <span class="ms-1">Event</span>
+      </button>
+    }
+  </div>
+</div>
+
+@if (failedModules().length > 0) {
+  <div class="alert alert-warning py-2 small" role="status" data-testid="partial">
+    Some dates could not load: {{ failedModules().join(', ') }}.
+  </div>
+}
+
+@if (calendarResource.error() && !calendar()) {
+  <app-error-state message="Could not load the calendar." (retry)="calendarResource.reload()" />
+} @else if (view() === 'month') {
+  <div class="row g-4">
+    <div class="col-12 col-xl-8">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          aria-label="Previous month"
+          (click)="goMonth(-1)"
+          data-testid="prev"
+        >
+          <app-icon name="chevron-left" [size]="16" />
+        </button>
+        <h2 class="h5 mb-0 month-title" data-testid="month-title">{{ monthTitle(month()) }}</h2>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          aria-label="Next month"
+          (click)="goMonth(1)"
+          data-testid="next"
+        >
+          <app-icon name="chevron-right" [size]="16" />
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-link ms-auto"
+          (click)="goToday()"
+          data-testid="today"
+        >
+          Today
+        </button>
+      </div>
+      <div
+        class="month"
+        role="grid"
+        [attr.aria-label]="monthTitle(month())"
+        [class.loading]="calendarResource.isLoading()"
+      >
+        <div class="weekdays" role="row">
+          @for (name of weekdays; track name) {
+            <div class="weekday" role="columnheader">{{ name }}</div>
+          }
+        </div>
+        @for (week of weeks(); track week[0]) {
+          <div class="week" role="row">
+            @for (day of week; track day) {
+              <button
+                type="button"
+                role="gridcell"
+                class="cell"
+                [class.other-month]="!inMonth(day)"
+                [class.is-today]="day === today()"
+                [class.is-selected]="day === selected()"
+                [attr.aria-selected]="day === selected()"
+                [attr.aria-label]="dayLabel(day)"
+                (click)="select(day)"
+                [attr.data-testid]="'day-' + day"
+              >
+                <span class="cell-number">{{ +day.slice(8, 10) }}</span>
+                <span class="cell-items" aria-hidden="true">
+                  @for (item of itemsOn(day).slice(0, cellItems); track item.id) {
+                    <span
+                      class="chip"
+                      [attr.data-accent]="accentOf(item)"
+                      [class.all-day]="item.allDay"
+                    >
+                      @if (!item.allDay && item.startsAt && item.startDate === day) {
+                        <span class="chip-time">{{ timeOf(item.startsAt) }}</span>
+                      }
+                      {{ item.title }}
+                    </span>
+                  }
+                  @if (itemsOn(day).length > cellItems) {
+                    <span class="chip-more">+{{ itemsOn(day).length - cellItems }} more</span>
+                  }
+                </span>
+                <span class="cell-dots" aria-hidden="true">
+                  @for (item of itemsOn(day).slice(0, 4); track item.id) {
+                    <span class="dot" [attr.data-accent]="accentOf(item)"></span>
+                  }
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+      <section aria-labelledby="day-heading" data-testid="day-panel">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+          <h2 id="day-heading" class="h5 mb-0">{{ dayHeading(selected(), today()) }}</h2>
+          @if (canWrite()) {
+            <button
+              type="button"
+              class="btn btn-sm btn-link"
+              (click)="addEvent(selected())"
+              data-testid="add-on-day"
+            >
+              Add event
+            </button>
+          }
+        </div>
+        @if (!calendar()) {
+          <app-skeleton [lines]="3" />
+        } @else if (selectedItems().length === 0) {
+          <p class="text-body-secondary small mb-0" data-testid="day-empty">Nothing on this day.</p>
+        } @else {
+          <ul class="list-unstyled d-flex flex-column gap-2 mb-0" data-testid="day-items">
+            @for (item of selectedItems(); track item.id) {
+              <li>
+                <ng-container *ngTemplateOutlet="row; context: { $implicit: item }" />
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  </div>
+} @else {
+  <!-- Agenda -->
+  @if (!calendar()) {
+    <app-skeleton [lines]="5" />
+  } @else if (agenda().length === 0) {
+    <p class="text-body-secondary" data-testid="agenda-empty">Nothing in the next {{ 60 }} days.</p>
+  } @else {
+    <div class="d-flex flex-column gap-4" data-testid="agenda">
+      @for (group of agenda(); track group.day) {
+        <section [attr.aria-label]="dayHeading(group.day, today())">
+          <h2 class="agenda-day" [class.is-today]="group.day === today()">
+            {{ dayHeading(group.day, today()) }}
+          </h2>
+          <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+            @for (item of group.items; track item.id) {
+              <li>
+                <ng-container *ngTemplateOutlet="row; context: { $implicit: item }" />
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+}
+
+<ng-template #row let-item>
+  <button
+    type="button"
+    class="item"
+    [attr.data-accent]="accentOf(item)"
+    [class.done]="item.done === true"
+    (click)="open(item)"
+    [attr.data-testid]="'item-' + item.id"
+  >
+    <span class="item-icon" aria-hidden="true"
+      ><app-icon [name]="itemIcon(item)" [size]="18"
+    /></span>
+    <span class="item-body">
+      <span class="item-title">{{ item.title }}</span>
+      <span class="item-meta">
+        {{ whenText(item) }}
+        @if (item.text) {
+          · {{ item.text }}
+        }
+        @if (item.recurring) {
+          · <span>repeats</span>
+        }
+      </span>
+    </span>
+    <span class="item-module">{{ item.module === 'Calendar' ? 'Event' : item.module }}</span>
+  </button>
+</ng-template>
+
+@if (dialog(); as target) {
+  <app-event-dialog [target]="target" (saved)="onSaved()" (closed)="closeDialog()" />
+}
+
+@if (importPreview(); as preview) {
+  <app-modal [title]="'Import ' + preview.fileName" (closed)="importPreview.set(null)">
+    <p class="mb-2" data-testid="import-summary">{{ importSummary(preview.result) }}</p>
+    <ul class="list-unstyled import-list mb-3" data-testid="import-list">
+      @for (event of preview.result.events; track $index) {
+        <li class="d-flex align-items-baseline gap-2">
+          <span class="badge import-action" [attr.data-action]="event.action">{{
+            event.action === 'Same' ? 'Already there' : event.action
+          }}</span>
+          <span class="flex-grow-1">
+            <span class="d-block">{{ event.title }}</span>
+            <span class="small text-body-secondary"
+              >{{ importWhen(event) }}
+              @if (event.reason) {
+                · {{ event.reason }}
+              }
+            </span>
+          </span>
+        </li>
+      }
+    </ul>
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="importPreview.set(null)">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="importing() || importChanges(preview.result) === 0"
+        (click)="confirmImport()"
+        data-testid="import-confirm"
+      >
+        {{ importing() ? 'Importing…' : 'Import' }}
+      </button>
+    </div>
+  </app-modal>
+}

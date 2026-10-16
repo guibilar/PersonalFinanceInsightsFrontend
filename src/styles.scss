@@ -193,6 +193,12 @@ $accents: (
     #e39aa8,
     #3b2027,
   ),
+  calendar: (
+    #5b5a8c,
+    #e6e5f1,
+    #aeacd9,
+    #26253a,
+  ),
 );
 @each $name, $c in $accents {
   [data-accent='#{$name}'] {

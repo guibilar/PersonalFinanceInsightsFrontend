@@ -79,6 +79,98 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/calendar': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The Calendar from one day to another (both included): the events, and the dated things of all modules.
+     * @description from: default today; to: default from + 30 days; at most 400 days. Items: events (with each occurrence of a repeated event), tasks due, birthdays, reach-out days, loans due, documents that expire, and warranties that end. On each day, the things of the whole day come first, then by time.
+     */
+    get: operations['GetCalendar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/calendar/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Adds an event: all day (startDate, endDate) or with a time (startsAt, endsAt), and a repeat (an RRULE). */
+    post: operations['CreateCalendarEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/calendar/events/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['GetCalendarEvent'];
+    /** Changes an event (all values; all occurrences of a repeated event). The skipped days stay. */
+    put: operations['UpdateCalendarEvent'];
+    post?: never;
+    /** Deletes an event (all occurrences of a repeated event). */
+    delete: operations['DeleteCalendarEvent'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/calendar/events/{id}/skip': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** One occurrence of a repeated event does not happen (date: its day). The others stay. */
+    post: operations['SkipCalendarOccurrence'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/calendar/import': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Imports the events of an .ics file (ics: its text). dryRun=true only says what would change.
+     * @description An event with a UID that Hestia has already (from an earlier import) is updated, not added again. A cancelled event (STATUS:CANCELLED, METHOD:CANCEL) is deleted. Repeats faster than daily are skipped.
+     */
+    post: operations['ImportCalendar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/documents': {
     parameters: {
       query?: never;
@@ -1360,6 +1452,127 @@ export interface components {
       /** Format: int32 */
       year?: null | number | string;
     };
+    CalendarDto: {
+      /** Format: date */
+      today: string;
+      /** Format: date */
+      from: string;
+      /** Format: date */
+      to: string;
+      timeZone: string;
+      items: components['schemas']['CalendarItem'][];
+      modules: components['schemas']['CalendarModuleDto'][];
+    };
+    CalendarEventDto: {
+      /** Format: uuid */
+      id: string;
+      title: string;
+      allDay: boolean;
+      /** Format: date */
+      startDate: null | string;
+      /** Format: date */
+      endDate: null | string;
+      /** Format: date-time */
+      startsAt: null | string;
+      /** Format: date-time */
+      endsAt: null | string;
+      timeZone: string;
+      location: null | string;
+      notes: null | string;
+      repeat: null | string;
+      skippedDates: string[];
+      source: components['schemas']['CalendarEventSource'];
+      uid: null | string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CalendarEventRequest: {
+      title: null | string;
+      /** @default false */
+      allDay: boolean;
+      /** Format: date */
+      startDate?: null | string;
+      /** Format: date */
+      endDate?: null | string;
+      /** Format: date-time */
+      startsAt?: null | string;
+      /** Format: date-time */
+      endsAt?: null | string;
+      timeZone?: null | string;
+      location?: null | string;
+      notes?: null | string;
+      repeat?: null | string;
+    };
+    /** @enum {unknown} */
+    CalendarEventSource: 'Manual' | 'Import';
+    /** @enum {unknown} */
+    CalendarImportAction: 'Add' | 'Update' | 'Same' | 'Delete' | 'Skip';
+    CalendarImportItemDto: {
+      action: components['schemas']['CalendarImportAction'];
+      title: string;
+      allDay: boolean;
+      /** Format: date */
+      startDate: null | string;
+      /** Format: date-time */
+      startsAt: null | string;
+      repeat: null | string;
+      /** Format: uuid */
+      eventId: null | string;
+      reason: null | string;
+    };
+    CalendarImportRequest: {
+      ics: null | string;
+      /** @default false */
+      dryRun: boolean;
+    };
+    CalendarImportResultDto: {
+      dryRun: boolean;
+      /** Format: int32 */
+      added: number | string;
+      /** Format: int32 */
+      updated: number | string;
+      /** Format: int32 */
+      unchanged: number | string;
+      /** Format: int32 */
+      deleted: number | string;
+      /** Format: int32 */
+      skipped: number | string;
+      events: components['schemas']['CalendarImportItemDto'][];
+    };
+    CalendarItem: {
+      id: string;
+      module: string;
+      kind: string;
+      title: string;
+      text: null | string;
+      allDay: boolean;
+      /** Format: date */
+      startDate: string;
+      /** Format: date */
+      endDate: string;
+      /** Format: date-time */
+      startsAt: null | string;
+      /** Format: date-time */
+      endsAt: null | string;
+      link: null | string;
+      /** Format: uuid */
+      eventId?: null | string;
+      /** @default false */
+      recurring: boolean;
+      done?: null | boolean;
+    };
+    CalendarModuleDto: {
+      module: string;
+      status: components['schemas']['CalendarModuleStatus'];
+    };
+    /** @enum {unknown} */
+    CalendarModuleStatus: 'Complete' | 'Partial' | 'Failed';
+    CalendarSkipRequest: {
+      /** Format: date */
+      date: null | string;
+    };
     CategoryCountDto: {
       name: string;
       /** Format: int32 */
@@ -2312,6 +2525,171 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['TodayDto'];
+        };
+      };
+    };
+  };
+  GetCalendar: {
+    parameters: {
+      query?: {
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CalendarDto'];
+        };
+      };
+    };
+  };
+  CreateCalendarEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CalendarEventRequest'];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CalendarEventDto'];
+        };
+      };
+    };
+  };
+  GetCalendarEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CalendarEventDto'];
+        };
+      };
+    };
+  };
+  UpdateCalendarEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CalendarEventRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CalendarEventDto'];
+        };
+      };
+    };
+  };
+  DeleteCalendarEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkipCalendarOccurrence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CalendarSkipRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CalendarEventDto'];
+        };
+      };
+    };
+  };
+  ImportCalendar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CalendarImportRequest'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CalendarImportResultDto'];
         };
       };
     };
