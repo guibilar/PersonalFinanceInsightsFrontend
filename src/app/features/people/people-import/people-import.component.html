@@ -1,0 +1,134 @@
+<div class="mb-4">
+  <a routerLink="/people" class="small d-inline-flex align-items-center gap-1 mb-2">
+    <app-icon name="chevron-left" [size]="14" /> People
+  </a>
+  <h1 class="h3 mb-1">Import contacts</h1>
+  <p class="text-body-secondary mb-0">
+    From a contacts file, or straight from this phone. Nothing you wrote is overwritten.
+  </p>
+</div>
+
+@if (!canWrite()) {
+  <p class="text-body-secondary" data-testid="read-only">This account can only read people.</p>
+} @else if (!preview()) {
+  <div class="row g-3">
+    <div class="col-12" [class.col-lg-7]="picker">
+      <label
+        class="drop-zone"
+        [class.dragging]="dragging()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="dragging.set(false)"
+        (drop)="onDrop($event)"
+        data-testid="drop-zone"
+      >
+        <app-icon name="upload" [size]="28" />
+        <span class="fw-semibold">{{
+          busy() ? 'Reading…' : 'Choose a .vcf file, or drop it here'
+        }}</span>
+        <span class="small text-body-secondary">
+          iPhone: Contacts → select → Share. Android: Contacts → Export. Google: contacts.google.com
+          → Export → vCard.
+        </span>
+        <input
+          #file
+          type="file"
+          class="visually-hidden"
+          accept=".vcf,text/vcard,text/x-vcard"
+          [disabled]="busy()"
+          (change)="chooseFile(file)"
+          data-testid="vcf-file"
+        />
+      </label>
+    </div>
+    @if (picker) {
+      <div class="col-12 col-lg-5">
+        <button
+          type="button"
+          class="phone-card"
+          [disabled]="busy()"
+          (click)="fromPhone()"
+          data-testid="from-phone"
+        >
+          <app-icon name="users" [size]="28" />
+          <span class="fw-semibold">Pick from this phone</span>
+          <span class="small text-body-secondary">Choose people in your phone's contacts.</span>
+        </button>
+      </div>
+    }
+  </div>
+} @else {
+  @let result = preview()!;
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3" data-testid="preview-summary">
+    <span class="badge rounded-pill text-bg-light">{{ result.added }} new</span>
+    <span class="badge rounded-pill text-bg-light">{{ result.merged }} to update</span>
+    <span class="badge rounded-pill text-bg-light">{{ result.unchanged }} already here</span>
+    @if (result.skipped) {
+      <span class="badge rounded-pill text-bg-light">{{ result.skipped }} skipped</span>
+    }
+    @if (choosable().length > 0) {
+      <button
+        type="button"
+        class="btn btn-sm btn-link ms-auto"
+        (click)="toggleAll()"
+        data-testid="toggle-all"
+      >
+        {{ allChosen() ? 'Choose none' : 'Choose all' }}
+      </button>
+    }
+  </div>
+
+  <ul class="list-unstyled d-flex flex-column gap-2 mb-4" data-testid="preview">
+    @for (item of result.people; track item.index) {
+      @let choosable = item.action === 'Add' || item.action === 'Merge';
+      <li>
+        <label class="contact" [class.muted]="!choosable" [attr.data-action]="item.action">
+          <input
+            type="checkbox"
+            class="form-check-input mt-0"
+            [checked]="isChosen(item.index)"
+            [disabled]="!choosable"
+            (change)="toggle(item.index)"
+            [attr.data-testid]="'choose-' + item.index"
+          />
+          <span class="flex-grow-1 min-w-0">
+            <span class="d-block fw-semibold text-truncate">{{
+              item.person.name || '(No name)'
+            }}</span>
+            <span class="d-block small text-body-secondary text-truncate">
+              {{ details(item.person) }}
+            </span>
+          </span>
+          <span class="action small">{{ actionText(item) }}</span>
+        </label>
+      </li>
+    }
+  </ul>
+
+  <div class="d-flex flex-wrap gap-2 sticky-actions">
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="startOver()"
+      [disabled]="busy()"
+    >
+      Start over
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary ms-auto"
+      [disabled]="busy() || chosenCount() === 0"
+      (click)="confirm()"
+      data-testid="confirm"
+    >
+      {{
+        busy()
+          ? 'Importing…'
+          : 'Import ' + chosenCount() + (chosenCount() === 1 ? ' contact' : ' contacts')
+      }}
+    </button>
+  </div>
+}
+
+@if (error(); as message) {
+  <div class="alert alert-danger mt-3" role="alert" data-testid="import-error">{{ message }}</div>
+}
