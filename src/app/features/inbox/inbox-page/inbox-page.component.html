@@ -112,7 +112,30 @@
               </button>
             </div>
           } @else {
+            @if (note.source === 'Email') {
+              <span
+                class="small text-body-secondary d-inline-flex align-items-center gap-1"
+                data-testid="email-from"
+              >
+                <app-icon name="mail" [size]="14" /> Email from {{ note.from }}
+              </span>
+            }
             <p class="note-text mb-0">{{ note.text }}</p>
+            @if (note.documentIds?.length) {
+              <div class="d-flex flex-wrap gap-2" data-testid="email-documents">
+                @for (id of note.documentIds; track id; let i = $index) {
+                  <a
+                    class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                    [routerLink]="['/documents', id]"
+                  >
+                    <app-icon name="file-text" [size]="14" />
+                    {{
+                      note.documentIds!.length === 1 ? 'Attached document' : 'Attachment ' + (i + 1)
+                    }}
+                  </a>
+                }
+              </div>
+            }
             <span class="small text-body-secondary">
               {{ when(note.createdAt) }}
               @if (note.doneAt) {

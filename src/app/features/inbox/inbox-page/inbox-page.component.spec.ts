@@ -108,6 +108,30 @@ describe('InboxPageComponent', () => {
     expect(root().querySelector<HTMLTextAreaElement>('#note-text')!.value).toBe('');
   });
 
+  it('shows who sent an email note, and opens its attached documents (T102)', async () => {
+    await start();
+    answerList([
+      note({
+        id: 'n3',
+        text: 'Your October bill\n\nAmount due: $84.12',
+        source: 'Email',
+        from: 'Hydro <bills@hydro.example>',
+        documentIds: ['d1', 'd2'],
+      }),
+    ]);
+    await settle();
+
+    const card = root().querySelector('[data-note="n3"]')!;
+    expect(text(card.querySelector('[data-testid="email-from"]')!)).toBe(
+      'Email from Hydro <bills@hydro.example>',
+    );
+    const links = Array.from(card.querySelectorAll('[data-testid="email-documents"] a'));
+    expect(links.map((a) => [text(a), a.getAttribute('href')])).toEqual([
+      ['Attachment 1', '/documents/d1'],
+      ['Attachment 2', '/documents/d2'],
+    ]);
+  });
+
   it('sends a quick note straight to a task or to the journal', async () => {
     await start();
     answerList([]);

@@ -1562,7 +1562,15 @@ export interface components {
       /** Format: date-time */
       doneAt: null | string;
       sortedTo: null | string;
+      source?: components['schemas']['InboxSource'];
+      from?: null | string;
+      documentIds?: null | string[];
     };
+    /**
+     * @default Note
+     * @enum {unknown}
+     */
+    InboxSource: 'Note' | 'Email';
     InboxTextRequest: {
       text: null | string;
     };
