@@ -1,8 +1,8 @@
-<div class="d-flex align-items-start gap-2 mb-4 today-header">
+<div class="d-flex align-items-start gap-2 mb-3 today-header">
   <div class="min-w-0">
     <p class="today-date mb-1">{{ dateLabel() }}</p>
     <h1 class="greeting mb-1" data-testid="greeting">{{ greeting() }}</h1>
-    <p class="text-body-secondary mb-0">Here is how things are at home today.</p>
+    <p class="text-body-secondary mb-0" data-testid="day-summary">{{ daySummary() }}</p>
   </div>
   <!-- T69: the bell: how many items need attention; a click goes to the list. -->
   <button
@@ -34,54 +34,149 @@
   </button>
 </div>
 
-@if (today()) {
-  <!-- A module with several tiles has the whole width; one with a single tile sits beside the next. -->
-  <div class="today-sections mb-4">
-    @for (section of sections(); track section.id) {
-      <section
-        class="today-section"
-        [class.wide]="section.tiles.length > 1 || section.status === 'Failed'"
-        [attr.data-accent]="section.id"
-        [attr.aria-labelledby]="'today-' + section.id"
-      >
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="section-icon" aria-hidden="true"
-            ><app-icon [name]="section.icon" [size]="16"
-          /></span>
-          <h2 [id]="'today-' + section.id" class="section-title mb-0">{{ section.name }}</h2>
-          @if (section.route) {
-            <a [routerLink]="section.route" class="small ms-auto text-decoration-none"
-              >Open {{ section.name }}</a
-            >
-          }
-        </div>
+<!-- T106: jot a thought down without leaving Today: it goes to the Inbox. -->
+@if (canWrite()) {
+  <form class="capture mb-4" (submit)="$event.preventDefault(); jot()" data-testid="jot">
+    <app-icon name="note" [size]="18" class="capture-icon" />
+    <label class="visually-hidden" for="jot-text">A note for the Inbox</label>
+    <input
+      id="jot-text"
+      class="capture-input"
+      name="jot"
+      autocomplete="off"
+      maxlength="4000"
+      placeholder="Jot something down for later…"
+      [value]="jotText()"
+      (input)="jotText.set($any($event.target).value)"
+      data-testid="jot-text"
+    />
+    <button
+      type="submit"
+      class="btn btn-sm btn-primary"
+      [disabled]="!jotText().trim() || jotting()"
+      data-testid="jot-save"
+    >
+      {{ jotting() ? 'Saving…' : 'Save' }}
+    </button>
+  </form>
+}
 
-        @if (section.status === 'Failed') {
-          <app-error-state
-            [message]="section.name + ' could not load.'"
-            (retry)="refresh()"
-            [attr.data-module-status]="section.id"
-          />
+@if (today(); as t) {
+  <div class="today-layout">
+    <div class="today-main d-flex flex-column gap-4">
+      <!-- Your day: the Calendar of today (T103), whole days first, then by time. -->
+      <section
+        class="day-card"
+        data-accent="calendar"
+        aria-labelledby="today-day"
+        data-testid="your-day"
+      >
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="section-icon" aria-hidden="true"
+            ><app-icon name="calendar" [size]="16"
+          /></span>
+          <h2 id="today-day" class="section-title mb-0">Your day</h2>
+          <a routerLink="/calendar" class="small ms-auto text-decoration-none">Open calendar</a>
+        </div>
+        @if (!t.agenda) {
+          <p class="small text-body-secondary mb-0" data-testid="agenda-failed">
+            The calendar could not load.
+          </p>
         } @else {
-          @if (section.status === 'Partial') {
+          @if (!t.agenda.complete) {
+            <p class="small text-warning-emphasis mb-2">Some dates could not load.</p>
+          }
+          @if (t.agenda.today.length === 0) {
+            <p class="text-body-secondary mb-0" data-testid="agenda-empty">
+              Nothing planned today. Enjoy the quiet.
+            </p>
+          } @else {
+            <ul class="list-unstyled d-flex flex-column gap-2 mb-0" data-testid="agenda-today">
+              @for (item of t.agenda.today; track item.id) {
+                <li
+                  class="agenda-row"
+                  [attr.data-accent]="accentOf(item)"
+                  [class.done]="isDone(item)"
+                >
+                  @if (item.kind === 'task-due' && canWrite()) {
+                    <input
+                      type="checkbox"
+                      class="form-check-input agenda-check"
+                      [checked]="isDone(item)"
+                      [disabled]="isDone(item) || busyTask() === item.id"
+                      (change)="complete(item)"
+                      [attr.aria-label]="'Done: ' + item.title"
+                      [attr.data-testid]="'done-' + item.id"
+                    />
+                  } @else {
+                    <span class="agenda-icon" aria-hidden="true"
+                      ><app-icon [name]="iconOf(item)" [size]="16"
+                    /></span>
+                  }
+                  <a class="agenda-text" [routerLink]="routeOf(item)" [queryParams]="queryOf(item)">
+                    <span class="agenda-title">{{ item.title }}</span>
+                    <span class="agenda-meta">{{ metaOf(item) }}</span>
+                  </a>
+                  @if (!item.allDay && item.startsAt) {
+                    <span class="agenda-time tabular">{{ timeOf(item.startsAt) }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+          @if (t.agenda.upcoming.length > 0) {
+            <h3 class="upcoming-title mt-4 mb-2">Coming up</h3>
+            <ul class="list-unstyled mb-0 upcoming" data-testid="agenda-upcoming">
+              @for (item of t.agenda.upcoming; track item.id) {
+                <li>
+                  <a
+                    class="upcoming-row"
+                    [routerLink]="routeOf(item)"
+                    [queryParams]="queryOf(item)"
+                    [attr.data-accent]="accentOf(item)"
+                  >
+                    <span class="upcoming-day">{{ upcomingDay(item, t.date) }}</span>
+                    <span class="dot" aria-hidden="true"></span>
+                    <span class="upcoming-text">{{ item.title }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </section>
+
+      @if (attention().length > 0) {
+        <app-attention-list class="d-block" [items]="attention()" headingId="today-attention" />
+      }
+    </div>
+
+    <aside class="today-side d-flex flex-column gap-4">
+      <!-- At a glance: the tiles of every module, small, each in its module's colour. -->
+      <section aria-labelledby="today-glance" data-testid="glance">
+        <h2 id="today-glance" class="section-title mb-3">At a glance</h2>
+        @for (section of sections(); track section.id) {
+          @if (section.status === 'Failed') {
+            <app-error-state
+              class="d-block mb-2"
+              [message]="section.name + ' could not load.'"
+              (retry)="refresh()"
+              [attr.data-module-status]="section.id"
+            />
+          } @else if (section.status === 'Partial') {
             <p
               class="small text-warning-emphasis mb-2 d-flex align-items-center gap-1"
               [attr.data-module-status]="section.id"
             >
-              <app-icon name="alert-circle" [size]="14" />
-              Some {{ section.name }} figures could not load.
+              <app-icon name="alert-circle" [size]="14" /> Some {{ section.name }} figures could not
+              load.
             </p>
           }
-          <div
-            class="row g-3"
-            [class]="
-              section.tiles.length > 1
-                ? 'row row-cols-1 row-cols-sm-2 row-cols-xxl-4 g-3'
-                : 'row row-cols-1 g-3'
-            "
-          >
+        }
+        <div class="glance-grid">
+          @for (section of sections(); track section.id) {
             @for (card of section.tiles; track card.id) {
-              <div class="col" [attr.data-card]="card.id">
+              <div [attr.data-accent]="section.id" [attr.data-card]="card.id" class="glance-tile">
                 @let tile = linkOf(card);
                 @if (tile) {
                   <a [routerLink]="tile" class="stat-link">
@@ -106,33 +201,48 @@
                 }
               </div>
             }
-          </div>
-        }
+          }
+        </div>
       </section>
-    }
-  </div>
 
-  @if (attention().length > 0) {
-    <app-attention-list class="d-block mb-4" [items]="attention()" headingId="today-attention" />
-  }
+      @if (t.memories?.length) {
+        <section data-accent="journal" aria-labelledby="today-memories" data-testid="memories">
+          <h2 id="today-memories" class="section-title mb-3">On this day</h2>
+          <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+            @for (memory of t.memories; track memory.day) {
+              <li>
+                <a
+                  class="memory"
+                  [routerLink]="routeOfLink(memory.link)"
+                  [queryParams]="queryOfLink(memory.link)"
+                >
+                  <span class="memory-when">{{ memoryWhen(memory) }}</span>
+                  <span class="memory-text">{{ memory.text }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </aside>
+  </div>
 } @else if (todayResource.error()) {
   <app-error-state message="Could not load Today." (retry)="refresh()" />
 } @else {
   <section class="mb-4" aria-label="Loading">
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-xxl-4 g-3">
-      @for (n of [1, 2, 3, 4]; track n) {
-        <div class="col">
-          <div class="card h-100">
-            <div class="card-body"><app-skeleton [lines]="3" /></div>
-          </div>
-        </div>
-      }
+    <div class="today-layout">
+      <div class="card">
+        <div class="card-body"><app-skeleton [lines]="5" /></div>
+      </div>
+      <div class="card">
+        <div class="card-body"><app-skeleton [lines]="4" /></div>
+      </div>
     </div>
   </section>
 }
 
 @if (comingSoon().length > 0) {
-  <section aria-labelledby="today-more">
+  <section aria-labelledby="today-more" class="mt-4">
     <h2 id="today-more" class="h6 mb-2">From the other modules</h2>
     <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
       @for (module of comingSoon(); track module.id) {

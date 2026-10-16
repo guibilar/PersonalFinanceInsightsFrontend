@@ -949,26 +949,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/people/import': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Imports contacts from a vCard file (vCard: its text) or a list (people). dryRun=true (default) gives the preview.
-     * @description A contact that matches a person (the same email, then the same phone, then the same name) only fills the empty details of that person and adds its groups. only: the indexes to import (null: all). At most 2000 contacts. The answer has each contact with its action: Add, Merge, Same, or Skip (with the reason).
-     */
-    post: operations['ImportPeople'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/people/by-link': {
     parameters: {
       query?: never;
@@ -2150,39 +2130,6 @@ export interface components {
       hasPreviousPage?: boolean;
       hasNextPage?: boolean;
     };
-    /** @enum {unknown} */
-    PeopleImportAction: 'Add' | 'Merge' | 'Same' | 'Skip';
-    PeopleImportItemDto: {
-      /** Format: int32 */
-      index: number | string;
-      action: components['schemas']['PeopleImportAction'];
-      person: components['schemas']['CreatePersonRequest'];
-      /** Format: uuid */
-      existingId: null | string;
-      existingName: null | string;
-      matchedBy: null | string;
-      newFields: string[];
-      reason: null | string;
-    };
-    PeopleImportRequest: {
-      vCard?: null | string;
-      people?: null | components['schemas']['CreatePersonRequest'][];
-      /** @default true */
-      dryRun: boolean;
-      only?: null | (number | string)[];
-    };
-    PeopleImportResultDto: {
-      dryRun: boolean;
-      /** Format: int32 */
-      added: number | string;
-      /** Format: int32 */
-      merged: number | string;
-      /** Format: int32 */
-      unchanged: number | string;
-      /** Format: int32 */
-      skipped: number | string;
-      people: components['schemas']['PeopleImportItemDto'][];
-    };
     PeopleSummaryDto: {
       /** Format: date */
       date: string;
@@ -2449,6 +2396,31 @@ export interface components {
     };
     /** @enum {unknown} */
     TimelineModuleStatus: 'Complete' | 'Partial' | 'Failed';
+    TodayAgendaDto: {
+      today: components['schemas']['TodayAgendaItem'][];
+      upcoming: components['schemas']['TodayAgendaItem'][];
+      complete: boolean;
+    };
+    TodayAgendaItem: {
+      id: string;
+      module: string;
+      kind: string;
+      title: string;
+      text: null | string;
+      allDay: boolean;
+      /** Format: date */
+      startDate: string;
+      /** Format: date */
+      endDate: string;
+      /** Format: date-time */
+      startsAt: null | string;
+      /** Format: date-time */
+      endsAt: null | string;
+      link: null | string;
+      /** Format: uuid */
+      eventId: null | string;
+      done: null | boolean;
+    };
     TodayCard: {
       id: string;
       module: string;
@@ -2473,6 +2445,18 @@ export interface components {
       generatedAt: string;
       modules: components['schemas']['TodayModuleDto'][];
       cards: components['schemas']['TodayCard'][];
+      agenda?: null | components['schemas']['TodayAgendaDto'];
+      memories?: null | components['schemas']['TodayMemoryDto'][];
+    };
+    TodayMemoryDto: {
+      module: string;
+      kind: string;
+      /** Format: int32 */
+      yearsAgo: number | string;
+      /** Format: date */
+      day: string;
+      text: string;
+      link: null | string;
     };
     TodayModuleDto: {
       module: string;
@@ -3860,30 +3844,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['PersonDto'];
-        };
-      };
-    };
-  };
-  ImportPeople: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PeopleImportRequest'];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PeopleImportResultDto'];
         };
       };
     };
