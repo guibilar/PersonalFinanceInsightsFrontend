@@ -67,6 +67,7 @@ describe('ShellComponent', () => {
       'Home',
       'People',
       'Inbox',
+      'Calendar',
       'Journal',
     ]);
     expect(
