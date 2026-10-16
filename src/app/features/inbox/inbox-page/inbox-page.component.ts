@@ -9,6 +9,7 @@ import { DataChangesService } from '../../../core/data/data-changes.service';
 import { InboxItemDto } from '../../../core/models/outputs/inbox-output-dto';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.component';
+import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { INBOX_LIMITS, NoteSender, NoteTarget, inboxError } from '../inbox';
@@ -25,6 +26,7 @@ import { INBOX_LIMITS, NoteSender, NoteTarget, inboxError } from '../inbox';
     RouterLink,
     ConfirmDialogComponent,
     ErrorStateComponent,
+    IconComponent,
     SkeletonComponent,
   ],
   templateUrl: './inbox-page.component.html',
