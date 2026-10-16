@@ -159,6 +159,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/documents/{id}/suggestions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the text of a document says (T100): the store, the day, and the total of a receipt, matching finance transactions, and the end of a warranty.
+     * @description Before the OCR is Done, the values are null. Transactions: the same amount, up to 3 days from the day, closest first (at most 5); transactionsComplete is false when finance did not answer.
+     */
+    get: operations['GetDocumentSuggestions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/documents/{id}/files/{fileId}': {
     parameters: {
       query?: never;
@@ -1489,6 +1509,23 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
     };
+    DocumentSuggestionsDto: {
+      /** Format: uuid */
+      documentId: string;
+      ocrStatus: components['schemas']['OcrStatus'];
+      merchant: null | string;
+      /** Format: date */
+      date: null | string;
+      /** Format: double */
+      total: null | number | string;
+      kind: null | components['schemas']['DocumentKind'];
+      /** Format: int32 */
+      warrantyMonths: null | number | string;
+      /** Format: date */
+      warrantyUntil: null | string;
+      transactions: components['schemas']['TransactionMatchDto'][];
+      transactionsComplete: boolean;
+    };
     DocumentSummaryDto: {
       /** Format: uuid */
       id: string;
@@ -2191,6 +2228,19 @@ export interface components {
     };
     /** @enum {unknown} */
     TodayValueType: 'Money' | 'Count' | 'Percent' | 'Date' | 'Text';
+    TransactionMatchDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date */
+      date: string;
+      description: string;
+      /** Format: double */
+      amount: number | string;
+      accountName: string;
+      /** Format: int32 */
+      daysOff: number | string;
+      linked: boolean;
+    };
     UpcomingBirthdayDto: {
       /** Format: uuid */
       personId: string;
@@ -2479,6 +2529,28 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  GetDocumentSuggestions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DocumentSuggestionsDto'];
+        };
       };
     };
   };

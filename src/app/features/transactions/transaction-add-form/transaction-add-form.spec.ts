@@ -63,6 +63,28 @@ describe('TransactionAddForm', () => {
     expect(again.componentInstance.form.controls.accountId.value).toBe('a1');
   });
 
+  it('starts on the values of a receipt, which win over the previous transaction (T100)', async () => {
+    const again = TestBed.createComponent(TransactionAddForm);
+    again.componentRef.setInput('accounts', accounts);
+    again.componentRef.setInput('previous', { date: '2026-08-14', accountId: 'a1' });
+    again.componentRef.setInput('prefill', {
+      description: 'Costco Wholesale',
+      amount: 33.05,
+      date: '2026-10-03',
+      documentId: 'd1',
+    });
+    again.detectChanges();
+    await again.whenStable();
+
+    const form = again.componentInstance.form.controls;
+    expect([
+      form.description.value,
+      form.amount.value,
+      form.date.value,
+      form.accountId.value,
+    ]).toEqual(['Costco Wholesale', 33.05, '2026-10-03', 'a1']);
+  });
+
   it('adds money out, leaving the category and flow to the rules', () => {
     component.form.patchValue({ date: '2026-09-10', description: '  Coffee ', amount: 4.5 });
 

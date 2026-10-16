@@ -73,3 +73,35 @@ export interface DocumentDto extends DocumentSummaryDto {
   /** Null before the OCR. */
   ocrText: string | null;
 }
+
+/** A finance transaction that can be the purchase of a receipt (T100). */
+export interface TransactionMatchDto {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  accountName: string;
+  /** Days from the day of the receipt. */
+  daysOff: number;
+  /** True when the document links to it already. */
+  linked: boolean;
+}
+
+/**
+ * What Hestia read in the text of a document (T100): the store, the day, and the total of a receipt, the transactions of
+ * that amount near that day, and the end of a warranty. Null when the text does not say it clearly.
+ */
+export interface DocumentSuggestionsDto {
+  documentId: string;
+  ocrStatus: OcrStatus;
+  merchant: string | null;
+  date: string | null;
+  total: number | null;
+  /** The kind that the document seems to be, when its kind is Other. */
+  kind: DocumentKind | null;
+  warrantyMonths: number | null;
+  warrantyUntil: string | null;
+  transactions: TransactionMatchDto[];
+  /** False when finance did not answer. */
+  transactionsComplete: boolean;
+}

@@ -24,11 +24,19 @@ import {
   testTransaction,
 } from '../../../testing/test-documents';
 import { signInAsReadOnly } from '../../../testing/test-auth';
+import { DocumentSuggestionsComponent } from '../document-suggestions/document-suggestions.component';
 import { DocumentTasksComponent } from '../../tasks/document-tasks/document-tasks.component';
 import { LinkedItemsComponent } from '../../home/linked-items/linked-items.component';
 import { LinkedPeopleComponent } from '../../people/linked-people/linked-people.component';
 
 /** The Tasks section has its own tests (DocumentTasksComponent); here it only shows which document it got. */
+@Component({ selector: 'app-document-suggestions', template: '' })
+class DocumentSuggestionsStub {
+  readonly document = input.required<DocumentDto>();
+  readonly canWrite = input(false);
+  readonly changed = output<void>();
+}
+
 @Component({ selector: 'app-document-tasks', template: '{{ document().id }}' })
 class DocumentTasksStub {
   readonly document = input.required<DocumentSummaryDto>();
@@ -114,8 +122,17 @@ describe('DocumentDetailComponent', () => {
 
   beforeEach(async () => {
     TestBed.overrideComponent(DocumentDetailComponent, {
-      remove: { imports: [DocumentTasksComponent, LinkedItemsComponent, LinkedPeopleComponent] },
-      add: { imports: [DocumentTasksStub, LinkedItemsStub, LinkedPeopleStub] },
+      remove: {
+        imports: [
+          DocumentTasksComponent,
+          LinkedItemsComponent,
+          LinkedPeopleComponent,
+          DocumentSuggestionsComponent,
+        ],
+      },
+      add: {
+        imports: [DocumentTasksStub, LinkedItemsStub, LinkedPeopleStub, DocumentSuggestionsStub],
+      },
     });
     TestBed.configureTestingModule({
       providers: [

@@ -3,6 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { AccountRepository } from '../../../core/api/account-repository';
 import { CategoryRepository } from '../../../core/api/category-repository';
+import { TransactionPrefill } from '../../../core/data/transaction-add-launcher.service';
 import { TransactionRepository } from '../../../core/api/transaction-repository';
 import { TransactionInputDto } from '../../../core/models/inputs/transaction-input-dto';
 import { TransactionOutputDto } from '../../../core/models/outputs/transaction-output-dto';
@@ -38,6 +39,7 @@ import { TransactionAddForm } from '../transaction-add-form/transaction-add-form
         [categories]="categories.value() ?? []"
         [saving]="saving()"
         [previous]="previous()"
+        [prefill]="prefill()"
         [duplicate]="duplicate()"
         (submitAdd)="onSubmit($event)"
         (cancelled)="cancelled.emit()"
@@ -54,6 +56,8 @@ export class TransactionAddPanel {
 
   /** The date and account of the transaction added before, which the form starts on. */
   readonly previous = input<{ date: string; accountId: string } | null>(null);
+  /** Values from a receipt (T100). */
+  readonly prefill = input<TransactionPrefill | null>(null);
   readonly added = output<TransactionOutputDto>();
   readonly cancelled = output<void>();
 

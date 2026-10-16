@@ -215,6 +215,7 @@
   <app-modal title="Add transaction" (closed)="adder.close()">
     <app-transaction-add-panel
       [previous]="adder.lastAdded()"
+      [prefill]="adder.prefill()"
       (added)="onTransactionAdded($event)"
       (cancelled)="adder.close()"
     />
