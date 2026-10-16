@@ -11,6 +11,48 @@ export interface TodayDto {
   modules: TodayModuleDto[];
   /** First the tiles, then the "Needs attention" items, each group in module order. */
   cards: TodayCard[];
+  /** "Your day" (T106): the Calendar of today and of the next days. Null when the Calendar did not answer. */
+  agenda?: TodayAgendaDto | null;
+  /** "On this day" (T106): this day in earlier years, newest first. */
+  memories?: TodayMemoryDto[] | null;
+}
+
+/** "Your day" (T106). */
+export interface TodayAgendaDto {
+  /** The items that touch today: whole days first, then by time. */
+  today: TodayAgendaItem[];
+  /** The items that start in the next 7 days, soonest first (at most 8). */
+  upcoming: TodayAgendaItem[];
+  /** False when a module's items did not load. */
+  complete: boolean;
+}
+
+/** One thing of "Your day": the fields of a Calendar item (`GET /api/calendar`). */
+export interface TodayAgendaItem {
+  id: string;
+  module: string;
+  kind: string;
+  title: string;
+  text: string | null;
+  allDay: boolean;
+  startDate: string;
+  endDate: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  link: string | null;
+  eventId: string | null;
+  /** For a task: false while it is open. */
+  done: boolean | null;
+}
+
+/** Something from this day in an earlier year, for example a journal entry. */
+export interface TodayMemoryDto {
+  module: string;
+  kind: string;
+  yearsAgo: number;
+  day: string;
+  text: string;
+  link: string | null;
 }
 
 export type TodayModuleStatus = 'Complete' | 'Partial' | 'Failed';

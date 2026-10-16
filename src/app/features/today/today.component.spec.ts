@@ -173,7 +173,8 @@ describe('TodayComponent', () => {
     const budgets = root().querySelector('[data-card="money.budgets"] a[href="/money/budgets"]')!;
     expect(budgets.textContent).toContain('1 of 3 over');
     expect(budgets.querySelector('.text-danger')).not.toBeNull();
-    expect(root().querySelector('a[href="/money"]')!.textContent).toContain('Open Money');
+    // At a glance: each tile in its module's colour (styles.scss, data-accent).
+    expect(spent.getAttribute('data-accent')).toBe('money');
 
     const items = Array.from(root().querySelectorAll('.attention li'));
     expect(items.map((item) => item.textContent!.trim())).toEqual([
@@ -269,10 +270,11 @@ describe('TodayComponent', () => {
 
     expect(root().textContent).toContain('Money could not load.');
     expect(tileLabels()).toEqual(['Expiring soon']);
-    // Documents is active, so it is never a placeholder; with cards it links to its module.
     // Every module is active (T21): no placeholder for a module to come.
     expect(placeholders()).toEqual([]);
-    expect(root().querySelector('a[href="/documents"]')!.textContent).toContain('Open Documents');
+    expect(
+      root().querySelector('[data-card="documents.expiring"]')!.getAttribute('data-accent'),
+    ).toBe('documents');
 
     clickButton('Retry');
     await answer(completeAnswer(), '/api/today?refresh=true');
@@ -383,7 +385,7 @@ describe('TodayComponent', () => {
     expect(link.getAttribute('href')).toBe('/documents/d1');
   });
 
-  it('shows no section for a module with only "Needs attention" items, and puts System last (T81)', async () => {
+  it('shows no tiles for a module with only "Needs attention" items, and puts System last (T81)', async () => {
     const body = completeAnswer();
     body.modules = [
       { module: 'System', status: 'Complete' },
@@ -408,14 +410,11 @@ describe('TodayComponent', () => {
     );
     await answer(body);
 
-    const headings = Array.from(
-      root().querySelectorAll('h2[id^="today-"]:not(#today-attention):not(#today-more)'),
-    ).map((h) => h.textContent!.trim());
-    expect(headings).toEqual(['Money']);
-    // Each module section has its own warm colour (styles.scss, data-accent).
-    expect(root().querySelector('section.today-section')!.getAttribute('data-accent')).toBe(
-      'money',
+    // Only Money has tiles; each tile has its module's warm colour (styles.scss, data-accent).
+    const accents = Array.from(root().querySelectorAll('.glance-tile')).map((t) =>
+      t.getAttribute('data-accent'),
     );
+    expect(new Set(accents)).toEqual(new Set(['money']));
     const system = root().querySelector('[data-card="system.broker-down"]')!;
     expect(system.querySelector('a')).toBeNull();
     expect(root().querySelector('[data-card="people.reach-out.p1"] a')!.getAttribute('href')).toBe(
@@ -423,7 +422,7 @@ describe('TodayComponent', () => {
     );
   });
 
-  it('keeps a section with a load problem, also without tiles, and System after the others', async () => {
+  it('says which module did not load, also one without tiles, and System after the others', async () => {
     const body = completeAnswer();
     body.modules = [
       { module: 'System', status: 'Failed' },
@@ -431,10 +430,11 @@ describe('TodayComponent', () => {
     ];
     await answer(body);
 
-    const headings = Array.from(
-      root().querySelectorAll('h2[id^="today-"]:not(#today-attention):not(#today-more)'),
-    ).map((h) => h.textContent!.trim());
-    expect(headings).toEqual(['Money', 'System']);
+    const problems = Array.from(root().querySelectorAll('[data-module-status]')).map((e) =>
+      e.getAttribute('data-module-status'),
+    );
+    expect(problems).toEqual(['system']);
+    expect(root().textContent).toContain('System could not load.');
   });
 
   it('gives no link for a path outside the app', async () => {
@@ -447,6 +447,142 @@ describe('TodayComponent', () => {
 
     expect(root().querySelectorAll('.attention a').length).toBe(0);
     expect(root().querySelector('.attention')!.textContent).toContain('Outside');
+  });
+
+  function withAgenda(): TodayDto {
+    const body = completeAnswer();
+    body.agenda = {
+      complete: true,
+      today: [
+        {
+          id: 'tasks.task-due.t1',
+          module: 'Tasks',
+          kind: 'task-due',
+          title: 'Water the plants',
+          text: null,
+          allDay: true,
+          startDate: '2026-10-13',
+          endDate: '2026-10-13',
+          startsAt: null,
+          endsAt: null,
+          link: '/tasks/t1',
+          eventId: null,
+          done: false,
+        },
+        {
+          id: 'calendar.event.e1',
+          module: 'Calendar',
+          kind: 'event',
+          title: 'Dinner with Ana',
+          text: "Luigi's",
+          allDay: false,
+          startDate: '2026-10-13',
+          endDate: '2026-10-13',
+          startsAt: '2026-10-14T00:30:00Z',
+          endsAt: '2026-10-14T02:30:00Z',
+          link: '/calendar?event=e1',
+          eventId: 'e1',
+          done: null,
+        },
+      ],
+      upcoming: [
+        {
+          id: 'people.birthday.p1.2026',
+          module: 'People',
+          kind: 'birthday',
+          title: "Ana's birthday",
+          text: 'Turns 36',
+          allDay: true,
+          startDate: '2026-10-15',
+          endDate: '2026-10-15',
+          startsAt: null,
+          endsAt: null,
+          link: '/people/p1',
+          eventId: null,
+          done: null,
+        },
+      ],
+    };
+    body.memories = [
+      {
+        module: 'Journal',
+        kind: 'journal-entry',
+        yearsAgo: 1,
+        day: '2025-10-13',
+        text: 'First night in the new place.',
+        link: '/journal?day=2025-10-13',
+      },
+    ];
+    return body;
+  }
+
+  it('shows your day first: the whole-day task, the event with its time, and what comes up (T106)', async () => {
+    await answer(withAgenda());
+
+    expect(root().querySelector('[data-testid="day-summary"]')!.textContent!.trim()).toBe(
+      '2 things today, and a birthday this week.',
+    );
+    const rows = Array.from(root().querySelectorAll('[data-testid="agenda-today"] li'));
+    expect(rows.map((r) => r.querySelector('.agenda-title')!.textContent!.trim())).toEqual([
+      'Water the plants',
+      'Dinner with Ana',
+    ]);
+    expect(rows[0].getAttribute('data-accent')).toBe('tasks');
+    expect(rows[1].querySelector('a')!.getAttribute('href')).toBe('/calendar?event=e1');
+    expect(rows[1].querySelector('.agenda-time')!.textContent).toMatch(/\d:30 [AP]M/);
+    const upcoming = root().querySelector('[data-testid="agenda-upcoming"]')!;
+    expect(upcoming.textContent).toContain("Ana's birthday");
+    expect(upcoming.querySelector('a')!.getAttribute('href')).toBe('/people/p1');
+
+    const memory = root().querySelector('[data-testid="memories"] a')!;
+    expect(memory.textContent).toContain('1 year ago · Oct 13, 2025');
+    expect(memory.getAttribute('href')).toBe('/journal?day=2025-10-13');
+  });
+
+  it('ticks a task of today as done, then loads again', async () => {
+    await answer(withAgenda());
+
+    root().querySelector<HTMLInputElement>('[data-testid="done-tasks.task-due.t1"]')!.click();
+    TestBed.tick();
+    const done = http.expectOne((r) => r.method === 'POST' && r.url === '/api/tasks/t1/done');
+    done.flush({});
+    TestBed.tick();
+    await answer(withAgenda(), '/api/today?refresh=true');
+
+    expect(root().querySelector('[data-testid="agenda-today"] li')!.classList).toContain('done');
+  });
+
+  it('jots a note down for the Inbox', async () => {
+    await answer(withAgenda());
+
+    const input = root().querySelector<HTMLInputElement>('[data-testid="jot-text"]')!;
+    input.value = '  Buy furnace filters ';
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    root().querySelector<HTMLButtonElement>('[data-testid="jot-save"]')!.click();
+    TestBed.tick();
+    const add = http.expectOne((r) => r.method === 'POST' && r.url === '/api/inbox');
+    expect(add.request.body).toEqual({ text: 'Buy furnace filters' });
+    add.flush({ id: 'n1', text: 'Buy furnace filters' });
+    TestBed.tick();
+    await answer(withAgenda(), '/api/today?refresh=true');
+
+    expect(input.value).toBe('');
+  });
+
+  it('says when the calendar did not load, or the day is free', async () => {
+    await answer(completeAnswer());
+    expect(root().querySelector('[data-testid="agenda-failed"]')).not.toBeNull();
+
+    clickButton('Refresh');
+    const free = withAgenda();
+    free.agenda = { complete: true, today: [], upcoming: [] };
+    free.memories = [];
+    await answer(free, '/api/today?refresh=true');
+    expect(root().querySelector('[data-testid="agenda-empty"]')!.textContent).toContain(
+      'Nothing planned today',
+    );
+    expect(root().querySelector('[data-testid="memories"]')).toBeNull();
   });
 });
 

@@ -1832,7 +1832,15 @@ export interface components {
       /** Format: date-time */
       doneAt: null | string;
       sortedTo: null | string;
+      source?: components['schemas']['InboxSource'];
+      from?: null | string;
+      documentIds?: null | string[];
     };
+    /**
+     * @default Note
+     * @enum {unknown}
+     */
+    InboxSource: 'Note' | 'Email';
     InboxTextRequest: {
       text: null | string;
     };
@@ -2449,6 +2457,31 @@ export interface components {
     };
     /** @enum {unknown} */
     TimelineModuleStatus: 'Complete' | 'Partial' | 'Failed';
+    TodayAgendaDto: {
+      today: components['schemas']['TodayAgendaItem'][];
+      upcoming: components['schemas']['TodayAgendaItem'][];
+      complete: boolean;
+    };
+    TodayAgendaItem: {
+      id: string;
+      module: string;
+      kind: string;
+      title: string;
+      text: null | string;
+      allDay: boolean;
+      /** Format: date */
+      startDate: string;
+      /** Format: date */
+      endDate: string;
+      /** Format: date-time */
+      startsAt: null | string;
+      /** Format: date-time */
+      endsAt: null | string;
+      link: null | string;
+      /** Format: uuid */
+      eventId: null | string;
+      done: null | boolean;
+    };
     TodayCard: {
       id: string;
       module: string;
@@ -2473,6 +2506,18 @@ export interface components {
       generatedAt: string;
       modules: components['schemas']['TodayModuleDto'][];
       cards: components['schemas']['TodayCard'][];
+      agenda?: null | components['schemas']['TodayAgendaDto'];
+      memories?: null | components['schemas']['TodayMemoryDto'][];
+    };
+    TodayMemoryDto: {
+      module: string;
+      kind: string;
+      /** Format: int32 */
+      yearsAgo: number | string;
+      /** Format: date */
+      day: string;
+      text: string;
+      link: null | string;
     };
     TodayModuleDto: {
       module: string;

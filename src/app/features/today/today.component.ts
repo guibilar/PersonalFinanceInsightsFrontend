@@ -1,13 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, UrlTree } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { InboxRepository } from '../../core/api/inbox-repository';
+import { TaskRepository } from '../../core/api/task-repository';
 import { TodayRepository } from '../../core/api/today-repository';
 import { DataChangesService } from '../../core/data/data-changes.service';
 import {
+  TodayAgendaItem,
   TodayCard,
+  TodayMemoryDto,
   TodayModuleStatus,
   TodaySeverity,
 } from '../../core/models/outputs/today-output-dto';
+import { CalendarItem } from '../../core/models/outputs/calendar-output-dto';
+import { ToastService } from '../../shared/ui/toast/toast.service';
+import { validationDetail } from '../../shared/utils/problem-detail';
+import { formatDay } from '../../shared/utils/format';
+import { accentOf, itemIcon, shortDay, timeOf } from '../calendar/calendar';
 import { AppModule, MODULES } from '../../core/modules/module-registry';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
@@ -49,10 +58,26 @@ const TONES: Record<TodaySeverity, StatTone> = {
   Bad: 'bad',
 };
 
+/** A Today agenda item as a Calendar item, for the Calendar's helpers (icons, colours, times). */
+function asCalendarItem(item: TodayAgendaItem): CalendarItem {
+  return { ...item, recurring: false };
+}
+
+/** The path and the query of a web link ("/calendar?event=e1"), for routerLink and queryParams. */
+export function splitLink(link: string | null): {
+  path: string | null;
+  query: Record<string, string>;
+} {
+  if (!link || !link.startsWith('/') || link.startsWith('//')) return { path: null, query: {} };
+  const [path, search = ''] = link.split('#')[0].split('?');
+  return { path, query: Object.fromEntries(new URLSearchParams(search)) };
+}
+
 /**
- * Today: the cards of all modules from `GET /api/today` (T08), the Money tiles first (D11). The server owns the card
- * rules; this page only fills the text placeholders with the app's formats (and privacy mode). Modules that have no
- * cards yet show a "Coming soon" card.
+ * Today (T106): the day first. "Your day" has the Calendar of today (events, tasks due with a box to tick, birthdays) and
+ * what comes up this week; then "Needs attention"; beside them, the tiles of all modules at a glance and "On this day".
+ * A note can be jotted down for the Inbox at the top. The server owns the card rules (`GET /api/today`); this page only
+ * fills the text placeholders with the app's formats (and privacy mode).
  */
 @Component({
   selector: 'app-today',
@@ -80,14 +105,186 @@ const TONES: Record<TodaySeverity, StatTone> = {
       color: var(--bs-emphasis-color);
     }
 
-    .today-sections {
+    .today-layout {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-      gap: 1.5rem 1rem;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
     }
 
-    .today-section.wide {
-      grid-column: 1 / -1;
+    @media (min-width: 992px) {
+      .today-layout {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        align-items: start;
+      }
+    }
+
+    .capture {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.375rem 0.375rem 0.875rem;
+      border: 1px solid var(--bs-border-color);
+      border-radius: 999px;
+      background: var(--bs-body-bg);
+
+      &:focus-within {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+      }
+    }
+
+    .capture-icon {
+      color: var(--bs-secondary-color);
+    }
+
+    .capture-input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--bs-body-color);
+    }
+
+    .capture .btn {
+      border-radius: 999px;
+    }
+
+    .day-card {
+      padding: 1.25rem;
+      border: 1px solid var(--bs-border-color-translucent);
+      border-radius: var(--bs-border-radius-xl);
+      background: var(--bs-body-bg);
+    }
+
+    .agenda-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-left: 4px solid var(--accent);
+      border-radius: var(--bs-border-radius);
+      background: var(--bs-tertiary-bg);
+
+      &.done .agenda-title {
+        text-decoration: line-through;
+        color: var(--bs-secondary-color);
+      }
+    }
+
+    .agenda-icon {
+      display: inline-flex;
+      padding: 0.375rem;
+      border-radius: 50%;
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .agenda-check {
+      width: 1.25rem;
+      height: 1.25rem;
+      margin: 0 0.25rem;
+      flex-shrink: 0;
+    }
+
+    .agenda-text {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      color: inherit;
+      text-decoration: none;
+
+      &:hover .agenda-title {
+        text-decoration: underline;
+      }
+    }
+
+    .agenda-title {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .agenda-meta {
+      font-size: 0.8125rem;
+      color: var(--bs-secondary-color);
+    }
+
+    .agenda-time {
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .upcoming-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--bs-secondary-color);
+    }
+
+    .upcoming-row {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.3125rem 0;
+      color: inherit;
+      text-decoration: none;
+
+      &:hover .upcoming-text {
+        text-decoration: underline;
+      }
+    }
+
+    .upcoming-day {
+      flex: 0 0 7.5rem;
+      font-size: 0.8125rem;
+      color: var(--bs-secondary-color);
+    }
+
+    .dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--accent);
+    }
+
+    .upcoming-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .glance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+      gap: 0.75rem;
+    }
+
+    .memory {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.875rem 1rem;
+      border-radius: var(--bs-border-radius-lg);
+      background: var(--accent-bg);
+      color: var(--bs-body-color);
+      text-decoration: none;
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+
+    .memory-when {
+      font-family: var(--bs-body-font-family);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
     }
 
     .section-icon {
@@ -149,6 +346,10 @@ const TONES: Record<TodaySeverity, StatTone> = {
 })
 export class TodayComponent {
   private readonly todayRepository = inject(TodayRepository);
+  private readonly inbox = inject(InboxRepository);
+  private readonly tasks = inject(TaskRepository);
+  private readonly toasts = inject(ToastService);
+  readonly canWrite = inject(AuthService).canWrite;
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   /** A statement or a transaction added from Capture loads the cards again. */
@@ -245,6 +446,128 @@ export class TodayComponent {
 
   refresh(): void {
     this.refreshes.update((n) => n + 1);
+  }
+
+  // ---- T106: your day, jot, on this day ----
+
+  /** "2 things today, and a birthday this week." */
+  readonly daySummary = computed(() => {
+    const agenda = this.today()?.agenda;
+    if (!agenda) return 'Here is how things are at home today.';
+    const count = agenda.today.length;
+    const today =
+      count === 0
+        ? 'Nothing planned today'
+        : count === 1
+          ? '1 thing today'
+          : `${count} things today`;
+    const birthday = agenda.upcoming.some((i) => i.kind === 'birthday')
+      ? ', and a birthday this week'
+      : '';
+    return `${today}${birthday}.`;
+  });
+
+  readonly jotText = signal('');
+  readonly jotting = signal(false);
+
+  /** Saves the note to the Inbox, to sort later. */
+  jot(): void {
+    const text = this.jotText().trim();
+    if (!text || this.jotting()) return;
+    this.jotting.set(true);
+    this.inbox.add(text).subscribe({
+      next: () => {
+        this.jotting.set(false);
+        this.jotText.set('');
+        this.toasts.success('Saved to the Inbox.', { label: 'Open', route: '/inbox' });
+        this.dataChanges.changed();
+      },
+      error: (error: unknown) => {
+        this.jotting.set(false);
+        this.toasts.error(validationDetail(error, 'Could not save the note.'));
+      },
+    });
+  }
+
+  /** The tasks ticked here, done before the next answer comes. */
+  private readonly doneHere = signal<ReadonlySet<string>>(new Set());
+  readonly busyTask = signal<string | null>(null);
+
+  isDone(item: TodayAgendaItem): boolean {
+    return item.done === true || this.doneHere().has(item.id);
+  }
+
+  /** Ticks a task due today: done on the server, then Today loads again. */
+  complete(item: TodayAgendaItem): void {
+    const id = splitLink(item.link).path?.split('/')[2];
+    if (!id) return;
+    this.busyTask.set(item.id);
+    this.tasks.done(id).subscribe({
+      next: () => {
+        this.busyTask.set(null);
+        this.doneHere.update((done) => new Set(done).add(item.id));
+        this.toasts.success(`Done: ${item.title}`);
+        this.dataChanges.changed();
+      },
+      error: (error: unknown) => {
+        this.busyTask.set(null);
+        this.toasts.error(validationDetail(error, 'Could not mark the task done.'));
+      },
+    });
+  }
+
+  accentOf(item: TodayAgendaItem): string {
+    return accentOf(asCalendarItem(item));
+  }
+
+  iconOf(item: TodayAgendaItem): IconName {
+    return itemIcon(asCalendarItem(item));
+  }
+
+  /** The second line: the place or the detail, or "until Sun, Oct 25" for several days. */
+  metaOf(item: TodayAgendaItem): string {
+    const parts: string[] = [];
+    if (item.text) parts.push(item.text);
+    if (item.endDate !== item.startDate) parts.push(`until ${shortDay(item.endDate)}`);
+    if (item.kind === 'task-due') parts.push('Task');
+    if (!item.allDay && item.endsAt && item.endsAt !== item.startsAt)
+      parts.push(`until ${timeOf(item.endsAt)}`);
+    return parts.join(' · ');
+  }
+
+  readonly timeOf = timeOf;
+
+  routeOf(item: TodayAgendaItem): string | null {
+    return splitLink(item.link).path;
+  }
+
+  queryOf(item: TodayAgendaItem): Record<string, string> {
+    return splitLink(item.link).query;
+  }
+
+  routeOfLink(link: string | null): string | null {
+    return splitLink(link).path;
+  }
+
+  queryOfLink(link: string | null): Record<string, string> {
+    return splitLink(link).query;
+  }
+
+  /** "Tomorrow" or "Tue" (or "Tue, Oct 20" after this week), and the time for an event. */
+  upcomingDay(item: TodayAgendaItem, today: string): string {
+    const tomorrow = new Date(`${today}T12:00:00`);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const day =
+      item.startDate === tomorrow.toISOString().slice(0, 10)
+        ? 'Tomorrow'
+        : new Date(`${item.startDate}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
+    return !item.allDay && item.startsAt ? `${day} ${timeOf(item.startsAt)}` : day;
+  }
+
+  /** "1 year ago · Oct 16, 2025". */
+  memoryWhen(memory: TodayMemoryDto): string {
+    const ago = memory.yearsAgo === 1 ? '1 year ago' : `${memory.yearsAgo} years ago`;
+    return `${ago} · ${formatDay(memory.day)}`;
   }
 
   /** The big value of a tile; "—" when the server does not know it. */
