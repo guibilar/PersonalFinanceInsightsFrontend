@@ -24,6 +24,8 @@ import { FLOW_LABELS, flowsFor } from '../../../shared/utils/flow-helper';
 import { cents } from '../../../shared/utils/cents';
 
 const NOT_BLANK = Validators.pattern(/\S/);
+/** The largest amount the API accepts (Finance.Contracts `TransactionInputDto`). */
+const MAX_AMOUNT = 1_000_000_000;
 
 /** Today as `yyyy-MM-dd` in the local time zone, which is what the date field takes. */
 function today(): string {
@@ -72,6 +74,7 @@ export class TransactionAddForm implements OnInit {
   readonly flowLabels = FLOW_LABELS;
   readonly maxDescription = TEXT_LIMITS.transactionDescription;
   readonly maxNote = TEXT_LIMITS.transactionNote;
+  protected readonly maxAmount = MAX_AMOUNT;
 
   readonly form = this.fb.group({
     accountId: this.fb.control<string | null>(null, Validators.required),
@@ -83,6 +86,7 @@ export class TransactionAddForm implements OnInit {
     amount: this.fb.control<number | null>(null, [
       Validators.required,
       Validators.min(0.01),
+      Validators.max(MAX_AMOUNT),
       cents,
     ]),
     transactionType: [TransactionType.Debit],

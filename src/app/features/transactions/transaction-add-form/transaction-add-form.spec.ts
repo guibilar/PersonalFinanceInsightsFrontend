@@ -167,6 +167,19 @@ describe('TransactionAddForm', () => {
     expect(component.form.controls.amount.valid).toBe(true);
   });
 
+  it('caps the amount at the API maximum of 1,000,000,000, and says so', async () => {
+    const { amount } = component.form.controls;
+
+    amount.setValue(1_000_000_000);
+    expect(amount.valid).toBe(true);
+
+    amount.setValue(1_000_000_001);
+    amount.markAsTouched();
+    await fixture.whenStable();
+    expect(amount.hasError('max')).toBe(true);
+    expect(root().textContent).toContain('Amount can be at most 1,000,000,000.');
+  });
+
   it('offers to add a duplicate anyway', async () => {
     component.form.patchValue({ description: 'Coffee', amount: 4.5 });
     fixture.componentRef.setInput('duplicate', 'An identical transaction already exists.');
