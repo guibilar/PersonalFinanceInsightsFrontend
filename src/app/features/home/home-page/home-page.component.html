@@ -81,8 +81,10 @@
             @for (task of maintenance(); track task.taskId + task.itemId) {
               <li class="list-group-item maintenance-row">
                 <input
+                  #box
                   type="checkbox"
                   class="form-check-input task-check"
+                  [attr.data-task]="task.taskId"
                   [disabled]="!canWrite() || done.busy().has(task.taskId)"
                   [attr.aria-label]="'Mark done: ' + task.title"
                   (change)="done.done({ id: task.taskId })"

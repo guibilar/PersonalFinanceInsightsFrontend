@@ -144,8 +144,10 @@
                 <li class="list-group-item d-flex align-items-start gap-2">
                   <!-- T89: done (or undo) here, as on the Home page. -->
                   <input
+                    #box
                     type="checkbox"
                     class="form-check-input task-check mt-1"
+                    [attr.data-task]="task.id"
                     [checked]="task.status === 'Done'"
                     [disabled]="!canWrite() || done.busy().has(task.id)"
                     [attr.aria-label]="

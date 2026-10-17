@@ -2,9 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   computed,
+  effect,
   inject,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -138,8 +141,15 @@ export class HomePageComponent {
   readonly addingRoom = signal(false);
   readonly busy = signal(false);
   readonly roomLimit = HOME_LIMITS.room;
+  private readonly boxes = viewChildren<ElementRef<HTMLInputElement>>('box');
 
   constructor() {
+    effect(() => {
+      // The box ticked itself; nothing unticks it when the task could not be marked done.
+      const id = this.done.failed()?.id;
+      for (const box of this.boxes())
+        if (box.nativeElement.dataset['task'] === id) box.nativeElement.checked = false;
+    });
     this.search.valueChanges
       .pipe(
         map((value) => value.trim()),

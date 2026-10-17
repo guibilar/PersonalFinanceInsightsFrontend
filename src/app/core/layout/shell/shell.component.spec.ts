@@ -314,6 +314,24 @@ describe('ShellComponent', () => {
     expect(fixture.componentInstance.mobileOpen()).toBe(false);
   });
 
+  it('closes the mobile menu on Escape, and gives the focus back to its button', async () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    document.body.append(fixture.nativeElement);
+    const element = fixture.nativeElement as HTMLElement;
+    const open = element.querySelector<HTMLButtonElement>('[aria-label="Open menu"]')!;
+    open.click();
+    await fixture.whenStable();
+    element.querySelector<HTMLButtonElement>('[aria-label="Close menu"]')!.focus();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.mobileOpen()).toBe(false);
+    expect(element.querySelector('#sidebar')!.classList.contains('open')).toBe(false);
+    expect(document.activeElement).toBe(open);
+    fixture.nativeElement.remove();
+  });
+
   it('shows who is signed in and signs out', async () => {
     const http = TestBed.inject(HttpTestingController);
     const auth = TestBed.inject(AuthService);

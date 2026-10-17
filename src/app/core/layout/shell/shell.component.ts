@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   NavigationEnd,
   NavigationSkipped,
@@ -66,6 +73,7 @@ export class ShellComponent {
   protected readonly amountsHidden = amountsHidden;
   protected readonly toggleAmountsHidden = toggleAmountsHidden;
   private readonly toasts = inject(ToastService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly mainMenu = MAIN_MENU;
   readonly modules = activeModules();
@@ -105,10 +113,16 @@ export class ShellComponent {
     if (!(event.target as Element | null)?.closest?.('.account')) this.accountMenuOpen.set(false);
   }
 
-  /** Escape closes the account menu, wherever the focus is. */
+  /** Escape closes the account menu and the slide-out menu, wherever the focus is. */
   @HostListener('document:keydown.escape')
   closeAccountMenuOnEscape(): void {
     this.accountMenuOpen.set(false);
+    if (!this.mobileOpen()) return;
+    this.mobileOpen.set(false);
+    // The closed menu is hidden: the focus in it goes back to the button that opened it, not to the page's start.
+    const document = this.host.nativeElement.ownerDocument;
+    if (document.activeElement?.closest('#sidebar'))
+      this.host.nativeElement.querySelector<HTMLElement>('[aria-controls="sidebar"]')?.focus();
   }
 
   /** The first letter of the user name, for the avatar. */
