@@ -205,6 +205,24 @@ describe('DocumentUploadComponent', () => {
     );
   });
 
+  it('ignores files dropped while an upload runs', async () => {
+    component.add(list(file('scan.pdf', 'application/pdf')));
+    await render();
+    uploadButton().click();
+    const request = http.expectOne('/api/documents');
+    await render();
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file('lease.pdf', 'application/pdf'));
+    const drop = new DragEvent('drop', { dataTransfer, cancelable: true });
+    root().querySelector<HTMLElement>('.drop-zone')!.dispatchEvent(drop);
+    await render();
+
+    expect(drop.defaultPrevented).toBe(true);
+    expect(component.files().map((f) => f.name)).toEqual(['scan.pdf']);
+    request.flush(null, { status: 500, statusText: 'Server Error' });
+  });
+
   it('stops an upload that is running', async () => {
     component.add(list(file('scan.pdf', 'application/pdf')));
     await render();

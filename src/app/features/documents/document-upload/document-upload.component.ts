@@ -116,7 +116,8 @@ export class DocumentUploadComponent implements OnDestroy {
 
   add(list: ArrayLike<File> | null | undefined): void {
     const added = Array.from(list ?? []);
-    if (added.length === 0) return;
+    // A file dropped while the others go up would not be in the document.
+    if (added.length === 0 || this.uploading()) return;
     // The same file twice (picked again) is kept once.
     const key = (file: File) => `${file.name}:${file.size}:${file.lastModified}`;
     const known = new Set(this.files().map(key));
