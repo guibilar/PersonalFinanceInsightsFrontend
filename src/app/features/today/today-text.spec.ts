@@ -54,5 +54,6 @@ describe('Today text', () => {
     expect(fillTodayText('No income yet this month', {})).toBe('No income yet this month');
     expect(fillTodayText(null, {})).toBe('');
     expect(fillTodayText('{a}', null)).toBe('{a}');
+    expect(fillTodayText('{constructor} {toString}', {})).toBe('{constructor} {toString}');
   });
 });
