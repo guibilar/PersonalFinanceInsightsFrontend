@@ -335,5 +335,35 @@ describe('BankAccountListComponent', () => {
           .disabled,
       ).toBe(true);
     });
+
+    it('takes a balance only in the range the API takes', async () => {
+      await load([tfsa]);
+      root()
+        .querySelector<HTMLButtonElement>('[aria-label="Balances of Wealthsimple TFSA"]')!
+        .click();
+      fixture.detectChanges();
+      TestBed.tick();
+      http.expectOne('/api/Accounts/a9/Balances').flush([]);
+      await fixture.whenStable();
+
+      const amount = root().querySelector<HTMLInputElement>('#balance-amount')!;
+      const submit = () =>
+        root().querySelector<HTMLButtonElement>('app-account-balances button[type="submit"]')!;
+      for (const value of ['100000000.01', '-100000000.01']) {
+        amount.value = value;
+        amount.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+        expect(root().querySelector('#balance-amount-error')!.textContent).toContain(
+          'Between -100,000,000 and 100,000,000.',
+        );
+        expect(submit().disabled).toBe(true);
+      }
+
+      amount.value = '-100000000';
+      amount.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(root().querySelector('#balance-amount-error')).toBeNull();
+      expect(submit().disabled).toBe(false);
+    });
   });
 });
