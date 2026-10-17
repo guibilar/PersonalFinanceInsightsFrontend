@@ -231,6 +231,8 @@ export class JournalPageComponent {
       next: () => {
         this.saving.set(false);
         this.confirmingDelete.set(false);
+        // What was typed went with the entry: the reload must not keep it as unsaved text.
+        this.text.setValue('');
         this.dataChanges.changed();
         this.toasts.success('Deleted the entry');
       },

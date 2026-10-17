@@ -140,6 +140,10 @@ describe('JournalPageComponent', () => {
     // On this day is for today only.
     expect(root().querySelector('[data-testid="on-this-day"]')).toBeNull();
 
+    // Changed but not saved: the delete takes it too.
+    textarea().value = 'Board game night with Marco. We lost';
+    textarea().dispatchEvent(new Event('input'));
+    await settle();
     button('delete')!.click();
     await settle();
     Array.from(document.querySelectorAll<HTMLButtonElement>('app-confirm-dialog button'))
