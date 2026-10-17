@@ -204,6 +204,16 @@ describe('DashboardComponent', () => {
     expect(tiles.spentHint()).toEqual({ text: '20% more than Aug 1–5', tone: 'bad', up: true });
   });
 
+  it('calls a change within 1% of last month so far about the same, not 0% less', async () => {
+    const { tiles } = await load(currentMonth(299, 300));
+
+    expect(tiles.spentHint()).toEqual({
+      text: 'about the same as Aug 1–5',
+      tone: 'neutral',
+      up: false,
+    });
+  });
+
   it('puts this month against a usual one, the average of the finished months', async () => {
     const { tiles } = await load(currentMonth(300, 250));
 

@@ -179,6 +179,31 @@ describe('BudgetListComponent', () => {
     );
   });
 
+  it("shows the API's reason when it refuses the budget", () => {
+    component.editing.set(null);
+
+    component.onFormSubmit({
+      id: '',
+      name: 'Food',
+      description: 'd',
+      amount: 120,
+      status: Status.Active,
+      period: BudgetPeriod.Monthly,
+      categoryIds: [],
+    });
+    http
+      .expectOne({ method: 'POST', url: '/api/Budget' })
+      .flush(
+        { status: 400, errors: { Amount: ['Amount must be at most 1,000,000,000.'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(component.editing()).toBeNull();
+    expect(toasts.toasts()[0]).toEqual(
+      expect.objectContaining({ kind: 'error', message: 'Amount must be at most 1,000,000,000.' }),
+    );
+  });
+
   it('sends one request when the form is submitted twice quickly', () => {
     const budget = {
       id: '',

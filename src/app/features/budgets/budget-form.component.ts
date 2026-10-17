@@ -27,6 +27,8 @@ import { cents } from '../../shared/utils/cents';
 import { yearStillTyped } from '../../shared/utils/date-presets';
 
 const NOT_BLANK = Validators.pattern(/\S/);
+/** The largest budget the API accepts (Finance.Contracts `BudgetInputDto`). */
+const MAX_AMOUNT = 1_000_000_000;
 
 /** A custom period needs its two days, the last not before the first (`yyyy-MM-dd` compares as text). */
 const CUSTOM_DAYS: ValidatorFn = (group): ValidationErrors | null => {
@@ -98,7 +100,7 @@ export class BudgetFormComponent implements OnInit {
         '',
         [Validators.required, NOT_BLANK, Validators.maxLength(TEXT_LIMITS.budgetDescription)],
       ],
-      amount: [0, [Validators.required, Validators.min(0.01), cents]],
+      amount: [0, [Validators.required, Validators.min(0.01), Validators.max(MAX_AMOUNT), cents]],
       status: [Status.Active, Validators.required],
       period: [BudgetPeriod.Total, Validators.required],
       startDate: '',
@@ -172,6 +174,7 @@ export class BudgetFormComponent implements OnInit {
   }
 
   readonly limits = TEXT_LIMITS;
+  protected readonly maxAmount = MAX_AMOUNT;
 
   isInvalid(control: 'name' | 'description' | 'amount' | 'merchant'): boolean {
     const c = this.form.controls[control];

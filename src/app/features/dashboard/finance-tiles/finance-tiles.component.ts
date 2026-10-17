@@ -10,12 +10,12 @@ import { StatCardComponent, StatTone } from '../../../shared/ui/stat-card/stat-c
 import { valueOf } from '../../../shared/utils/resource-value';
 import { anyMonthFinished } from '../../../shared/utils/months';
 import { formatCurrency } from '../../../shared/utils/format';
+import { changeText, compared } from '../../../shared/utils/insights';
 import { moneyPath } from '../../money/money-paths';
 import {
   budgetsOverLimit,
   leftOverThisMonth,
   netWorthChange,
-  percentChange,
   previousMonthToDateLabel,
   spentThisMonth,
   usualByNow,
@@ -79,12 +79,15 @@ export class FinanceTilesComponent {
     const month = valueOf(this.monthReport());
     if (spent === null || !month) return null;
     // Like for like: last month up to the same day, not all of it against a month in progress.
-    const change = percentChange(spent, month.previousMonthToDateTotal ?? null);
+    const previous = month.previousMonthToDateTotal;
+    const change = previous == null ? null : changeText(spent, previous);
     if (change === null) return null;
+    // Within 1% is "about the same": neither good nor bad, and no arrow.
+    const same = change.text === 'about the same';
     return {
-      text: `${Math.abs(change).toFixed(0)}% ${change >= 0 ? 'more' : 'less'} than ${previousMonthToDateLabel(this.today())}`,
-      tone: change > 0 ? 'bad' : 'good',
-      up: change >= 0,
+      text: compared(change, previousMonthToDateLabel(this.today())),
+      tone: same ? 'neutral' : change.up ? 'bad' : 'good',
+      up: change.up,
     };
   });
 

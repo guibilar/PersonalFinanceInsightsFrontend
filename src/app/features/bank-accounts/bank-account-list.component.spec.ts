@@ -169,6 +169,28 @@ describe('BankAccountListComponent', () => {
     );
   });
 
+  it("shows the API's reason when it refuses the account", async () => {
+    await load();
+    component.editing.set(null);
+
+    component.onFormSubmit({
+      name: 'Savings',
+      type: AccountType.Savings,
+      format: StatementFormat.Neo,
+    });
+    http
+      .expectOne({ method: 'POST', url: '/api/Accounts' })
+      .flush(
+        { status: 400, errors: { ContributionRoom: ['Contribution room must be 0 or more.'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(component.editing()).toBeNull();
+    expect(toasts.toasts()[0]).toEqual(
+      expect.objectContaining({ kind: 'error', message: 'Contribution room must be 0 or more.' }),
+    );
+  });
+
   it('deletes only after confirmation', async () => {
     await load();
     deleteButton('Mastercard').click();

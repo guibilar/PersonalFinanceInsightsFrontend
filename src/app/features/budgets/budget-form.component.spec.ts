@@ -75,6 +75,22 @@ describe('BudgetFormComponent', () => {
     expect(component.form.controls.amount.invalid).toBe(true);
   });
 
+  it('caps the amount at the API maximum of 1,000,000,000, and says so', () => {
+    create();
+    const { amount } = component.form.controls;
+
+    amount.setValue(1_000_000_000);
+    expect(amount.valid).toBe(true);
+
+    amount.setValue(1_000_000_001);
+    amount.markAsTouched();
+    fixture.detectChanges();
+    expect(amount.hasError('max')).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Amount can be at most 1,000,000,000.',
+    );
+  });
+
   it('emits a trimmed DTO for a new budget', () => {
     create();
 
