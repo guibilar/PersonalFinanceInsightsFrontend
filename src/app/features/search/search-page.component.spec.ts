@@ -150,6 +150,30 @@ describe('SearchPageComponent', () => {
     expect(TestBed.inject(Router).url).toBe('/tasks/k1');
   });
 
+  it('shows the search of the address after back or forward, and runs it again when typed', async () => {
+    await start('/search?q=dishwasher');
+    http.expectOne((r) => r.url === '/api/search').flush(answer());
+    await settle();
+    const input = root().querySelector<HTMLInputElement>('#search-everything')!;
+    expect(input.value).toBe('dishwasher');
+
+    await TestBed.inject(Router).navigateByUrl('/search?q=fern');
+    await settle();
+    http
+      .expectOne((r) => r.url === '/api/search')
+      .flush(answer({ query: 'fern', total: 0, modules: [] }));
+    await settle();
+    expect(input.value).toBe('fern');
+
+    input.value = 'dishwasher';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await settle();
+    expect(TestBed.inject(Router).url).toBe('/search?q=dishwasher');
+    http.expectOne((r) => r.url === '/api/search').flush(answer());
+    await settle();
+  });
+
   it('says when nothing matches, and offers a retry after an error', async () => {
     await start('/search?q=zzz');
     http

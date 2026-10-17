@@ -1,8 +1,16 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  untracked,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, map, of } from 'rxjs';
+import { debounceTime, filter, map, of } from 'rxjs';
 import { SearchRepository } from '../../core/api/search-repository';
 import { SearchHit } from '../../core/models/outputs/search-output-dto';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
@@ -225,7 +233,9 @@ export class SearchPageComponent {
       .pipe(
         map((value) => value.trim()),
         debounceTime(300),
-        distinctUntilChanged(),
+        // Against the address, not the last value typed: back or forward sets the box without an event, and the same
+        // search typed again afterwards has to run.
+        filter((q) => q.replace(/\s+/g, ' ') !== this.term()),
         takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((q) =>
@@ -236,6 +246,15 @@ export class SearchPageComponent {
           replaceUrl: true,
         }),
       );
+
+    // Back or forward to another search: the box shows it.
+    effect(() => {
+      const q = this.term();
+      untracked(() => {
+        if (this.text.value.trim().replace(/\s+/g, ' ') !== q)
+          this.text.setValue(q, { emitEvent: false });
+      });
+    });
   }
 
   section(module: string): string {
