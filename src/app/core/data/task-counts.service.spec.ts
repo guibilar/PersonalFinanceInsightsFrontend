@@ -14,7 +14,8 @@ describe('TaskCountsService', () => {
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
-        provideRouter([]),
+        // The end of a session goes to the sign-in page.
+        provideRouter([{ path: 'login', children: [] }]),
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
