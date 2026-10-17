@@ -27,7 +27,8 @@ export function monthIndex(label: string): number | null {
 
 /**
  * Positions of the months that are over, to average: the running month would pull the average down (and
- * future-dated rows don't belong in it either). When no month is over yet (January), all of them.
+ * future-dated rows don't belong in it either). When no month is over yet (January), the running one, as the API
+ * does: still not a later one dated ahead.
  */
 export function finishedMonths(labels: string[], now: Date): number[] {
   const current = now.getFullYear() * 12 + now.getMonth();
@@ -35,7 +36,10 @@ export function finishedMonths(labels: string[], now: Date): number[] {
     const month = monthIndex(label);
     return month !== null && month < current ? [index] : [];
   });
-  return finished.length > 0 ? finished : labels.map((_, index) => index);
+  if (finished.length > 0) return finished;
+  return labels.flatMap((label, index) =>
+    (monthIndex(label) ?? current) <= current ? [index] : [],
+  );
 }
 
 /** Whether any of the months is over: the reports' averages are of those, or (with none, every January) of the running one. */
