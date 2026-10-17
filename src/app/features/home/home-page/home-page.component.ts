@@ -9,7 +9,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, map, of } from 'rxjs';
+import { debounceTime, filter, map, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { HomeRepository } from '../../../core/api/home-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
@@ -144,7 +144,9 @@ export class HomePageComponent {
       .pipe(
         map((value) => value.trim()),
         debounceTime(300),
-        distinctUntilChanged(),
+        // Against the address, not the last value typed: the box is also cleared (or set) without an event, and
+        // the same search typed again afterwards has to run.
+        filter((q) => q !== this.term()),
         takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((q) =>
