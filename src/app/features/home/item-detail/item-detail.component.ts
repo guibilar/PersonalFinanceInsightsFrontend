@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChildren,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
@@ -99,6 +108,7 @@ export class ItemDetailComponent {
   protected readonly done = inject(TaskDoneService);
   readonly canWrite = inject(AuthService).canWrite;
   readonly today = inject(HOME_TODAY)();
+  private readonly boxes = viewChildren<ElementRef<HTMLInputElement>>('box');
 
   readonly id = toSignal(inject(ActivatedRoute).paramMap.pipe(map((p) => p.get('id') ?? '')), {
     initialValue: '',
@@ -175,6 +185,17 @@ export class ItemDetailComponent {
       transactions: this.purchaseLinks()?.map((l) => l.targetId) ?? [],
     };
   });
+
+  constructor() {
+    effect(() => {
+      // The box ticked itself; `[checked]` did not change, so it would not put it back.
+      const id = this.done.failed()?.id;
+      const task = this.item()?.maintenance.find((t) => t.id === id);
+      for (const box of this.boxes())
+        if (task && box.nativeElement.dataset['task'] === id)
+          box.nativeElement.checked = task.status === 'Done';
+    });
+  }
 
   day(iso: string): string {
     return formatDay(iso);

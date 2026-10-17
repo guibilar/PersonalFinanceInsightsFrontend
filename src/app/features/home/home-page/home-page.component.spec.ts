@@ -205,6 +205,21 @@ describe('HomePageComponent', () => {
       await answer();
     });
 
+    it('clears the tick when the maintenance task could not be marked done', async () => {
+      await open();
+      const check = root().querySelector<HTMLInputElement>('[data-testid="maintenance"] input')!;
+
+      check.click();
+      http
+        .expectOne({ method: 'POST', url: '/api/tasks/smoke/done' })
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(messages()).toEqual(['Could not mark the task done.']);
+      expect(check.checked).toBe(false);
+      expect(check.disabled).toBe(false);
+    });
+
     it('says so when there is no maintenance and no room', async () => {
       await harness.navigateByUrl('/home', HomePageComponent);
       await answer(testHomeSummary({ itemCount: 0, totalValue: 0, rooms: [] }), []);

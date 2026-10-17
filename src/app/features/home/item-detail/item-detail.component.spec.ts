@@ -182,6 +182,32 @@ describe('ItemDetailComponent', () => {
       await answer(testItem({ maintenance: [{ ...task, dueOn: '2026-11-20' }] }));
     });
 
+    it('puts the tick back when the maintenance task could not be undone', async () => {
+      const task = {
+        id: 'task-1',
+        title: 'Clean the filter',
+        status: 'Done',
+        dueOn: '2026-10-20',
+        repeatEvery: null,
+        repeatUnit: null,
+        lastDoneAt: '2026-10-13T08:00:00Z',
+      };
+      await open(testItem({ maintenance: [task] }));
+      const check = root().querySelector<HTMLInputElement>(
+        '[data-testid="item-maintenance"] input[type="checkbox"]',
+      )!;
+      expect(check.checked).toBe(true);
+
+      check.click();
+      http
+        .expectOne({ method: 'POST', url: '/api/tasks/task-1/undo' })
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await render();
+
+      expect(messages()).toEqual(['Could not undo the done.']);
+      expect(check.checked).toBe(true);
+    });
+
     it('shows the purchase, which opens it in Money', async () => {
       await open(testItem({ links: [TX_LINK] }));
       const [lookup] = lookups();
