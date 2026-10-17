@@ -15,6 +15,8 @@ export const HIDDEN_AMOUNT = '$•••••';
 
 /** "$1,234.56", "-$5.00"; "$•••••" in privacy mode. */
 export function formatCurrency(value: number): string {
+  // Less than half a cent is zero: a sum that left -2.7e-17 behind is "$0.00", not "-$0.00".
+  if (Math.abs(value) < 0.005) value = 0;
   if (amountsHidden()) return value < 0 ? `-${HIDDEN_AMOUNT}` : HIDDEN_AMOUNT;
   return currencyFormatter.format(value);
 }
