@@ -68,6 +68,7 @@ class LinkedPeopleStub {
 
 const LINK = { id: 'link-1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' };
 const POLL_MS = 20;
+/** The time limit of the one test of it. The others never reach theirs, however long a busy machine takes. */
 const MAX_MS = 150;
 
 describe('DocumentDetailComponent', () => {
@@ -75,6 +76,7 @@ describe('DocumentDetailComponent', () => {
   let harness: RouterTestingHarness;
   let router: Router;
   let page: DocumentDetailComponent;
+  let polling: { intervalMs: number; maxMs: number };
 
   const root = () => harness.routeNativeElement as HTMLElement;
   const docUrl = `/api/documents/${DOC_ID}`;
@@ -121,6 +123,7 @@ describe('DocumentDetailComponent', () => {
   }
 
   beforeEach(async () => {
+    polling = { intervalMs: POLL_MS, maxMs: 60_000 };
     TestBed.overrideComponent(DocumentDetailComponent, {
       remove: {
         imports: [
@@ -145,7 +148,7 @@ describe('DocumentDetailComponent', () => {
           { path: 'money/transactions', children: [] },
         ]),
         provideLocationMocks(),
-        { provide: DOCUMENT_POLLING, useValue: { intervalMs: POLL_MS, maxMs: MAX_MS } },
+        { provide: DOCUMENT_POLLING, useValue: polling },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -261,6 +264,7 @@ describe('DocumentDetailComponent', () => {
   });
 
   it('stops asking after the time limit, and asks again on "Check again"', async () => {
+    polling.maxMs = MAX_MS;
     const pending = testDocument({ ocrStatus: 'Pending', ocrText: null });
     await open(pending);
 
