@@ -72,6 +72,11 @@ describe('dashboard stats', () => {
     expect(finishedMonths([], new Date(2026, 0, 20))).toEqual([]);
   });
 
+  it('leaves a month dated ahead out of January’s average, as the API does', () => {
+    // A rent entered ahead for March: the average of January is January's, not the two months'.
+    expect(finishedMonths(['Jan 2026', 'Mar 2026'], new Date(2026, 0, 20))).toEqual([0]);
+  });
+
   it('computes the change, or null without a baseline', () => {
     expect(percentChange(120, 100)).toBeCloseTo(20);
     expect(percentChange(50, 100)).toBeCloseTo(-50);

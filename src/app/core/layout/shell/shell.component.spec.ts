@@ -87,9 +87,17 @@ describe('ShellComponent', () => {
     expect(root.querySelector('[data-testid="overdue-badge"]')).toBeNull();
   });
 
+  /** Signs in through `GET /api/Auth/me`, as the guard does before the shell shows. */
+  async function signIn(http: HttpTestingController, username = 'alex'): Promise<void> {
+    const loaded = TestBed.inject(AuthService).ensureLoaded();
+    http.expectOne('/api/Auth/me').flush({ username });
+    await loaded;
+  }
+
   it('shows the overdue count on Tasks, and asks again after a data change', async () => {
     TestBed.overrideProvider(TaskCountsService, { useFactory: () => new TaskCountsService() });
     const http = TestBed.inject(HttpTestingController);
+    await signIn(http);
     const fixture = TestBed.createComponent(ShellComponent);
     const root = fixture.nativeElement as HTMLElement;
     TestBed.tick();
@@ -114,6 +122,7 @@ describe('ShellComponent', () => {
   it('shows no badge when the server has no Tasks module', async () => {
     TestBed.overrideProvider(TaskCountsService, { useFactory: () => new TaskCountsService() });
     const http = TestBed.inject(HttpTestingController);
+    await signIn(http);
     const fixture = TestBed.createComponent(ShellComponent);
     TestBed.tick();
     http.expectOne('/api/tasks/summary').flush(null, { status: 404, statusText: 'Not Found' });
