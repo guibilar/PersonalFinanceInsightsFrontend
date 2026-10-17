@@ -263,7 +263,8 @@ export function splitLink(link: string | null): {
 
     .glance-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+      /* Wide enough for a figure such as $94,512.30 in a compact tile. */
+      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
       gap: 0.75rem;
     }
 
