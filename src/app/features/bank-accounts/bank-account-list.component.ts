@@ -12,7 +12,7 @@ import {
   PLAN_LABELS,
   STATEMENT_FORMAT_LABELS,
 } from '../../shared/utils/account-labels';
-import { conflictDetail } from '../../shared/utils/problem-detail';
+import { conflictDetail, validationDetail } from '../../shared/utils/problem-detail';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
@@ -98,7 +98,10 @@ export class BankAccountListComponent {
         this.toasts.error(
           conflictDetail(
             error,
-            editing ? 'Could not save the account.' : 'Could not add the account.',
+            validationDetail(
+              error,
+              editing ? 'Could not save the account.' : 'Could not add the account.',
+            ),
           ),
         );
       },
