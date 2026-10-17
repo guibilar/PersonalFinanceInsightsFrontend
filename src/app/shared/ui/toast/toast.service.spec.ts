@@ -1,5 +1,9 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from './toast.service';
 
 describe('ToastService', () => {
@@ -7,7 +11,15 @@ describe('ToastService', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        // The end of a session goes to the sign-in page.
+        provideRouter([{ path: 'login', children: [] }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
     service = TestBed.inject(ToastService);
   });
 
@@ -60,5 +72,20 @@ describe('ToastService', () => {
     ['a', 'b', 'c', 'd', 'e'].forEach((m) => service.error(m));
 
     expect(service.toasts().map((t) => t.message)).toEqual(['b', 'c', 'd', 'e']);
+  });
+
+  it('clears the toasts when the session ends, so an Undo does not run without one', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const auth = TestBed.inject(AuthService);
+    const loaded = auth.ensureLoaded();
+    http.expectOne('/api/Auth/me').flush({ username: 'alex' });
+    await loaded;
+    service.successWithAction('Done: Water the plants', { label: 'Undo', run: vi.fn() });
+    service.error('Could not save');
+
+    auth.sessionEnded();
+
+    expect(service.toasts()).toEqual([]);
+    http.verify();
   });
 });

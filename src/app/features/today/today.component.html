@@ -104,7 +104,7 @@
                       class="form-check-input agenda-check"
                       [checked]="isDone(item)"
                       [disabled]="isDone(item) || busyTask() === item.id"
-                      (change)="complete(item)"
+                      (change)="complete(item, $any($event.target))"
                       [attr.aria-label]="'Done: ' + item.title"
                       [attr.data-testid]="'done-' + item.id"
                     />

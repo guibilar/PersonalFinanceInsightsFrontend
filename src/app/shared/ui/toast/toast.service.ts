@@ -1,5 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
 import { Params } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 
 export type ToastKind = 'success' | 'error';
 
@@ -24,7 +25,10 @@ export interface Toast {
   action?: ToastAction;
 }
 
-/** Short-lived notifications shown in the corner of the screen by ToastContainerComponent. */
+/**
+ * Short-lived notifications shown in the corner of the screen by ToastContainerComponent. A sign-out or a new sign-in
+ * clears them: an "Undo" left on the sign-in page would call the API without a session, or for the next person.
+ */
 @Injectable({ providedIn: 'root' })
 export class ToastService {
   static readonly DURATION_MS = 5000;
@@ -32,7 +36,10 @@ export class ToastService {
   static readonly LINK_DURATION_MS = 10000;
 
   private nextId = 1;
-  private readonly items = signal<Toast[]>([]);
+  private readonly items = linkedSignal<unknown, Toast[]>({
+    source: inject(AuthService).user,
+    computation: () => [],
+  });
   readonly toasts = this.items.asReadonly();
 
   private readonly dialogs = signal<HTMLDialogElement[]>([]);
