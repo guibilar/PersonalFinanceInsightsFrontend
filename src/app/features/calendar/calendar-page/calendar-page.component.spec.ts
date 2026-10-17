@@ -179,6 +179,35 @@ describe('CalendarPageComponent', () => {
     expect(byId('event-form')).toBeNull();
   });
 
+  it('does not save a repeat that ends before the first day', async () => {
+    await start();
+    answerRange('2026-09-27', '2026-10-31');
+    await settle();
+
+    byId('add-on-day')!.click();
+    await settle();
+    const title = byId<HTMLInputElement>('event-title')!;
+    title.value = 'Swim';
+    title.dispatchEvent(new Event('input'));
+    const repeat = byId<HTMLSelectElement>('event-repeat')!;
+    repeat.value = 'FREQ=WEEKLY';
+    repeat.dispatchEvent(new Event('change'));
+    await settle();
+    const until = byId<HTMLInputElement>('event-until')!;
+    until.value = '2026-10-31';
+    until.dispatchEvent(new Event('input'));
+    // The first day moves past it afterwards.
+    const startDate = byId<HTMLInputElement>('event-start-date')!;
+    startDate.value = '2026-11-05';
+    startDate.dispatchEvent(new Event('input'));
+    startDate.dispatchEvent(new Event('change'));
+    byId('event-save')!.click();
+    await settle();
+
+    http.expectNone((r) => r.method === 'POST' && r.url === '/api/calendar/events');
+    expect(text(byId('event-error')!)).toBe('The repeat cannot end before the first day.');
+  });
+
   it('previews an .ics file, then imports it', async () => {
     await start();
     answerRange('2026-09-27', '2026-10-31');

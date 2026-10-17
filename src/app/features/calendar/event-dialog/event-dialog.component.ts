@@ -149,6 +149,12 @@ export class EventDialogComponent implements OnInit {
       return null;
     }
     const endDate = v.endDate || v.startDate;
+    // The first day moved past the end of the repeat (the field's minimum only limits the picker): the server takes
+    // such a rule, and the event would no longer repeat as "Until" says.
+    if (v.repeat && v.repeat !== CUSTOM && v.until && v.until < v.startDate) {
+      this.error.set('The repeat cannot end before the first day.');
+      return null;
+    }
     const repeat =
       v.repeat === CUSTOM ? this.customRule : joinRepeat(v.repeat, v.until || null, v.allDay);
     if (v.allDay) {
