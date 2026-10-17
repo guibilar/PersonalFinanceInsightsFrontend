@@ -8,7 +8,9 @@
         icon="calendar"
         [value]="format(spent()!)"
         [hint]="hint?.text"
-        [hintIcon]="hint ? (hint.up ? 'trending-up' : 'trending-down') : null"
+        [hintIcon]="
+          hint && hint.tone !== 'neutral' ? (hint.up ? 'trending-up' : 'trending-down') : null
+        "
         [tone]="hint?.tone ?? 'neutral'"
       />
     } @else if (monthReport().error()) {
