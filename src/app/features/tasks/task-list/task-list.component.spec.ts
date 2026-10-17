@@ -236,6 +236,23 @@ describe('TaskListComponent', () => {
       expect(rows('today').length).toBe(2);
     });
 
+    it('clears the tick when the task could not be marked done', async () => {
+      await open();
+      const checkbox = root().querySelector<HTMLInputElement>(
+        '[data-testid="today"] input[type="checkbox"]',
+      )!;
+
+      checkbox.click();
+      http
+        .expectOne({ method: 'POST', url: `/api/tasks/${TASK_ID}/done` })
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(messages()).toEqual(['Could not mark the task done.']);
+      expect(checkbox.checked).toBe(false);
+      expect(checkbox.disabled).toBe(false);
+    });
+
     it('tells the next date of a repeated task that is done', async () => {
       await open();
       root()

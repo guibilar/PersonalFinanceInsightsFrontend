@@ -14,6 +14,9 @@ import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-d
 import { cents } from '../../shared/utils/cents';
 import { AccountBalanceOutputDto } from '../../core/models/outputs/account-output-dto';
 
+/** The API takes a balance between minus and plus this. */
+const MAX_BALANCE = 100_000_000;
+
 /** Today in the browser's time zone, as yyyy-MM-dd. */
 function today(): string {
   const now = new Date();
@@ -49,6 +52,8 @@ function today(): string {
             id="balance-amount"
             class="form-control"
             formControlName="amount"
+            [min]="-maxBalance"
+            [max]="maxBalance"
             step="0.01"
             inputmode="decimal"
             aria-describedby="balance-amount-error"
@@ -58,6 +63,10 @@ function today(): string {
         @if (form.controls.amount.hasError('cents')) {
           <div id="balance-amount-error" class="invalid-feedback d-block">
             Whole cents only, like 12.50.
+          </div>
+        } @else if (form.controls.amount.hasError('min') || form.controls.amount.hasError('max')) {
+          <div id="balance-amount-error" class="invalid-feedback d-block">
+            Between -100,000,000 and 100,000,000.
           </div>
         }
       </div>
@@ -130,6 +139,7 @@ export class AccountBalancesComponent {
 
   protected readonly AccountType = AccountType;
   readonly maxDate = today();
+  readonly maxBalance = MAX_BALANCE;
   readonly saving = signal(false);
   /** Asked to delete; the confirm dialog is showing. */
   readonly deleting = signal<AccountBalanceOutputDto | null>(null);
@@ -144,7 +154,12 @@ export class AccountBalancesComponent {
 
   readonly form = this.fb.group({
     date: [today(), Validators.required],
-    amount: this.fb.control<number | null>(null, [Validators.required, cents]),
+    amount: this.fb.control<number | null>(null, [
+      Validators.required,
+      Validators.min(-MAX_BALANCE),
+      Validators.max(MAX_BALANCE),
+      cents,
+    ]),
   });
 
   save(): void {

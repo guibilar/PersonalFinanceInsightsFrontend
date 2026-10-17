@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Observable, switchMap } from 'rxjs';
+import { Observable, switchMap, tap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { InboxRepository } from '../../../core/api/inbox-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
@@ -56,6 +56,7 @@ export class InboxPageComponent {
   private readonly textValue = toSignal(this.text.valueChanges, { initialValue: '' });
   readonly canSend = computed(() => this.textValue().trim().length > 0);
   readonly target = signal<NoteTarget>('Inbox');
+  /** The note (or `'new'`, the quick note) with a change in progress. One change at a time: the others wait. */
   readonly busy = signal<string | null>(null);
   readonly editing = signal<string | null>(null);
   readonly editText = new FormControl('', { nonNullable: true });
@@ -64,7 +65,7 @@ export class InboxPageComponent {
   /** Saves the quick note where the chips say. */
   send(): void {
     const text = this.text.value.trim();
-    if (!text || this.busy()) return;
+    if (!text) return;
     const target = this.target();
     const send: Observable<unknown> =
       target === 'Task'
@@ -82,14 +83,24 @@ export class InboxPageComponent {
     );
   }
 
-  /** Sorts a note: adds it to the module first, then marks it done with where it went. */
+  /**
+   * Sorts a note: adds it to the module first, then marks it done with where it went. When only the second step fails,
+   * the note is already in the module, so it says to use "Done" rather than to try again (which would add it twice).
+   */
   sortTo(note: InboxItemDto, target: 'Task' | 'Journal'): void {
     const add =
       target === 'Task' ? this.sender.toTask(note.text) : this.sender.toJournal(note.text);
+    const added = target === 'Task' ? 'Added to Tasks' : 'Added to the journal';
+    let wasAdded = false;
     this.run(
       note.id,
-      add.pipe(switchMap(() => this.repository.done(note.id, target))),
-      target === 'Task' ? 'Added to Tasks' : 'Added to the journal',
+      add.pipe(
+        tap(() => (wasAdded = true)),
+        switchMap(() => this.repository.done(note.id, target)),
+      ),
+      added,
+      undefined,
+      () => (wasAdded ? `${added}, but the note is still here. Use Done to clear it.` : undefined),
     );
   }
 
@@ -120,7 +131,14 @@ export class InboxPageComponent {
     );
   }
 
-  private run(key: string, work: Observable<unknown>, success: string, after?: () => void): void {
+  private run(
+    key: string,
+    work: Observable<unknown>,
+    success: string,
+    after?: () => void,
+    failure?: () => string | undefined,
+  ): void {
+    if (this.busy()) return;
     this.busy.set(key);
     work.subscribe({
       next: () => {
@@ -132,7 +150,7 @@ export class InboxPageComponent {
       error: (error: unknown) => {
         this.busy.set(null);
         this.deleting.set(null);
-        this.toasts.error(inboxError(error, 'That did not work. Try again.'));
+        this.toasts.error(failure?.() ?? inboxError(error, 'That did not work. Try again.'));
       },
     });
   }
