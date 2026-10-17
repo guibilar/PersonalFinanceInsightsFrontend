@@ -16,6 +16,7 @@ import { CalendarItem } from '../../core/models/outputs/calendar-output-dto';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { validationDetail } from '../../shared/utils/problem-detail';
 import { formatDay } from '../../shared/utils/format';
+import { isoDay } from '../../shared/utils/date-presets';
 import { accentOf, itemIcon, shortDay, timeOf } from '../calendar/calendar';
 import { AppModule, MODULES } from '../../core/modules/module-registry';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
@@ -560,7 +561,7 @@ export class TodayComponent {
     const tomorrow = new Date(`${today}T12:00:00`);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const day =
-      item.startDate === tomorrow.toISOString().slice(0, 10)
+      item.startDate === isoDay(tomorrow)
         ? 'Tomorrow'
         : new Date(`${item.startDate}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
     return !item.allDay && item.startsAt ? `${day} ${timeOf(item.startsAt)}` : day;

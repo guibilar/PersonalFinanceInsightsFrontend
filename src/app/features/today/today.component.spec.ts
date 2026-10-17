@@ -539,6 +539,26 @@ describe('TodayComponent', () => {
     expect(memory.getAttribute('href')).toBe('/journal?day=2025-10-13');
   });
 
+  it('says "Tomorrow" for the next local day, far east of UTC too', async () => {
+    await answer(withAgenda());
+    // At UTC+13, local noon is still the day before in UTC.
+    const toISOString = Date.prototype.toISOString;
+    const spy = vi.spyOn(Date.prototype, 'toISOString').mockImplementation(function (this: Date) {
+      return toISOString.call(new Date(this.getTime() - 13 * 3_600_000));
+    });
+    try {
+      const birthday = withAgenda().agenda!.upcoming[0];
+      expect(
+        fixture.componentInstance.upcomingDay(
+          { ...birthday, startDate: '2026-10-14' },
+          '2026-10-13',
+        ),
+      ).toBe('Tomorrow');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('ticks a task of today as done, then loads again', async () => {
     await answer(withAgenda());
 
