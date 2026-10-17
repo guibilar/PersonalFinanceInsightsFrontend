@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { InboxPageComponent } from './inbox-page.component';
 import { InboxItemDto } from '../../../core/models/outputs/inbox-output-dto';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { provideReadOnlyUser } from '../../../testing/test-auth';
 import { testJournalSummary, testEntry } from '../../../testing/test-journal';
 import { journalWithNote, taskFromNote } from '../inbox';
@@ -160,6 +161,46 @@ describe('InboxPageComponent', () => {
     expect(text(root().querySelector('[data-testid="empty"]')!)).toBe(
       'Nothing to sort. A quick note shows here until you sort it.',
     );
+  });
+
+  it('says the task is there when the note could not be marked done after it', async () => {
+    await start();
+    answerList([note()]);
+    await settle();
+
+    button('To task', root().querySelector('[data-note="n1"]')!).click();
+    http.expectOne({ method: 'POST', url: '/api/tasks' }).flush({});
+    http
+      .expectOne({ method: 'POST', url: '/api/inbox/n1/done' })
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(
+      TestBed.inject(ToastService)
+        .toasts()
+        .map((t) => t.message),
+    ).toEqual(['Added to Tasks, but the note is still here. Use Done to clear it.']);
+  });
+
+  it('runs one change at a time: the other buttons wait', async () => {
+    await start();
+    answerList([note(), note({ id: 'n2', text: 'Buy furnace filters' })]);
+    await settle();
+    type('A new note');
+    await settle();
+
+    button('Done', root().querySelector('[data-note="n1"]')!).click();
+    await settle();
+    const other = root().querySelector('[data-note="n2"]')!;
+    expect(button('To task', other).disabled).toBe(true);
+    expect(button('Done', other).disabled).toBe(true);
+    expect(button('Save').disabled).toBe(true);
+
+    http.expectOne({ method: 'POST', url: '/api/inbox/n1/done' }).flush(note());
+    await settle();
+    answerList([note({ id: 'n2', text: 'Buy furnace filters' })]);
+    await settle();
+    expect(button('Done', root().querySelector('[data-note="n2"]')!).disabled).toBe(false);
   });
 
   it('shows the sorted notes with an undo', async () => {
