@@ -138,9 +138,11 @@
 
     <div class="d-flex flex-wrap gap-2 justify-content-end">
       @if (uploading()) {
-        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
-          Stop the upload
-        </button>
+        @if (!linking()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
+            Stop the upload
+          </button>
+        }
       } @else {
         <a
           class="btn btn-outline-secondary"

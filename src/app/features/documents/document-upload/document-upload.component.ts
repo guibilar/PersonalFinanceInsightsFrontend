@@ -97,6 +97,11 @@ export class DocumentUploadComponent implements OnDestroy {
   /** 0 to 100 while the files go up; null when no upload runs. */
   readonly progress = signal<number | null>(null);
   readonly uploading = computed(() => this.progress() !== null);
+  /**
+   * The document is saved and the page links it: too late to stop. Stopping now would keep the document, unlinked, and
+   * leave the form as it was, so a second Upload would add it twice.
+   */
+  readonly linking = signal(false);
   /** Why the server refused the last upload. */
   readonly serverError = signal<string | null>(null);
 
@@ -167,6 +172,7 @@ export class DocumentUploadComponent implements OnDestroy {
         } else if (event.type === HttpEventType.Response && event.body) {
           const document = event.body;
           this.dataChanges.changed();
+          this.linking.set(!!(this.transactionId || this.homeItemId));
           if (this.transactionId) {
             this.linkToTransaction(document, this.transactionId);
           } else if (this.homeItemId) {
@@ -228,6 +234,7 @@ export class DocumentUploadComponent implements OnDestroy {
   }
 
   cancel(): void {
+    if (this.linking()) return;
     this.upload?.unsubscribe();
     this.progress.set(null);
   }

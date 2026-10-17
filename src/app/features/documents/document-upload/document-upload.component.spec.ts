@@ -314,6 +314,23 @@ describe('DocumentUploadComponent from a transaction', () => {
     expect(component.uploading()).toBe(false);
   });
 
+  it('cannot be stopped once the document is saved and the link runs: it would be added twice', async () => {
+    await opened();
+    await upload();
+
+    const link = http.expectOne({ method: 'POST', url: `/api/documents/${DOC_ID}/links` });
+    const stop = Array.from(root().querySelectorAll('button')).find(
+      (b) => b.textContent!.trim() === 'Stop the upload',
+    );
+    expect(stop).toBeUndefined();
+    component.cancel();
+    expect(link.cancelled).toBe(false);
+    link.flush({ id: 'l1', kind: 'Money.Transaction', targetId: TX_ID, createdAt: '' });
+    await render();
+
+    expect(messages()).toEqual(['Added “receipt” to the transaction']);
+  });
+
   it('opens the document when the link fails, and says so', async () => {
     await opened();
     await upload();
