@@ -87,10 +87,14 @@ export class CalendarPageComponent {
     return asked && /^\d{4}-\d{2}$/.test(asked) ? `${asked}-01` : monthStart(this.localToday);
   });
   readonly weeks = computed(() => monthWeeks(this.month()));
-  /** The chosen day of the month view: the day in the address, or today. */
+  /**
+   * The chosen day of the month view: the day in the address, or today. In another month, its 1st: today is not in the
+   * days loaded, so it would show as empty.
+   */
   readonly selected = computed(() => {
     const asked = this.query().get('day');
-    return asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : this.localToday;
+    if (asked && /^\d{4}-\d{2}-\d{2}$/.test(asked)) return asked;
+    return this.inMonth(this.localToday) ? this.localToday : this.month();
   });
 
   /** The days to load: the whole weeks of the month, or the agenda days from today. */

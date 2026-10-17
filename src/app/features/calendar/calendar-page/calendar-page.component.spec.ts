@@ -124,6 +124,19 @@ describe('CalendarPageComponent', () => {
     expect(text(byId('day-empty')!)).toBe('Nothing on this day.');
   });
 
+  it('chooses the 1st of another month, not today, which that month does not load', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 16, 12));
+    await start('/calendar?month=2026-11');
+    const first = testCalendarItem({ startDate: '2026-11-01', endDate: '2026-11-01' });
+    answerRange('2026-11-01', '2026-12-05', [first]);
+    await settle();
+
+    expect(byId('day-2026-11-01')!.getAttribute('aria-selected')).toBe('true');
+    expect(text(root().querySelector('#day-heading')!)).toBe('Sunday, November 1');
+    expect(byId('day-items')!.querySelectorAll('button.item').length).toBe(1);
+  });
+
   it('opens the page of another module, and the dialog of an event', async () => {
     await start();
     answerRange('2026-09-27', '2026-10-31');
