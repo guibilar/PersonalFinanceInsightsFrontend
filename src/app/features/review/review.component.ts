@@ -133,6 +133,14 @@ export class ReviewComponent {
     });
   }
 
+  /**
+   * The length of a bar, in percent of the largest. A category whose refunds outweigh its spending has a negative
+   * amount: a negative length is not a width at all, and the bar would fill its track instead of being empty.
+   */
+  share(amount: number, max: number): number {
+    return Math.min(100, Math.max(0, (amount / max) * 100));
+  }
+
   format(amount: number): string {
     return formatCurrency(amount);
   }

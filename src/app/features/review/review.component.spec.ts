@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { ReviewComponent } from './review.component';
 import { TEST_REVIEW } from '../../testing/test-insights';
+import { TEST_CATEGORIES } from '../../testing/test-categories';
 
 describe('ReviewComponent', () => {
   let http: HttpTestingController;
@@ -59,6 +60,24 @@ describe('ReviewComponent', () => {
     expect(text(root)).toContain('Dining+$15.00');
     expect(text(root)).toContain('Groceries−$10.00');
     expect(text(root)).toContain('$1,000.00 at LANDLORD');
+  });
+
+  it('gives a category whose refunds outweigh its spending an empty bar, not a full one', async () => {
+    const fixture = TestBed.createComponent(ReviewComponent);
+    TestBed.tick();
+    http.expectOne('/api/Reports/review').flush({
+      ...TEST_REVIEW,
+      categories: [
+        { category: TEST_CATEGORIES.rent, spending: 1000, previousSpending: 1000 },
+        { category: TEST_CATEGORIES.dining, spending: -40, previousSpending: 500 },
+      ],
+    });
+    await fixture.whenStable();
+
+    const widths = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.bar-track .bar'),
+    ).map((bar) => bar.style.width);
+    expect(widths).toEqual(['100%', '100%', '0%', '50%']);
   });
 
   it('steps to the month before, but not past the running one', async () => {
