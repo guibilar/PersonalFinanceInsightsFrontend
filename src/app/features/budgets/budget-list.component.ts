@@ -16,7 +16,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ModalComponent } from '../../shared/ui/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
-import { conflictDetail } from '../../shared/utils/problem-detail';
+import { conflictDetail, validationDetail } from '../../shared/utils/problem-detail';
 import { periodName, periodSuffix } from '../../shared/utils/budget-period';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { keptValueOf, valueOf } from '../../shared/utils/resource-value';
@@ -135,7 +135,10 @@ export class BudgetListComponent {
         this.toasts.error(
           conflictDetail(
             error,
-            editing ? 'Could not save the budget.' : 'Could not create the budget.',
+            validationDetail(
+              error,
+              editing ? 'Could not save the budget.' : 'Could not create the budget.',
+            ),
           ),
         );
       },

@@ -47,6 +47,7 @@
       class="form-control"
       formControlName="amount"
       min="0.01"
+      [max]="maxAmount"
       step="0.01"
       placeholder="Enter budget amount"
       [class.is-invalid]="isInvalid('amount')"
@@ -54,6 +55,8 @@
     <div class="invalid-feedback">
       @if (form.controls.amount.hasError('cents')) {
         Use whole cents: at most 2 decimal places.
+      } @else if (form.controls.amount.hasError('max')) {
+        Amount can be at most 1,000,000,000.
       } @else {
         Amount must be greater than 0.
       }
