@@ -86,6 +86,29 @@ describe('TimelinePageComponent', () => {
     expect(TestBed.inject(Router).url).toBe('/money/transactions?id=t1');
   });
 
+  it('leaves a Ctrl or Cmd click on an entry to the browser, for a new tab', async () => {
+    await start();
+    TestBed.tick();
+    answer();
+    await settle();
+
+    const link = root().querySelector('[data-entry="money.transaction.t1"] a') as HTMLAnchorElement;
+    let handled = true;
+    // Seen after the page's own handler; then cancelled, so the test browser stays on its page.
+    const record = (event: Event) => {
+      handled = event.defaultPrevented;
+      event.preventDefault();
+    };
+    root().addEventListener('click', record);
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true }));
+    root().removeEventListener('click', record);
+    await settle();
+
+    expect(handled).toBe(false);
+    expect(TestBed.inject(Router).url).toBe('/timeline');
+  });
+
   it('filters by module through the address, and loads earlier days', async () => {
     await start('/timeline?module=money');
     TestBed.tick();
