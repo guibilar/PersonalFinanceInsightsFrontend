@@ -1,8 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TaskSummaryDto } from '../../../core/models/outputs/task-output-dto';
 import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { formatDay } from '../../../shared/utils/format';
+import { TaskDoneService } from '../task-done.service';
 import { dueText, linkLabels, repeatRule } from '../tasks';
 
 /**
@@ -21,6 +32,7 @@ export type TaskRowVariant = 'due' | 'recurring' | 'done';
   template: `
     <div class="task-row" [class.is-done]="isDone()">
       <input
+        #box
         type="checkbox"
         class="form-check-input task-check"
         [checked]="isDone()"
@@ -115,6 +127,7 @@ export class TaskRowComponent {
     return !this.isDone() && !!due && due.slice(0, 10) < this.today();
   });
   readonly modules = computed(() => linkLabels(this.task()));
+  private readonly box = viewChild.required<ElementRef<HTMLInputElement>>('box');
 
   readonly subtitle = computed(() => {
     const task = this.task();
@@ -132,4 +145,12 @@ export class TaskRowComponent {
       }
     }
   });
+
+  constructor() {
+    const failed = inject(TaskDoneService).failed;
+    effect(() => {
+      // The box ticked itself; `[checked]` did not change, so it would not put it back.
+      if (failed()?.id === this.task().id) this.box().nativeElement.checked = this.isDone();
+    });
+  }
 }

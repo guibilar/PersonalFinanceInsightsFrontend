@@ -21,6 +21,9 @@ export class TaskDoneService {
   private readonly pending = signal<ReadonlySet<string>>(new Set());
   /** The tasks with a change in progress: their checkboxes wait. */
   readonly busy = this.pending.asReadonly();
+  private readonly failure = signal<{ id: string } | null>(null);
+  /** The last task whose change failed (a new value each time): its checkbox shows what the server has again. */
+  readonly failed = this.failure.asReadonly();
 
   /** Marks an open task done, or undoes the last "done" of a done task. */
   toggle(task: Pick<TaskSummaryDto, 'id' | 'status'>): void {
@@ -60,6 +63,7 @@ export class TaskDoneService {
       },
       error: (error: unknown) => {
         this.setPending(task.id, false);
+        this.failure.set({ id: task.id });
         // 409: another tab or device changed the task first. Show what the server has now.
         if (error instanceof HttpErrorResponse && error.status === 409) this.dataChanges.changed();
         this.toasts.error(taskError(error, fallback));
