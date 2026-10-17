@@ -113,6 +113,21 @@ describe('JournalPageComponent', () => {
     expect(button('delete')).not.toBeNull();
   });
 
+  it('keeps what is being written when the page loads again after a change elsewhere', async () => {
+    await start();
+    await answer(testJournalSummary({ today: testEntry({ text: 'Morning.' }) }));
+    expect(textarea().value).toBe('Morning.');
+
+    textarea().value = 'Morning. Then a long walk';
+    textarea().dispatchEvent(new Event('input'));
+    await settle();
+    TestBed.inject(DataChangesService).changed();
+    await answer(testJournalSummary({ today: testEntry({ text: 'Morning.' }) }));
+
+    expect(textarea().value).toBe('Morning. Then a long walk');
+    expect(button('save')!.disabled).toBe(false);
+  });
+
   it('opens an earlier day from the address, and deletes its entry after a confirmation', async () => {
     await start('/journal?day=2026-10-09');
     await answer();
@@ -166,6 +181,27 @@ describe('JournalPageComponent', () => {
     list.flush(testJournalPage([]));
     await settle();
     expect(text(root().querySelector('[data-testid="no-entries"]')!)).toBe('No entry matches.');
+  });
+
+  it('shows the search of the address after back or forward, and runs it again when typed', async () => {
+    await start('/journal?q=marco');
+    await answer();
+    const search = root().querySelector<HTMLInputElement>('#journal-search')!;
+    expect(search.value).toBe('marco');
+
+    await TestBed.inject(Router).navigateByUrl('/journal');
+    await settle();
+    http.expectOne((r) => r.url === '/api/journal/entries').flush(testJournalPage([]));
+    await settle();
+    expect(search.value).toBe('');
+
+    search.value = 'marco';
+    search.dispatchEvent(new Event('input'));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await settle();
+    expect(TestBed.inject(Router).url).toBe('/journal?q=marco');
+    http.expectOne((r) => r.url === '/api/journal/entries').flush(testJournalPage([]));
+    await settle();
   });
 
   it('lets a read-only user read only', async () => {
