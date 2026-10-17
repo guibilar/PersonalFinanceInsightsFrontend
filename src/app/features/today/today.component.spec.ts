@@ -552,6 +552,21 @@ describe('TodayComponent', () => {
     expect(root().querySelector('[data-testid="agenda-today"] li')!.classList).toContain('done');
   });
 
+  it('clears the tick when the task could not be marked done', async () => {
+    await answer(withAgenda());
+
+    const box = root().querySelector<HTMLInputElement>('[data-testid="done-tasks.task-due.t1"]')!;
+    box.click();
+    TestBed.tick();
+    http
+      .expectOne((r) => r.method === 'POST' && r.url === '/api/tasks/t1/done')
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await fixture.whenStable();
+
+    expect(box.checked).toBe(false);
+    expect(box.disabled).toBe(false);
+  });
+
   it('jots a note down for the Inbox', async () => {
     await answer(withAgenda());
 

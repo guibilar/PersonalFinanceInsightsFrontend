@@ -497,8 +497,8 @@ export class TodayComponent {
     return item.done === true || this.doneHere().has(item.id);
   }
 
-  /** Ticks a task due today: done on the server, then Today loads again. */
-  complete(item: TodayAgendaItem): void {
+  /** Ticks a task due today: done on the server, then Today loads again. A failure clears the tick. */
+  complete(item: TodayAgendaItem, box: HTMLInputElement): void {
     const id = splitLink(item.link).path?.split('/')[2];
     if (!id) return;
     this.busyTask.set(item.id);
@@ -511,6 +511,8 @@ export class TodayComponent {
       },
       error: (error: unknown) => {
         this.busyTask.set(null);
+        // The box ticked itself; `[checked]` did not change, so it would not clear it.
+        box.checked = false;
         this.toasts.error(validationDetail(error, 'Could not mark the task done.'));
       },
     });
