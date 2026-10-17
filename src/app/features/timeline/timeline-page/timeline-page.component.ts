@@ -22,6 +22,7 @@ import { ErrorStateComponent } from '../../../shared/ui/error-state/error-state.
 import { IconComponent, IconName } from '../../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../../shared/ui/skeleton/skeleton.component';
 import { formatCurrency } from '../../../shared/utils/format';
+import { plainClick } from '../../../shared/utils/links';
 import {
   TIMELINE_FILTERS,
   TIMELINE_PAGE_DAYS,
@@ -155,7 +156,8 @@ export class TimelinePageComponent {
 
   /** Opens the page of an entry: its link has a query (`/money/transactions?id=…`), so it goes to the router as a URL. */
   open(event: Event, entry: TimelineEntry): void {
-    if (!entry.link) return;
+    // Ctrl or Cmd and the like: the browser opens the link's href in a new tab.
+    if (!entry.link || !plainClick(event)) return;
     event.preventDefault();
     void this.router.navigateByUrl(entry.link);
   }

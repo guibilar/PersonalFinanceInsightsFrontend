@@ -9,6 +9,7 @@ import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.com
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton.component';
 import { formatCurrency, formatDay } from '../../shared/utils/format';
+import { plainClick } from '../../shared/utils/links';
 
 /** The shortest search that the server takes. */
 export const MIN_SEARCH = 2;
@@ -256,7 +257,8 @@ export class SearchPageComponent {
 
   /** Opens a hit: its link can have a query (`/money/transactions?id=…`), so it goes to the router as a URL. */
   open(event: Event, hit: SearchHit): void {
-    if (!hit.link) return;
+    // Ctrl or Cmd and the like: the browser opens the link's href in a new tab.
+    if (!hit.link || !plainClick(event)) return;
     event.preventDefault();
     void this.router.navigateByUrl(hit.link);
   }

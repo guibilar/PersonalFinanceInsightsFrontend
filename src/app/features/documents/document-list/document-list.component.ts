@@ -10,7 +10,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, map } from 'rxjs';
+import { debounceTime, filter, map } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentRepository } from '../../../core/api/document-repository';
 import {
@@ -118,7 +118,9 @@ export class DocumentListComponent {
       .pipe(
         map((value) => value.trim()),
         debounceTime(300),
-        distinctUntilChanged(),
+        // Against the address, not the last value typed: the box is also cleared (or set) without an event, and
+        // the same search typed again afterwards has to run.
+        filter((q) => q !== this.q()),
         takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((q) => this.setFilters({ q: q || null, page: null }));

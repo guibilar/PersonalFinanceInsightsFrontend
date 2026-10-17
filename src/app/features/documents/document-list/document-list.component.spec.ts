@@ -247,6 +247,30 @@ describe('DocumentListComponent', () => {
     expect(root().textContent).toContain('No document matches “kettle”.');
   });
 
+  it('runs the same search again after Escape cleared it', async () => {
+    await harness.navigateByUrl('/documents', DocumentListComponent);
+    await answer([testSummary()]);
+    const input = root().querySelector<HTMLInputElement>('#document-search')!;
+    const type = async (value: string) => {
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      await settle();
+    };
+
+    await type('kettle');
+    expect(router.url).toBe('/documents?q=kettle');
+    await answer([]);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await settle();
+    expect(router.url).toBe('/documents');
+    await answer([testSummary()]);
+
+    await type('kettle');
+    expect(router.url).toBe('/documents?q=kettle');
+    await answer([]);
+  });
+
   it('starts from the filters in the address, and pages', async () => {
     await harness.navigateByUrl('/documents?kind=Receipt&q=costco&page=2', DocumentListComponent);
     const { page } = await answer(

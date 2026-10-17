@@ -121,7 +121,7 @@
               [title]="month.label + ': ' + format(month.spending)"
             >
               <div class="month-bar">
-                <div [style.height.%]="(month.spending / monthMax()) * 100"></div>
+                <div [style.height.%]="share(month.spending, monthMax())"></div>
               </div>
               <div class="text-body-secondary mt-1">{{ month.label }}</div>
             </div>
@@ -163,14 +163,14 @@
                   <div class="bar-track mt-1">
                     <div
                       class="bar"
-                      [style.width.%]="(item.spending / categoryMax()) * 100"
+                      [style.width.%]="share(item.spending, categoryMax())"
                       [style.background-color]="item.category.color"
                     ></div>
                   </div>
                   <div class="bar-track mt-1 opacity-50">
                     <div
                       class="bar"
-                      [style.width.%]="(item.previousSpending / categoryMax()) * 100"
+                      [style.width.%]="share(item.previousSpending, categoryMax())"
                       [style.background-color]="item.category.color"
                     ></div>
                   </div>
