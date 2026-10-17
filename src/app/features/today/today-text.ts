@@ -39,7 +39,8 @@ export function fillTodayText(
 ): string {
   if (!text) return '';
   return text.replace(PLACEHOLDER, (placeholder, name: string) => {
-    const value = values?.[name];
+    // Its own values only: `{constructor}` is not a value of every object.
+    const value = values && Object.hasOwn(values, name) ? values[name] : undefined;
     return value ? formatTodayValue(value) : placeholder;
   });
 }

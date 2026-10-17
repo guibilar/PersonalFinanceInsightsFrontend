@@ -145,15 +145,58 @@ export const REPEAT_PRESETS: readonly RepeatPreset[] = [
   { label: 'Every year', rule: 'FREQ=YEARLY' },
 ];
 
-/** The RRULE without its UNTIL and COUNT, and the UNTIL day (`yyyy-MM-dd`), if any. */
-export function splitRepeat(repeat: string | null): { rule: string; until: string | null } {
+/** The browser's time zone, such as `America/Toronto`. */
+function browserZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/** The wall clock of `instant` in `timeZone`, as if it were UTC (ms): the zone's offset is the difference. */
+function wallClock(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  }).formatToParts(new Date(instant));
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(
+    part('year'),
+    part('month') - 1,
+    part('day'),
+    part('hour'),
+    part('minute'),
+    part('second'),
+  );
+}
+
+/** The day of an UNTIL in `timeZone`: a day ("20261231") as it is, a UTC moment ("20270101T045959Z") on its local day. */
+function untilDay(value: string, timeZone: string): string | null {
+  const moment = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/i.exec(value);
+  if (moment) {
+    const [y, mo, d, h, mi, s] = moment.slice(1).map(Number);
+    return new Date(wallClock(Date.UTC(y, mo - 1, d, h, mi, s), timeZone))
+      .toISOString()
+      .slice(0, 10);
+  }
+  const match = /^(\d{4})(\d{2})(\d{2})/.exec(value);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
+}
+
+/** The RRULE without its UNTIL and COUNT, and the UNTIL day (`yyyy-MM-dd`) in `timeZone`, if any. */
+export function splitRepeat(
+  repeat: string | null,
+  timeZone = browserZone(),
+): { rule: string; until: string | null } {
   if (!repeat) return { rule: '', until: null };
   let until: string | null = null;
   const parts = repeat.split(';').filter((part) => {
     const [key, value] = part.split('=');
     if (key.toUpperCase() === 'UNTIL') {
-      const match = /^(\d{4})(\d{2})(\d{2})/.exec(value ?? '');
-      until = match ? `${match[1]}-${match[2]}-${match[3]}` : null;
+      until = untilDay(value ?? '', timeZone);
       return false;
     }
     return true;
@@ -161,18 +204,33 @@ export function splitRepeat(repeat: string | null): { rule: string; until: strin
   return { rule: parts.join(';'), until };
 }
 
-/** The RRULE of a preset and an end day: an all-day event ends on the day; one with a time at the end of the day. */
-export function joinRepeat(rule: string, until: string | null, allDay: boolean): string | null {
+/**
+ * The RRULE of a preset and an end day: an all-day event ends on the day; one with a time at the end of the day in
+ * `timeZone`, written in UTC as RFC 5545 asks. The end of the UTC day would drop the last evening in the Americas (8 PM
+ * in Toronto is after midnight UTC).
+ */
+export function joinRepeat(
+  rule: string,
+  until: string | null,
+  allDay: boolean,
+  timeZone = browserZone(),
+): string | null {
   if (!rule) return null;
   if (!until) return rule;
-  const day = until.replaceAll('-', '');
-  return `${rule};UNTIL=${allDay ? day : `${day}T235959Z`}`;
+  if (allDay) return `${rule};UNTIL=${until.replaceAll('-', '')}`;
+  const [y, m, d] = until.split('-').map(Number);
+  const wall = Date.UTC(y, m - 1, d, 23, 59, 59);
+  // The offset at the guess, then at the moment it gives: right on either side of a change of the clocks.
+  let end = wall - (wallClock(wall, timeZone) - wall);
+  end = wall - (wallClock(end, timeZone) - end);
+  const utc = new Date(end).toISOString().replace(/[-:]/g, '').slice(0, 15);
+  return `${rule};UNTIL=${utc}Z`;
 }
 
 /** "Every week", or "Repeats (custom)" for a rule that the presets do not have. */
-export function repeatText(repeat: string | null): string | null {
+export function repeatText(repeat: string | null, timeZone = browserZone()): string | null {
   if (!repeat) return null;
-  const { rule, until } = splitRepeat(repeat);
+  const { rule, until } = splitRepeat(repeat, timeZone);
   const preset = REPEAT_PRESETS.find((p) => p.rule === rule && p.rule !== '');
   const base = preset?.label ?? 'Repeats (custom)';
   return until ? `${base} until ${shortDay(until)}` : base;

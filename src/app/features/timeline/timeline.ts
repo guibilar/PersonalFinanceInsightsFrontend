@@ -48,7 +48,7 @@ export function dayHeading(day: string, today: string): string {
   yesterday.setDate(yesterday.getDate() - 1);
   if (day === today) return `Today · ${plain}`;
   if (date.getTime() === yesterday.getTime()) return `Yesterday · ${plain}`;
-  return sameYear ? plain : label;
+  return plain;
 }
 
 /** "14:20" for an entry with a time, in the browser's time zone; empty for one of a whole day. */

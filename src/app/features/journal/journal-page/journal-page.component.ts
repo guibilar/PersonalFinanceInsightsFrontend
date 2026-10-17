@@ -6,12 +6,13 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { catchError, debounceTime, distinctUntilChanged, map, of, throwError } from 'rxjs';
+import { catchError, debounceTime, filter, map, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { JournalRepository } from '../../../core/api/journal-repository';
 import { DataChangesService } from '../../../core/data/data-changes.service';
@@ -128,12 +129,23 @@ export class JournalPageComponent {
 
   readonly search = new FormControl(this.term(), { nonNullable: true });
 
+  /** The day and the text that the editor last showed, to tell unsaved changes from a reload. */
+  private shown: { day: string | null; text: string } = { day: null, text: '' };
+
   constructor() {
-    // A new day (or its entry loaded): the editor shows its text.
+    // A new day (or its entry loaded): the editor shows its text. The same day loaded again (after a change anywhere)
+    // keeps what is being written, unless it is what is now saved.
     effect(() => {
       const entry = this.entry();
+      const day = this.day();
       if (entry === undefined) return;
-      this.text.setValue(entry?.text ?? '');
+      untracked(() => {
+        const text = entry?.text ?? '';
+        const typed = this.text.value.trim();
+        const writing = day === this.shown.day && typed !== this.shown.text && typed !== text;
+        this.shown = { day, text };
+        if (!writing) this.text.setValue(text);
+      });
     });
     effect(() => (this.canWrite() ? this.text.enable() : this.text.disable()));
 
@@ -141,7 +153,9 @@ export class JournalPageComponent {
       .pipe(
         map((value) => value.trim()),
         debounceTime(300),
-        distinctUntilChanged(),
+        // Against the address, not the last value typed: back or forward sets the box without an event, and the same
+        // search typed again afterwards has to run.
+        filter((q) => q !== this.term()),
         takeUntilDestroyed(inject(DestroyRef)),
       )
       .subscribe((q) =>
@@ -152,6 +166,14 @@ export class JournalPageComponent {
           replaceUrl: true,
         }),
       );
+
+    // Back or forward to another search: the box shows it.
+    effect(() => {
+      const q = this.term();
+      untracked(() => {
+        if (this.search.value.trim() !== q) this.search.setValue(q, { emitEvent: false });
+      });
+    });
   }
 
   streak(streak: number): string | null {
@@ -209,6 +231,8 @@ export class JournalPageComponent {
       next: () => {
         this.saving.set(false);
         this.confirmingDelete.set(false);
+        // What was typed went with the entry: the reload must not keep it as unsaved text.
+        this.text.setValue('');
         this.dataChanges.changed();
         this.toasts.success('Deleted the entry');
       },

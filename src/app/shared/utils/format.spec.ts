@@ -8,6 +8,20 @@ describe('format', () => {
     expect(formatCompactCurrency(1200)).toBe('$1.2K');
   });
 
+  it('shows what a sum leaves below half a cent as zero, without a minus', () => {
+    expect(formatCurrency(-2.7e-17)).toBe('$0.00');
+    expect(formatCurrency(-0)).toBe('$0.00');
+    expect(formatCurrency(-0.004)).toBe('$0.00');
+    expect(formatCurrency(-0.005)).toBe('-$0.01');
+    setAmountsHidden(true);
+    try {
+      expect(formatCurrency(-2.7e-17)).toBe(HIDDEN_AMOUNT);
+    } finally {
+      setAmountsHidden(false);
+      localStorage.removeItem(PRIVACY_STORAGE_KEY);
+    }
+  });
+
   it('hides every amount in privacy mode, at the same length whatever its size, and remembers it', () => {
     setAmountsHidden(true);
     try {
